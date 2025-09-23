@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ seo.title }}</title>
+  <meta name="description" content="{{ seo.description }}" />
+  <link rel="canonical" href="{{ seo.canonical }}" />
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="{{ seo.title }}" />
+  <meta property="og:description" content="{{ seo.description }}" />
+  <meta property="og:url" content="{{ seo.canonical }}" />
+  <meta property="og:site_name" content="PostulaMatic" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "PostulaMatic",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web",
+    "description": "Postularse automáticamente a empleos por habilidades (IA).",
+    "url": "http://127.0.0.1:8000/",
+    "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}
+  }
+  </script>
+  
+</head>
+<body>
+  <header class="container">
+    <a href="/" class="logo">PostulaMatic</a>
+    <nav>
+      <a href="/enviar-cv-automaticamente">Enviar CV automáticamente</a>
+      <a href="/postularse-automaticamente">Postularse automáticamente</a>
+      <a href="/bot-para-postular">Bot para postular</a>
+    </nav>
+  </header>
+  <main class="container">{% block content %}{% endblock %}</main>
+  <footer class="container footer">
+    <small>© {{ now|date:"Y" }} PostulaMatic — <a href="/privacidad">Privacidad</a> · <a href="/terminos">Términos</a></small>
+  </footer>
+</body>
+</html>
+
+

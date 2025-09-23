@@ -1,0 +1,7 @@
+{% extends 'base.html' %}{% block content %}
+<h1>Postularse automáticamente a empleos por habilidades (IA)</h1>
+<p>Leemos tu CV, detectamos <strong>skills</strong> y te ayudamos a enviar CV automáticamente.</p>
+<form method="post" class="lead-form">{% csrf_token %}{{ form.email }}<button type="submit">Quiero acceso</button></form>
+{% endblock %}
+
+
