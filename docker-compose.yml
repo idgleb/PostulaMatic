@@ -1,0 +1,11 @@
+services:
+  postulamatic_web:
+    build: .
+    env_file: .env
+    restart: unless-stopped
+    networks: [web]
+
+networks:
+  web:
+    external: true
+

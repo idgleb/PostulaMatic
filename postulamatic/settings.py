@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-*km#mune!j!-fua678rs@3)ds@97&w-y0ukri%m*q=s7+(qik3
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'postulamatic.app', 'www.postulamatic.app']
 
 
 # Application definition
@@ -40,6 +40,10 @@ INSTALLED_APPS = [
     'landing',
 ]
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://postulamatic.app',
+    'https://www.postulamatic.app',
+]
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -117,7 +121,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
