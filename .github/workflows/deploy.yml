@@ -1,0 +1,40 @@
+name: Deploy Postulamatic
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Preparar SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Sincronizar código al servidor (rsync)
+        run: |
+          rsync -az --delete \
+            --exclude ".git/" \
+            --exclude "__pycache__/" \
+            --exclude ".venv/" \
+            --exclude "node_modules/" \
+            ./ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:~/apps/postulamatic/
+
+      - name: Build & restart con Docker Compose en el servidor
+        run: |
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} 'bash -se' <<'EOSSH'
+          set -euo pipefail
+          cd ~/apps/postulamatic
+          docker compose build
+          docker compose up -d
+          EOSSH
