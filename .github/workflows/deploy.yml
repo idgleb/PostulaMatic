@@ -45,17 +45,13 @@ jobs:
 
       - name: Build & restart con Docker Compose en el servidor
         env:
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
           SERVER_USER: ${{ secrets.SERVER_USER }}
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
         run: |
           set -e
           ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=yes \
-            "${SERVER_USER}@${SERVER_HOST}" \
-            "DOCKERHUB_USERNAME='${DOCKERHUB_USERNAME}' DOCKERHUB_TOKEN='${DOCKERHUB_TOKEN}' bash -se" <<'EOSSH'
+            "${SERVER_USER}@${SERVER_HOST}" bash -se <<'EOSSH'
           set -euo pipefail
-          echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
           cd ~/apps/postulamatic
           docker compose build --pull
           docker compose up -d
