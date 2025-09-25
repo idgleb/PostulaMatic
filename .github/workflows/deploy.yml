@@ -13,44 +13,36 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Preparar SSH (key + known_hosts)
+      - name: Preparar SSH
         run: |
           set -e
           mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-
-          # Clave privada desde el secret (sanear \r por si se copió desde Windows)
-          echo "${{ secrets.SSH_KEY }}" | tr -d '\r' > ~/.ssh/id_ed25519
+          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-
-          # Generar known_hosts correcto consultando el servidor
-          ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+          echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
-
-          # Comprobación mínima (no imprime secretos)
-          ssh -o StrictHostKeyChecking=yes ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} 'echo SSH OK' || exit 1
 
       - name: Sincronizar código al servidor (rsync)
         run: |
           set -e
-          RSYNC_SSH="ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=yes"
           rsync -az --delete \
-            --rsh="$RSYNC_SSH" \
             --exclude ".git/" \
             --exclude "__pycache__/" \
             --exclude ".venv/" \
             --exclude "node_modules/" \
-            --exclude ".github/" \
             ./ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:~/apps/postulamatic/
 
       - name: Build & restart con Docker Compose en el servidor
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
         run: |
           set -e
-          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=yes \
-            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} 'bash -se' <<'EOSSH'
+          ssh -o StrictHostKeyChecking=yes ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} 'bash -se' <<'EOSSH'
           set -euo pipefail
+          # Login a Docker Hub (evita 401/limit)
+          echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
           cd ~/apps/postulamatic
-          docker compose build
+          docker compose build --pull
           docker compose up -d
-          docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
           EOSSH
