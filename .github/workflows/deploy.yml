@@ -13,16 +13,26 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Preparar SSH
+      - name: Preparar SSH (clave + known_hosts dinámico)
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
         run: |
           set -e
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+
+          # Genera known_hosts con la huella del server (IPv4/IPv6 si aplica)
+          touch ~/.ssh/known_hosts
+          ssh-keyscan -H "$SERVER_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+          ssh-keyscan -H -4 "$SERVER_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+          ssh-keyscan -H -6 "$SERVER_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
           chmod 644 ~/.ssh/known_hosts
 
       - name: Sincronizar código al servidor (rsync)
+        env:
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
         run: |
           set -e
           rsync -az --delete \
@@ -30,17 +40,19 @@ jobs:
             --exclude "__pycache__/" \
             --exclude ".venv/" \
             --exclude "node_modules/" \
-            ./ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:~/apps/postulamatic/
+            -e "ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=yes" \
+            ./ "${SERVER_USER}@${SERVER_HOST}:~/apps/postulamatic/"
 
       - name: Build & restart con Docker Compose en el servidor
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
         run: |
           set -e
-          ssh -o StrictHostKeyChecking=yes ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} 'bash -se' <<'EOSSH'
+          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=yes "${SERVER_USER}@${SERVER_HOST}" 'bash -se' <<'EOSSH'
           set -euo pipefail
-          # Login a Docker Hub (evita 401/limit)
           echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
           cd ~/apps/postulamatic
           docker compose build --pull
