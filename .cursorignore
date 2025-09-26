@@ -1,0 +1,86 @@
+# 🔐 Secretos / credenciales
+.env
+.env.*
+*.pem
+*.key
+*.crt
+secrets/*
+**/settings_local.py
+
+# 🗃️ Datos locales y artefactos
+*.sqlite3
+/media/**
+/static/**
+/staticfiles/**
+/.collected-static/**
+/coverage/**
+/reports/**
+*.log
+
+# 🐍 Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+.eggs/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+ruff_cache/
+
+# 🧱 Frontend / Node
+node_modules/
+dist/
+build/
+
+# 🗂️ VCS y CI
+.git/
+.gitignore
+.gitattributes
+.github/
+
+# 🐳 Docker artefactos locales
+**/data/**
+**/.docker-cache/**
+
+# 🧬 Modelos/IA pesados (si los hubiera)
+models/**
+checkpoints/**
+
+# IDE / Editor
+.idea/
+.vscode/
+*.code-workspace
+
+# Cursor (metadatos locales de sesiones)
+.cursor/
+
+# Base de datos local y artefactos de Django
+db.sqlite3
+/media/
+/static/
+/staticfiles/
+/.collected-static/
+
+# Caches y artefactos de Python
+.pytest_cache/
+.mypy_cache/
+ruff_cache/
+.eggs/
+*.egg-info/
+
+# Virtualenv (por si cambia el nombre)
+.venv/
+venv/
+
+# Logs y archivos temporales
+*.log
+*.swp
+*.swo
+*.tmp
+
+# Basura de SO
+.DS_Store
+Thumbs.db

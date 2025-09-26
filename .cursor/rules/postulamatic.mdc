@@ -1,0 +1,44 @@
+---
+description: Reglas globales del proyecto PostulaMatic
+globs: "**/*"
+alwaysApply: true
+---
+
+# Objetivo
+Construir un sistema Django que:
+- Permita a usuarios subir su CV (PDF/DOCX), extraer habilidades con IA y mantener su perfil.
+- Haga login en https://dvcarreras.davinci.edu.ar/login.html con credenciales del usuario, scrapee la bolsa de trabajo interna y guarde posteos.
+- Calcule coincidencia CV↔puesto con umbral configurable y, si supera el umbral, envíe email personalizado (IA) desde la cuenta SMTP del usuario.
+- Personalice el CV adjunto (versión generada a partir del CV original).
+- Limite el envío diario y use pausas aleatorias para emular comportamiento humano.
+- Muestre un dashboard con tarjetas/resumen y detalle de cada postulación.
+
+# Tecnologías y lineamientos
+- **Lenguaje/stack**: Python 3.12 + Django 5.x. No generar código en otros lenguajes para backend. Front mínimo con Django templates + HTMX/Alpine opcional.
+- **Formateo/lint**: `black` (line-length 88), `ruff`, `isort`. Cumplir PEP8.
+- **Persistencia**: PostgreSQL. Usar migraciones al tocar `models.py`.
+- **Contenedores**: Docker y docker-compose del repo son la única fuente de verdad para ejecutar.
+- **Config**: variables de entorno con `django-environ`. Nunca hardcodear secretos.
+- **Scraping**: `requests` + `BeautifulSoup`. Sesión autenticada. Respetar límites:
+  - backoff exponencial, timeouts razonables, `User-Agent` propio.
+  - rate limit configurable (p.ej. máx N requests/min).
+  - manejo de 2FA/cambios de HTML con selectores robustos.
+- **Extracción de habilidades**: parsear CV (pdf/docx) y normalizar habilidades (sinónimos).
+- **Matching**: función pura que reciba vector de habilidades del usuario y del puesto; retornar score 0..100. Umbral configurable.
+- **Email saliente**: SMTP del usuario; plantilla generada por IA (asunto + cuerpo) y CV personalizado adjunto.
+  - Límite diario + pausas aleatorias (jitter) entre envíos.
+  - Reintentos con backoff y logging.
+- **Capa IA**: abstraer proveedor en `services/ai/` (prompting limpio, tests con fixtures).
+- **Tareas**: usar Celery + Redis para scraping, matching y envío (jobs idempotentes).
+- **Observabilidad**: logs estructurados; registrar cada postulación, score, job_id, email_id, estado y errores.
+- **Seguridad/Privacidad**: cifrar en reposo credenciales sensibles; nunca loggear secretos; cumplir TOS del sitio.
+- **Entrega incremental**: dividir en pasos pequeños y probar; incluir tests cuando toques lógica crítica.
+
+# Calidad y PRs
+- Cada cambio debe incluir tests (unitarios/funcionales) si toca lógica.
+- No introducir dependencias pesadas sin justificar.
+- Mantener cobertura básica en `apps/` y `services/`.
+
+# Estilo de respuesta de Cursor
+- Cuando generes código, incluye archivos completos y comandos de ejecución/migraciones.
+- Explica brevemente cómo probar (pasos reproducibles).
