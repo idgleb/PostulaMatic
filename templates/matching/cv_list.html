@@ -1,0 +1,462 @@
+{% extends 'matching/base.html' %}
+
+{% block matching_content %}
+<!-- Header Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+            <h1 class="h3 mb-1">
+                <i class="bi bi-file-earmark-text me-2 text-primary"></i>Mis CVs
+            </h1>
+            <p class="text-muted mb-0">Gestiona tus CVs y visualiza las habilidades detectadas</p>
+            </div>
+            <a href="{% url 'upload_cv' %}" class="btn btn-primary btn-lg">
+                <i class="bi bi-plus-lg me-2"></i>Subir nuevo CV
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Section -->
+{% if user_cvs %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-file-earmark-text fs-1 me-3"></i>
+                            <div>
+                                <h4 class="mb-0">{{ user_cvs|length }}</h4>
+                                <small>Total CVs</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-check-circle fs-1 me-3"></i>
+                            <div>
+                                <h4 class="mb-0">{{ user_cvs|length }}</h4>
+                                <small>CVs Procesados</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-info text-white">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-tags fs-1 me-3"></i>
+                            <div>
+                                <h4 class="mb-0">{{ total_skills }}</h4>
+                                <small>Total Skills</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-white">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-graph-up fs-1 me-3"></i>
+                            <div>
+                                <h4 class="mb-0">100%</h4>
+                                <small>Procesamiento</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- CVs Grid -->
+{% if user_cvs %}
+<div class="row">
+    {% for cv in user_cvs %}
+    <div class="col-lg-6 col-xl-4 mb-4">
+        <div class="card h-100 shadow-sm border-0">
+            <!-- Card Header -->
+            <div class="card-header bg-white border-0 pb-0">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        {% if cv.original_file.name|slice:"-4:" == ".pdf" %}
+                            <div class="bg-danger bg-opacity-10 rounded-circle p-3">
+                                <i class="bi bi-file-earmark-pdf text-danger fs-3"></i>
+                            </div>
+                        {% else %}
+                            <div class="bg-primary bg-opacity-10 rounded-circle p-3">
+                                <i class="bi bi-file-earmark-word text-primary fs-3"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="card-title mb-1 fw-bold">{{ cv.original_file.name|truncatechars:30 }}</h6>
+                        <small class="text-muted">
+                            <i class="bi bi-calendar3 me-1"></i>{{ cv.created_at|date:"d/m/Y H:i" }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Card Body -->
+            <div class="card-body pt-3">
+                <!-- Skills Section -->
+                <div class="mb-3">
+                    {% if cv.skills_count > 0 %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0 text-success">
+                                <i class="bi bi-check-circle me-1"></i>Procesado
+                            </h6>
+                            <span class="badge bg-success fs-6">{{ cv.skills_count }} skills</span>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="d-flex flex-wrap gap-1">
+                                {% for skill in cv.skills.skills|slice:":4" %}
+                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">{{ skill }}</span>
+                                {% endfor %}
+                                {% if cv.skills_count > 4 %}
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">
+                                        +{{ cv.skills_count|add:"-4" }} más
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Categories -->
+                        {% if cv.skills.categories %}
+                            <div class="mb-3">
+                                <small class="text-muted fw-semibold">Categorías:</small>
+                                <div class="d-flex flex-wrap gap-1 mt-1">
+                                    {% for category, skills in cv.skills.categories.items %}
+                                        {% if skills %}
+                                            <span class="badge bg-light text-dark border">{{ category|title }} ({{ skills|length }})</span>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-3">
+                            <div class="spinner-border spinner-border-sm text-warning me-2" role="status">
+                                <span class="visually-hidden">Procesando...</span>
+                            </div>
+                            <span class="badge bg-warning">Pendiente de procesar</span>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Text Preview -->
+                {% if cv.parsed_text %}
+                    <div class="border-top pt-3">
+                        <h6 class="text-muted mb-2">
+                            <i class="bi bi-eye me-1"></i>Vista previa del texto
+                        </h6>
+                        <div class="bg-light rounded p-3" style="max-height: 80px; overflow: hidden;">
+                            <small class="text-muted" style="white-space: pre-wrap; line-height: 1.4;">{{ cv.parsed_text|truncatechars:120 }}</small>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Card Footer -->
+            <div class="card-footer bg-white border-0 pt-0">
+                <div class="d-grid gap-2 d-md-flex">
+                    <button type="button" class="btn btn-outline-primary flex-fill" 
+                            data-bs-toggle="modal" data-bs-target="#cvModal{{ cv.id }}">
+                        <i class="bi bi-eye me-1"></i>Ver detalles
+                    </button>
+                    {% if not cv.is_processed %}
+                        <a href="{% url 'process_cv' cv.id %}" class="btn btn-outline-warning flex-fill">
+                            <i class="bi bi-gear me-1"></i>Procesar
+                        </a>
+                    {% endif %}
+                    <button type="button" class="btn btn-outline-danger flex-fill" 
+                            onclick="deleteCV({{ cv.id }}, '{{ cv.original_file.name }}')">
+                        <i class="bi bi-trash me-1"></i>Eliminar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Enhanced Modal -->
+    <div class="modal fade" id="cvModal{{ cv.id }}" tabindex="-1" aria-labelledby="cvModalLabel{{ cv.id }}">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="cvModalLabel{{ cv.id }}">
+                        <i class="bi bi-file-earmark-text me-2"></i>{{ cv.original_file.name }}
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <!-- Left Column - Info -->
+                        <div class="col-lg-4">
+                            <div class="card border-0 bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <i class="bi bi-info-circle me-2"></i>Información del CV
+                                    </h6>
+                                    <ul class="list-unstyled">
+                                        <li class="mb-2">
+                                            <strong><i class="bi bi-calendar3 me-1"></i>Fecha:</strong><br>
+                                            <small class="text-muted">{{ cv.created_at|date:"d/m/Y H:i" }}</small>
+                                        </li>
+                                        <li class="mb-2">
+                                            <strong><i class="bi bi-file-earmark me-1"></i>Archivo:</strong><br>
+                                            <small class="text-muted">{{ cv.original_file.name }}</small>
+                                        </li>
+                                        <li class="mb-2">
+                                            <strong><i class="bi bi-tags me-1"></i>Skills detectadas:</strong><br>
+                                            <span class="badge bg-success fs-6">{{ cv.skills_list|length }}</span>
+                                        </li>
+                                        <li class="mb-2">
+                                            <strong><i class="bi bi-check-circle me-1"></i>Estado:</strong><br>
+                                            {% if cv.is_processed %}
+                                                <span class="badge bg-success">Procesado</span>
+                                            {% else %}
+                                                <span class="badge bg-warning">Pendiente</span>
+                                            {% endif %}
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Right Column - Skills -->
+                        <div class="col-lg-8">
+                            <div class="card border-0">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <i class="bi bi-tags me-2"></i>Habilidades detectadas
+                                    </h6>
+                                    
+                                    {% if cv.skills_list %}
+                                        <!-- All Skills -->
+                                        <div class="mb-4">
+                                            <h6 class="text-muted mb-3">Todas las habilidades:</h6>
+                                            <div class="d-flex flex-wrap gap-2">
+                                                {% for skill in cv.skills_list %}
+                                                    <span class="badge bg-primary fs-6 px-3 py-2">{{ skill }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Skills by Category -->
+                                        {% if cv.skills_categories %}
+                                            <div>
+                                                <h6 class="text-muted mb-3">Por categorías:</h6>
+                                                {% for category, skills in cv.skills_categories.items %}
+                                                    {% if skills %}
+                                                        <div class="mb-3">
+                                                            <h6 class="text-capitalize mb-2">{{ category|title }}</h6>
+                                                            <div class="d-flex flex-wrap gap-1">
+                                                                {% for skill in skills %}
+                                                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border">{{ skill }}</span>
+                                                                {% endfor %}
+                                                            </div>
+                                                        </div>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    {% else %}
+                                        <div class="text-center py-4">
+                                            <i class="bi bi-hourglass-split text-warning fs-1"></i>
+                                            <p class="text-muted mt-2">Pendiente de procesar</p>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Text Content -->
+                    {% if cv.parsed_text %}
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="card border-0 bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title">
+                                            <i class="bi bi-file-text me-2"></i>Texto extraído del CV
+                                        </h6>
+                                        <div class="bg-white p-4 rounded border" style="max-height: 300px; overflow-y: auto;">
+                                            <small class="text-muted" style="white-space: pre-wrap; line-height: 1.5;">{{ cv.parsed_text }}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg me-1"></i>Cerrar
+                    </button>
+                    <a href="{% url 'upload_cv' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-lg me-1"></i>Subir otro CV
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% else %}
+<!-- Empty State -->
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center py-5">
+                <div class="mb-4">
+                    <i class="bi bi-file-earmark-plus text-primary" style="font-size: 4rem;"></i>
+                </div>
+                <h4 class="mb-3">No tienes CVs subidos</h4>
+                <p class="text-muted mb-4 fs-5">
+                    Sube tu primer CV para comenzar a recibir ofertas de trabajo automáticamente.<br>
+                    El sistema detectará automáticamente tus habilidades y las utilizará para encontrar coincidencias.
+                </p>
+                <a href="{% url 'upload_cv' %}" class="btn btn-primary btn-lg px-4">
+                    <i class="bi bi-upload me-2"></i>Subir mi primer CV
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function deleteCV(cvId, fileName) {
+    // Crear modal de confirmación personalizado
+    const modal = `
+        <div class="modal fade" id="deleteModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title">
+                            <i class="bi bi-exclamation-triangle me-2"></i>Confirmar eliminación
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>¿Estás seguro de que quieres eliminar el CV <strong>"${fileName}"</strong>?</p>
+                        <div class="alert alert-warning">
+                            <i class="bi bi-info-circle me-2"></i>
+                            Esta acción no se puede deshacer y se perderán todas las habilidades detectadas.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-danger" onclick="confirmDelete(${cvId})">
+                            <i class="bi bi-trash me-1"></i>Eliminar CV
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remover modal anterior si existe
+    const existingModal = document.getElementById('deleteModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Agregar nuevo modal al DOM
+    document.body.insertAdjacentHTML('beforeend', modal);
+    
+    // Mostrar modal
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    deleteModal.show();
+    
+    // Limpiar modal cuando se cierre
+    document.getElementById('deleteModal').addEventListener('hidden.bs.modal', function() {
+        this.remove();
+    });
+}
+
+function confirmDelete(cvId) {
+    fetch(`{% url 'delete_cv' 0 %}`.replace('0', cvId), {
+        method: 'DELETE',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Cerrar modal de confirmación
+            const deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+            deleteModal.hide();
+            
+            // Mostrar toast de éxito
+            showToast('CV eliminado exitosamente', 'success');
+            
+            // Recargar página después de un breve delay
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        } else {
+            showToast('Error al eliminar el CV: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Error al eliminar el CV', 'error');
+    });
+}
+
+function showToast(message, type) {
+    const toastHtml = `
+        <div class="toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `;
+    
+    // Crear contenedor de toasts si no existe
+    let toastContainer = document.getElementById('toastContainer');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toastContainer';
+        toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+        document.body.appendChild(toastContainer);
+    }
+    
+    // Agregar toast
+    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+    
+    // Mostrar toast
+    const toastElement = toastContainer.lastElementChild;
+    const toast = new bootstrap.Toast(toastElement);
+    toast.show();
+    
+    // Remover toast después de que se oculte
+    toastElement.addEventListener('hidden.bs.toast', function() {
+        this.remove();
+    });
+}
+</script>
+{% endblock %}

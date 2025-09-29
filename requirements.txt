@@ -1,4 +1,16 @@
 Django==5.2.6
 whitenoise==6.7.0
 gunicorn==22.0.0
+requests
+beautifulsoup4
+lxml
+spacy
+python-docx
+PyPDF2
+# django-cryptography  # Problemas de compatibilidad con Django 5.2
+celery
+redis
+django-celery-results
+django-celery-beat
+playwright
 

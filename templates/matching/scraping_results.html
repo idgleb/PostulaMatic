@@ -1,0 +1,490 @@
+{% extends 'matching/base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - PostulaMatic{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-1">
+                        <i class="bi bi-search me-2"></i>{{ title }}
+                    </h1>
+                    <p class="text-muted mb-0">Resultados del scraping automático de dvcarreras</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ stats.total_jobs }}</h4>
+                            <p class="mb-0">Total Ofertas</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-briefcase fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ stats.total_matches }}</h4>
+                            <p class="mb-0">Total Matches</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-graph-up fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ stats.above_threshold_matches }}</h4>
+                            <p class="mb-0">Matches Sobresalientes</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-star fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ user_profile.match_threshold }}%</h4>
+                            <p class="mb-0">Umbral Configurado</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-sliders fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Matches del Usuario -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-heart-fill me-2"></i>Mis Matches
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if user_matches %}
+                        {% for match in user_matches %}
+                        <div class="border-bottom pb-3 mb-3" 
+                             data-job-id="{{ match.job_posting.id }}" 
+                             data-job-title="{{ match.job_posting.title }}" 
+                             data-job-email="{{ match.job_posting.email }}" 
+                             data-job-description="{{ match.job_posting.description }}" 
+                             data-job-created="{{ match.job_posting.created_at|date:'d/m/Y H:i' }}" 
+                             data-job-external-id="{{ match.job_posting.external_id }}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">{{ match.job_posting.title }}</h6>
+                                    {% if match.job_posting.email %}
+                                    <p class="text-muted mb-1">
+                                        <i class="bi bi-envelope me-1"></i>{{ match.job_posting.email }}
+                                    </p>
+                                    {% endif %}
+                                    <small class="text-muted">
+                                        {{ match.job_posting.description|truncatewords:15 }}
+                                    </small>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge {% if match.score >= user_profile.match_threshold %}bg-success{% else %}bg-secondary{% endif %} fs-6">
+                                        {{ match.score }}%
+                                    </span>
+                                    <br>
+                                    <small class="text-muted">{{ match.created_at|date:"d/m/Y" }}</small>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <button type="button" class="btn btn-sm btn-outline-info" 
+                                        onclick="showJobDetails('{{ match.job_posting.id }}')">
+                                    <i class="bi bi-eye me-1"></i>Ver Detalles
+                                </button>
+                                {% if match.job_posting.email %}
+                                <a href="mailto:{{ match.job_posting.email }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-envelope me-1"></i>Contactar
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-search fs-1 text-muted"></i>
+                            <p class="text-muted mt-2">No se encontraron matches aún</p>
+                            <p class="small text-muted">Ejecuta el scraper para buscar ofertas que coincidan con tus CVs</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Ofertas Recientes -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="bi bi-clock me-2"></i>Ofertas Recientes
+                        </h5>
+                        {% if recent_jobs %}
+                        <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteJobsModal">
+                            <i class="bi bi-trash me-1"></i>Borrar Ofertas
+                        </button>
+                        {% else %}
+                        <small class="text-muted">(No hay ofertas para mostrar)</small>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if recent_jobs %}
+                        {% for job in recent_jobs %}
+                        <div class="border-bottom pb-3 mb-3" 
+                             data-job-id="{{ job.id }}" 
+                             data-job-title="{{ job.title }}" 
+                             data-job-email="{{ job.email }}" 
+                             data-job-description="{{ job.description }}" 
+                             data-job-created="{{ job.created_at|date:'d/m/Y H:i' }}" 
+                             data-job-external-id="{{ job.external_id }}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">{{ job.title }}</h6>
+                                    {% if job.email %}
+                                    <p class="text-muted mb-1">
+                                        <i class="bi bi-envelope me-1"></i>{{ job.email }}
+                                    </p>
+                                    {% endif %}
+                                    <small class="text-muted">
+                                        {{ job.description|truncatewords:20 }}
+                                    </small>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-primary">Nueva</span>
+                                    <br>
+                                    <small class="text-muted">{{ job.created_at|date:"d/m/Y" }}</small>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <button type="button" class="btn btn-sm btn-outline-info" 
+                                        onclick="showJobDetails('{{ job.id }}')">
+                                    <i class="bi bi-eye me-1"></i>Ver Detalles
+                                </button>
+                                {% if job.email %}
+                                <a href="mailto:{{ job.email }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-envelope me-1"></i>Contactar
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-briefcase fs-1 text-muted"></i>
+                            <p class="text-muted mt-2">No hay ofertas disponibles</p>
+                            <p class="small text-muted">Ejecuta el scraper para obtener ofertas de trabajo</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Acciones -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title">¿Qué quieres hacer ahora?</h5>
+                    <p class="card-text">Gestiona tus matches y configura la automatización</p>
+                    <div class="d-flex justify-content-center gap-2 flex-wrap">
+                        <a href="{% url 'test_scraper' %}" class="btn btn-primary">
+                            <i class="bi bi-play-fill me-2"></i>Ejecutar Scraper
+                        </a>
+                        <a href="{% url 'profile' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-gear me-2"></i>Configurar Perfil
+                        </a>
+                        <a href="{% url 'cv_list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-file-text me-2"></i>Mis CVs
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmación para Borrar Ofertas -->
+<div class="modal fade" id="deleteJobsModal" tabindex="-1" aria-labelledby="deleteJobsModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteJobsModalLabel">
+                    <i class="bi bi-exclamation-triangle text-warning me-2"></i>Confirmar Eliminación
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p><strong>¿Estás seguro de que quieres eliminar todas las ofertas de la base de datos?</strong></p>
+                <p class="text-muted">Esta acción eliminará:</p>
+                <ul class="text-muted">
+                    <li>Todas las ofertas de trabajo guardadas</li>
+                    <li>Todos los matches asociados</li>
+                    <li>Los datos de scraping anteriores</li>
+                </ul>
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>¡Atención!</strong> Esta acción no se puede deshacer.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-danger" onclick="deleteAllJobs()">
+                    <i class="bi bi-trash me-1"></i>Sí, Eliminar Todo
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para mostrar detalles de ofertas -->
+<div class="modal fade" id="jobDetailsModal" tabindex="-1" aria-labelledby="jobDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="jobDetailsModalLabel">
+                    <i class="bi bi-briefcase me-2"></i>Detalles de la Oferta
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="jobDetailsContent">
+                    <!-- El contenido se cargará dinámicamente -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Cerrar
+                </button>
+                <button type="button" class="btn btn-primary" id="contactButton" style="display: none;">
+                    <i class="bi bi-envelope me-1"></i>Contactar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function deleteAllJobs() {
+    // Mostrar spinner de carga
+    const deleteBtn = document.querySelector('#deleteJobsModal .btn-danger');
+    const originalText = deleteBtn.innerHTML;
+    deleteBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Eliminando...';
+    deleteBtn.disabled = true;
+    
+    // Realizar la petición AJAX
+    fetch('{% url "delete_all_jobs" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Mostrar mensaje de éxito
+            showAlert('success', '¡Ofertas eliminadas correctamente!', 'Todas las ofertas han sido eliminadas de la base de datos.');
+            
+            // Cerrar modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('deleteJobsModal'));
+            modal.hide();
+            
+            // Recargar la página después de un breve delay
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        } else {
+            // Mostrar error
+            showAlert('danger', 'Error al eliminar ofertas', data.error || 'Ocurrió un error inesperado');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('danger', 'Error de conexión', 'No se pudo conectar con el servidor');
+    })
+    .finally(() => {
+        // Restaurar botón
+        deleteBtn.innerHTML = originalText;
+        deleteBtn.disabled = false;
+    });
+}
+
+function showAlert(type, title, message) {
+    // Crear alerta
+    const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            <strong>${title}</strong> ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    `;
+    
+    // Insertar al inicio del contenido
+    const container = document.querySelector('.container-fluid');
+    container.insertAdjacentHTML('afterbegin', alertHtml);
+    
+    // Auto-dismiss después de 5 segundos
+    setTimeout(() => {
+        const alert = container.querySelector('.alert');
+        if (alert) {
+            const bsAlert = new bootstrap.Alert(alert);
+            bsAlert.close();
+        }
+    }, 5000);
+}
+
+function showJobDetails(jobId) {
+    console.log('showJobDetails llamado con ID:', jobId);
+    
+    try {
+        // Buscar la oferta en los datos existentes
+        const jobData = findJobData(jobId);
+        console.log('Datos encontrados:', jobData);
+        
+        if (!jobData) {
+            console.error('No se encontraron datos para la oferta:', jobId);
+            alert('No se encontraron datos para la oferta: ' + jobId);
+            return;
+        }
+        
+        // Construir el contenido del modal
+        const content = `
+            <div class="mb-3">
+                <h4>${jobData.title}</h4>
+            </div>
+            
+            ${jobData.email ? `
+            <div class="mb-3">
+                <h6><i class="bi bi-envelope me-2"></i>Email de Contacto:</h6>
+                <p class="text-primary"><strong>${jobData.email}</strong></p>
+            </div>
+            ` : ''}
+            
+            <div class="mb-3">
+                <h6><i class="bi bi-file-text me-2"></i>Descripción:</h6>
+                <div class="bg-light p-3 rounded" style="max-height: 400px; overflow-y: auto;">
+                    <p style="white-space: pre-wrap; line-height: 1.6;">${jobData.description}</p>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <h6><i class="bi bi-calendar me-2"></i>Información:</h6>
+                <p><strong>Fecha de creación:</strong> ${jobData.created_at}</p>
+                <p><strong>ID:</strong> ${jobData.external_id}</p>
+            </div>
+        `;
+        
+        // Mostrar el contenido en el modal
+        const contentElement = document.getElementById('jobDetailsContent');
+        if (contentElement) {
+            contentElement.innerHTML = content;
+        } else {
+            console.error('Content element not found');
+            alert('Error: Elemento de contenido no encontrado');
+            return;
+        }
+        
+        // Configurar botón de contacto
+        const contactButton = document.getElementById('contactButton');
+        if (contactButton) {
+            if (jobData.email) {
+                contactButton.style.display = 'inline-block';
+                contactButton.onclick = () => window.open(`mailto:${jobData.email}`, '_blank');
+            } else {
+                contactButton.style.display = 'none';
+            }
+        }
+        
+        // Mostrar el modal usando Bootstrap
+        const modalElement = document.getElementById('jobDetailsModal');
+        if (modalElement) {
+            const modal = new bootstrap.Modal(modalElement);
+            modal.show();
+            console.log('Modal mostrado correctamente');
+        } else {
+            console.error('Modal element not found');
+            alert('Error: Modal no encontrado');
+        }
+        
+    } catch (error) {
+        console.error('Error en showJobDetails:', error);
+        alert('Error al mostrar detalles: ' + error.message);
+    }
+}
+
+function findJobData(jobId) {
+    console.log('findJobData llamado con ID:', jobId);
+    
+    // Esta función debería buscar los datos de la oferta
+    // Por ahora, vamos a hacer una búsqueda simple en los elementos del DOM
+    const jobElements = document.querySelectorAll('[data-job-id]');
+    console.log('Elementos encontrados:', jobElements.length);
+    
+    for (let element of jobElements) {
+        console.log('Elemento ID:', element.dataset.jobId, 'Buscando:', jobId);
+        if (element.dataset.jobId === jobId.toString()) {
+            const data = {
+                title: element.dataset.jobTitle || 'Título no disponible',
+                email: element.dataset.jobEmail || '',
+                description: element.dataset.jobDescription || 'Descripción no disponible',
+                created_at: element.dataset.jobCreated || 'Fecha no disponible',
+                external_id: element.dataset.jobExternalId || 'ID no disponible'
+            };
+            console.log('Datos extraídos:', data);
+            return data;
+        }
+    }
+    
+    // Si no se encuentra, buscar en los datos disponibles
+    // Por simplicidad, vamos a hacer una aproximación
+    return {
+        title: 'Título no disponible',
+        email: '',
+        description: 'Descripción no disponible',
+        created_at: 'Fecha no disponible',
+        external_id: jobId
+    };
+}
+</script>
+{% endblock %}

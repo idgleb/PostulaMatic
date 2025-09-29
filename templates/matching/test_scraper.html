@@ -1,0 +1,896 @@
+{% extends 'matching/base.html' %}
+
+{% block matching_content %}
+<!-- Header Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h3 mb-1">
+                    <i class="bi bi-robot me-2 text-primary"></i>Probar Scraper
+                </h1>
+                <p class="text-muted mb-0">Prueba el scraping automático de dvcarreras</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="card bg-info text-white">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-briefcase fs-1 me-3"></i>
+                            <div>
+                                <h4 class="mb-0">{{ stats.total_jobs }}</h4>
+                                <small>Total Ofertas</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-success text-white">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-check-circle fs-1 me-3"></i>
+                            <div>
+                                <h4 class="mb-0">{{ stats.user_matches }}</h4>
+                                <small>Mis Matches</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card {% if stats.has_credentials %}bg-success{% else %}bg-warning{% endif %} text-white">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-{% if stats.has_credentials %}check-circle{% else %}exclamation-triangle{% endif %} fs-1 me-3"></i>
+                            <div>
+                                <h4 class="mb-0">{% if stats.has_credentials %}✓{% else %}✗{% endif %}</h4>
+                                <small>Credenciales</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Configuration Check -->
+{% if not stats.has_credentials %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="alert alert-warning" role="alert">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            <strong>Configuración requerida:</strong> 
+            Necesitas configurar las credenciales de dvcarreras antes de poder usar el scraper.
+            <a href="{% url 'profile' %}" class="alert-link">Ir a configuración</a>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Scraper Test Section -->
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-play-circle me-2"></i>Ejecutar Scraping
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if stats.has_credentials %}
+                    <div class="mb-4">
+                        <h6>Configuración actual:</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Usuario:</strong> {{ profile.dv_username }}</li>
+                            <li><strong>Umbral de matching:</strong> {{ profile.match_threshold }}%</li>
+                            <li><strong>Límite diario:</strong> {{ profile.daily_limit }} emails</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>¿Qué hace el scraper?</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Inicia sesión en dvcarreras con tus credenciales</li>
+                            <li>Extrae ofertas de trabajo del job board</li>
+                            <li>Calcula coincidencias con tus CVs</li>
+                            <li>Guarda matches que superen tu umbral</li>
+                        </ul>
+                    </div>
+                    
+                    <form method="post" action="{% url 'test_scraper' %}" id="scraperForm">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-primary btn-lg" id="scraperBtn">
+                            <i class="bi bi-play-fill me-2"></i>Iniciar Scraping
+                        </button>
+                    </form>
+                    
+                    <!-- Área para mostrar mensajes de resultado del scraping -->
+                    <div id="scraperResult" class="mt-3" style="display: none;">
+                        <div class="alert alert-info" role="alert">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <span id="scraperMessage"></span>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Section - Siempre visible -->
+                    <div id="progressSection" class="mt-4">
+                        <div class="card border-primary">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-hourglass-split me-2"></i>Progreso del Scraping
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                
+                                <div class="progress mb-3" style="height: 25px;">
+                                    <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                                         role="progressbar" style="width: 0%">
+                                        <span id="progressText">Iniciando...</span>
+                                    </div>
+                                </div>
+                                
+                                <div id="statusLog" class="bg-light p-3 rounded" style="max-height: 200px; overflow-y: auto;">
+                                    <div class="log-entry text-muted">
+                                        <small>No hay proceso de scraping activo</small>
+                                    </div>
+                                </div>
+                                
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-lock text-muted" style="font-size: 3rem;"></i>
+                        <h5 class="mt-3">Configuración requerida</h5>
+                        <p class="text-muted">
+                            Configura tus credenciales de dvcarreras para poder usar el scraper.
+                        </p>
+                        <a href="{% url 'profile' %}" class="btn btn-primary">
+                            <i class="bi bi-gear me-2"></i>Configurar Credenciales
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-info-circle me-2"></i>Información
+                </h5>
+            </div>
+            <div class="card-body">
+                <h6>Rate Limiting:</h6>
+                <ul class="small">
+                    <li>Delay entre requests: 2-5 segundos</li>
+                    <li>Máximo 3 páginas por scraping</li>
+                    <li>Respeto a robots.txt</li>
+                </ul>
+                
+                <h6 class="mt-3">Seguridad:</h6>
+                <ul class="small">
+                    <li>Credenciales almacenadas de forma segura</li>
+                    <li>User-Agent realista</li>
+                    <li>Manejo de errores robusto</li>
+                </ul>
+                
+                <h6 class="mt-3">Logs:</h6>
+                <p class="small text-muted">
+                    Los logs del scraping se pueden ver en la consola de Django o en los logs de Celery.
+                </p>
+            </div>
+        </div>
+        
+        {% if stats.has_credentials %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-gear me-2"></i>Configuración
+                </h5>
+            </div>
+            <div class="card-body">
+                <a href="{% url 'profile' %}" class="btn btn-outline-primary btn-sm w-100">
+                    <i class="bi bi-pencil me-1"></i>Editar Perfil
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Recent Matches -->
+{% if stats.user_matches > 0 %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-star me-2"></i>Matches Recientes
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">
+                    Tienes {{ stats.user_matches }} matches que superan tu umbral.
+                    <a href="{% url 'dashboard' %}" class="text-decoration-none">Ver en dashboard</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Versión: 2025-09-28-17:30
+(function() {
+    'use strict';
+    
+let progressInterval = null;
+let currentTaskId = null;
+let isMonitoring = false;
+let lastStatus = null;
+let lastCurrentStep = null;
+let lastProgressInfo = null;
+let monitoringId = null; // Identificador único para el monitoreo
+let isRefreshMode = false; // Control para evitar duplicados en refresh
+
+// Función para desactivar botón durante scraping
+function disableScrapingButton() {
+    const scraperBtn = document.getElementById('scraperBtn');
+    if (scraperBtn) {
+        scraperBtn.disabled = true;
+        scraperBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Scraping en progreso...';
+    }
+}
+
+// Función para reactivar botón
+function enableScrapingButton() {
+    const scraperBtn = document.getElementById('scraperBtn');
+    if (scraperBtn) {
+        scraperBtn.disabled = false;
+        scraperBtn.innerHTML = '<i class="bi bi-play-fill me-2"></i>Iniciar Scraping';
+    }
+}
+
+
+
+// Función principal para iniciar monitoreo
+function startMonitoring() {
+    console.log('Iniciando monitoreo de progreso...');
+    
+    // Intentar obtener Task ID desde localStorage si no hay uno actual
+    if (!currentTaskId) {
+        addLogEntry('No hay Task ID disponible. Inicia un scraping para comenzar el monitoreo.', 'error');
+        updateProgress(0, 'No hay proceso de scraping activo');
+        return;
+    }
+    
+    // Limpiar logs anteriores para nuevo scraping
+    const statusLog = document.getElementById('statusLog');
+    if (statusLog) {
+        statusLog.innerHTML = '';
+    }
+    
+    // Limpiar logs de la base de datos para el nuevo scraping
+    if (currentTaskId) {
+        clearLogsFromDatabase(currentTaskId);
+    }
+    
+    updateProgress(10, 'Conectando con dvcarreras...');
+    
+    // Cargar logs iniciales desde BD y comenzar monitoreo simple
+    loadAllLogsFromDatabase();
+    startSimpleMonitoring();
+}
+
+// Función para continuar monitoreo desde refresh (sin limpiar logs)
+function startMonitoringFromRefresh() {
+    console.log('Continuando monitoreo desde refresh...');
+    
+    // Limpiar intervalo anterior si existe
+    if (progressInterval) {
+        clearInterval(progressInterval);
+        progressInterval = null;
+    }
+    
+    isMonitoring = true;
+    // Solo reiniciar las variables si no hay un monitoreo previo
+    if (lastStatus === null) lastStatus = null;
+    if (lastCurrentStep === null) lastCurrentStep = null;
+    if (lastProgressInfo === null) lastProgressInfo = null;
+    
+    // Iniciar monitoreo inmediatamente
+    monitorProgress();
+}
+
+// Función simple para verificar si hay scraping activo
+function checkCurrentScrapingStatus() {
+    console.log('Verificando estado actual del scraping...');
+    
+    // Obtener el último Task ID del localStorage
+    const lastTaskId = localStorage.getItem('lastTaskId');
+    
+    if (lastTaskId) {
+        currentTaskId = lastTaskId;
+        console.log('Task ID encontrado:', lastTaskId);
+        
+        // Iniciar monitoreo simple de logs
+        startSimpleMonitoring();
+        
+    } else {
+        // No hay Task ID - mostrar estado inicial
+        console.log('No hay Task ID disponible');
+        updateProgressBar(0, 'Inicia un scraping para comenzar', 'secondary');
+        addLogEntry('No hay scraping previo. Haz clic en "Iniciar Scraping" para comenzar.', 'info');
+        enableScrapingButton();
+    }
+}
+
+// Función simple para monitorear logs desde la base de datos
+function startSimpleMonitoring() {
+    console.log('Iniciando monitoreo simple de logs...');
+    
+    // Detener cualquier monitoreo previo
+    if (window.logsInterval) {
+        clearInterval(window.logsInterval);
+    }
+    
+    // Verificar estado del scraping
+    checkScrapingStatus();
+    
+    // Iniciar monitoreo cada 2 segundos
+    window.logsInterval = setInterval(() => {
+        loadAllLogsFromDatabase();
+        checkScrapingStatus();
+    }, 2000);
+}
+
+// Función para verificar el estado del scraping
+function checkScrapingStatus() {
+    if (!currentTaskId) return;
+    
+    fetch(`/matching/scraper-status/${currentTaskId}/`)
+        .then(response => response.json())
+        .then(data => {
+            // Actualizar progress bar según el estado
+                            if (data.status === 'PENDING') {
+                    updateProgressBar(15, 'Tarea en cola...', 'warning');
+                    disableScrapingButton();
+                } else if (data.status === 'STARTED') {
+                    updateProgressBar(25, 'Ejecutando scraping...', 'info');
+                    disableScrapingButton();
+                } else if (data.status === 'SUCCESS') {
+                    updateProgressBar(100, 'Completado exitosamente', 'success');
+                    enableScrapingButton();
+                    // Detener monitoreo
+                    if (window.logsInterval) {
+                        clearInterval(window.logsInterval);
+                        window.logsInterval = null;
+                    }
+                    // Cargar logs finales desde BD
+                    loadAllLogsFromDatabase();
+                } else if (data.status === 'FAILURE') {
+                    updateProgressBar(0, 'Falló', 'danger');
+                    enableScrapingButton();
+                    // Detener monitoreo
+                    if (window.logsInterval) {
+                        clearInterval(window.logsInterval);
+                        window.logsInterval = null;
+                    }
+                    // Cargar logs de error desde BD
+                    loadAllLogsFromDatabase();
+                } else if (data.status === 'NOT_FOUND') {
+                    // Tarea no encontrada - limpiar
+                    localStorage.removeItem('lastTaskId');
+                    currentTaskId = null;
+                    updateProgressBar(0, 'Inicia un scraping para comenzar', 'secondary');
+                    enableScrapingButton();
+                    // Detener monitoreo
+                    if (window.logsInterval) {
+                        clearInterval(window.logsInterval);
+                        window.logsInterval = null;
+                    }
+                }
+        })
+        .catch(error => {
+            console.error('Error verificando estado:', error);
+        });
+}
+
+// Función para monitorear el progreso (simplificada y ordenada)
+function monitorProgress() {
+    // Verificar que no haya un intervalo activo
+    if (progressInterval) {
+        console.log('Ya hay un intervalo activo, no creando otro');
+        return;
+    }
+    
+    // Monitorear el estado REAL de la tarea
+    progressInterval = setInterval(() => {
+        // Verificar que el monitoreo sigue siendo válido
+        if (!isMonitoring) {
+            clearInterval(progressInterval);
+            progressInterval = null;
+            return;
+        }
+        
+        // Evitar múltiples peticiones simultáneas
+        if (window.monitoringInProgress) {
+            return;
+        }
+        window.monitoringInProgress = true;
+        
+        fetch(`/matching/scraper-status/${currentTaskId}/`)
+            .then(response => response.json())
+            .then(data => {
+                console.log('Estado real de la tarea:', data);
+                console.log('data.result:', data.result);
+                console.log('data.result.current_step:', data.result?.current_step);
+                console.log('data.result.progress_info:', data.result?.progress_info);
+                
+                // Verificar que el task_id coincida con el actual
+                if (data.task_id && data.task_id !== currentTaskId) {
+                    console.log('Task ID no coincide, ignorando respuesta:', data.task_id, 'vs', currentTaskId);
+                    return;
+                }
+                
+                if (data.error) {
+                    addLogEntry(`Error: ${data.error}`, 'error');
+                    stopMonitoring();
+                    return;
+                }
+                
+                // Mostrar logs solo desde la base de datos; no agregar logs desde el cliente
+                // Sincronizar vista con el servidor
+                loadAllLogsFromDatabase();
+                
+                // Desactivar modo refresh después del primer ciclo
+                if (isRefreshMode) {
+                    isRefreshMode = false;
+                }
+                
+                // Agregar pequeño delay para evitar duplicados
+                setTimeout(() => {
+                    // No hacer nada, solo dar tiempo para que se procese
+                }, 100);
+                
+                // Actualizar progress bar según el estado real del worker
+                if (data.status === 'PENDING') {
+                    updateProgressBar(15, 'Tarea en cola...', 'warning');
+                } else if (data.status === 'STARTED') {
+                    // Verificar si hay información específica del worker
+                    if (data.result && data.result.current_step) {
+                        const step = data.result.current_step;
+                        if (step.includes('login') || step.includes('autenticación')) {
+                            updateProgressBar(25, 'Iniciando sesión...', 'info');
+                        } else if (step.includes('navegando') || step.includes('navegación')) {
+                            updateProgressBar(35, 'Navegando al portal...', 'info');
+                        } else if (step.includes('scraping') || step.includes('extrayendo')) {
+                            updateProgressBar(50, 'Extrayendo ofertas...', 'info');
+                        } else if (step.includes('procesando') || step.includes('analizando')) {
+                            updateProgressBar(65, 'Procesando datos...', 'info');
+                        } else if (step.includes('matching') || step.includes('calculando')) {
+                            updateProgressBar(80, 'Calculando matches...', 'info');
+                        } else if (step.includes('guardando') || step.includes('almacenando')) {
+                            updateProgressBar(90, 'Guardando resultados...', 'info');
+                        } else {
+                            updateProgressBar(50, 'Ejecutando scraping...', 'info');
+                        }
+                    } else {
+                        updateProgressBar(50, 'Ejecutando scraping...', 'info');
+                    }
+                } else if (data.status === 'SUCCESS') {
+                    // Verificar si hay error en el resultado
+                    if (data.result && data.result.error) {
+                        updateProgressBar(0, 'Error', 'danger');
+                        addLogEntry('Scraping falló', 'error');
+                        addLogEntry(`Error: ${data.result.error}`, 'error');
+                        stopMonitoring();
+                        enableScrapingButton();
+                    } else {
+                        // Actualizar progress bar a 100% cuando sea SUCCESS
+                        updateProgressBar(100, 'Completado exitosamente', 'success');
+                        
+                        // Solo mostrar resultados una vez
+                        if (lastStatus !== 'SUCCESS') {
+                            addLogEntry('¡Scraping completado exitosamente!', 'success');
+                            if (data.result) {
+                                addLogEntry(`Método usado: ${data.result.method || 'N/A'}`, 'info');
+                                addLogEntry(`Ofertas encontradas: ${data.result.total_jobs || 0}`, 'success');
+                                addLogEntry(`Ofertas guardadas: ${data.result.saved_jobs || 0}`, 'success');
+                                addLogEntry(`Nuevas ofertas: ${data.result.new_jobs || 0}`, 'success');
+                                addLogEntry(`Matches encontrados: ${data.result.matches_found || 0}`, 'success');
+                                if (data.result.message) {
+                                    addLogEntry(`Mensaje: ${data.result.message}`, 'info');
+                                }
+                            }
+                        }
+                        stopMonitoring();
+                        enableScrapingButton();
+                    }
+                } else if (data.status === 'FAILURE') {
+                    updateProgressBar(0, 'Falló', 'danger');
+                    addLogEntry('Scraping falló', 'error');
+                    if (data.result && data.result.error) {
+                        addLogEntry(`Error: ${data.result.error}`, 'error');
+                    } else if (data.result && data.result.traceback) {
+                        addLogEntry(`Traceback: ${data.result.traceback}`, 'error');
+                    } else {
+                        addLogEntry('Error desconocido en el scraping', 'error');
+                    }
+                    stopMonitoring();
+                    enableScrapingButton();
+                } else if (data.status === 'RETRY') {
+                    updateProgressBar(75, 'Reintentando...', 'warning');
+                    addLogEntry('Reintentando conexión...', 'warning');
+                    if (data.result && data.result.error) {
+                        addLogEntry(`Error en reintento: ${data.result.error}`, 'warning');
+                    }
+                } else if (data.status === 'PROGRESS') {
+                    // Estado de progreso específico
+                    if (data.result && data.result.progress_percentage) {
+                        const percentage = data.result.progress_percentage;
+                        updateProgressBar(percentage, `Progreso: ${percentage}%`, 'info');
+                        addLogEntry(`Progreso del scraping: ${percentage}%`, 'info');
+                    } else {
+                        updateProgressBar(60, 'Procesando...', 'info');
+                        addLogEntry('Procesando datos del scraping...', 'info');
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error obteniendo estado:', error);
+                addLogEntry(`Error de conexión: ${error.message}`, 'error');
+            })
+            .finally(() => {
+                // Liberar el flag de monitoreo
+                window.monitoringInProgress = false;
+            });
+    }, 2000); // Verificar cada 2 segundos para evitar duplicados
+}
+
+// Alias para compatibilidad
+const startProgressMonitoring = startMonitoring;
+
+// Función para actualizar progress bar con color específico (ordenada y consistente)
+function updateProgressBar(percentage, text, colorType) {
+    console.log(`Actualizando progreso: ${percentage}% - ${text} (${colorType})`);
+    
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+    
+    if (!progressBar || !progressText) {
+        console.error('Elementos de progreso no encontrados');
+        return;
+    }
+    
+    progressBar.style.width = percentage + '%';
+    progressText.textContent = text;
+    
+    // Aplicar color según el tipo de estado
+    switch (colorType) {
+        case 'success':
+            progressBar.className = 'progress-bar bg-success';
+            break;
+        case 'danger':
+            progressBar.className = 'progress-bar bg-danger';
+            break;
+        case 'warning':
+            progressBar.className = 'progress-bar progress-bar-striped progress-bar-animated bg-warning';
+            break;
+        case 'info':
+            progressBar.className = 'progress-bar progress-bar-striped progress-bar-animated bg-info';
+            break;
+        case 'secondary':
+            progressBar.className = 'progress-bar bg-secondary';
+            break;
+        default:
+            progressBar.className = 'progress-bar progress-bar-striped progress-bar-animated bg-info';
+    }
+}
+
+// Función legacy para compatibilidad
+function updateProgress(percentage, text) {
+    updateProgressBar(percentage, text, 'info');
+}
+
+function addLogEntry(message, type = 'info') {
+    console.log(`Agregando log: ${message} (${type})`);
+    
+    const statusLog = document.getElementById('statusLog');
+    if (!statusLog) {
+        console.error('Elemento statusLog no encontrado');
+        return;
+    }
+    
+    const timestamp = new Date().toLocaleTimeString();
+    
+    const logEntry = document.createElement('div');
+    logEntry.className = 'log-entry mb-1';
+    
+    let icon = 'bi-info-circle';
+    let color = 'text-info';
+    
+    if (type === 'success') {
+        icon = 'bi-check-circle';
+        color = 'text-success';
+    } else if (type === 'error') {
+        icon = 'bi-exclamation-triangle';
+        color = 'text-danger';
+    } else if (type === 'warning') {
+        icon = 'bi-exclamation-circle';
+        color = 'text-warning';
+    }
+    
+    logEntry.innerHTML = `
+        <small class="text-muted">[${timestamp}]</small>
+        <i class="bi ${icon} ${color} ms-2"></i>
+        <span class="ms-1">${message}</span>
+    `;
+    
+    statusLog.appendChild(logEntry);
+    statusLog.scrollTop = statusLog.scrollHeight;
+    
+    // Ya no guardamos logs desde el frontend; el backend (worker) es la única fuente de verdad
+}
+
+function saveLogToDatabase(message, type) {
+    if (!currentTaskId) return;
+    
+    fetch('/matching/add-scraping-log/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify({
+            task_id: currentTaskId,
+            message: message,
+            type: type
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (!data.success) {
+            console.error('Error guardando log:', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error guardando log:', error);
+    });
+}
+
+function loadAllLogsFromDatabase() {
+    if (!currentTaskId) return;
+    
+    fetch(`/matching/scraping-logs/${currentTaskId}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.logs) {
+                // Reemplazar todos los logs en la interfaz
+                const statusLog = document.getElementById('statusLog');
+                if (statusLog) {
+                    statusLog.innerHTML = '';
+                    
+                    // Cargar todos los logs desde la base de datos
+                    data.logs.forEach(log => {
+                        addLogEntryFromDatabase(log.message, log.type, log.timestamp);
+                    });
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error cargando logs:', error);
+        });
+}
+
+function addLogEntryFromDatabase(message, type, timestamp) {
+    const statusLog = document.getElementById('statusLog');
+    if (!statusLog) return;
+    
+    const logEntry = document.createElement('div');
+    logEntry.className = 'log-entry mb-1';
+    
+    let icon = 'bi-info-circle';
+    let color = 'text-info';
+    
+    if (type === 'success') {
+        icon = 'bi-check-circle';
+        color = 'text-success';
+    } else if (type === 'error') {
+        icon = 'bi-exclamation-triangle';
+        color = 'text-danger';
+    } else if (type === 'warning') {
+        icon = 'bi-exclamation-circle';
+        color = 'text-warning';
+    }
+    
+    logEntry.innerHTML = `
+        <small class="text-muted">[${timestamp}]</small>
+        <i class="bi ${icon} ${color} ms-2"></i>
+        <span class="ms-1">${message}</span>
+    `;
+    
+    statusLog.appendChild(logEntry);
+    statusLog.scrollTop = statusLog.scrollHeight;
+}
+
+function clearLogsFromDatabase(taskId) {
+    if (!taskId) return;
+    
+    fetch(`/matching/clear-scraping-logs/${taskId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log('Logs limpiados:', data.message);
+        } else {
+            console.error('Error limpiando logs:', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error limpiando logs:', error);
+    });
+}
+
+function addDotToLastLine() {
+    const statusLog = document.getElementById('statusLog');
+    if (!statusLog) return;
+    
+    const lastEntry = statusLog.lastElementChild;
+    if (lastEntry) {
+        const messageSpan = lastEntry.querySelector('span');
+        if (messageSpan) {
+            messageSpan.textContent += '.';
+        }
+    }
+}
+
+function stopMonitoring() {
+    console.log('Deteniendo monitoreo...');
+    isMonitoring = false;
+    if (progressInterval) {
+        clearInterval(progressInterval);
+        progressInterval = null;
+    }
+    // Liberar el flag de monitoreo
+    window.monitoringInProgress = false;
+    // Liberar flag global
+    window.globalMonitoringActive = false;
+    // Limpiar variables de estado
+    lastStatus = null;
+    lastCurrentStep = null;
+    lastProgressInfo = null;
+    // Limpiar identificador de monitoreo
+    monitoringId = null;
+    // Limpiar localStorage para evitar monitoreo automático en futuras cargas
+    localStorage.removeItem('lastTaskId');
+}
+
+function refreshProgress() {
+    if (currentTaskId && !isMonitoring) {
+        addLogEntry('Verificando estado actual del scraping...', 'info');
+        startMonitoring();
+    } else if (!currentTaskId) {
+        addLogEntry('No hay Task ID disponible. Ingresa un Task ID y haz clic en "Cargar".', 'error');
+    }
+}
+
+function cancelScraping() {
+    stopMonitoring();
+    addLogEntry('Monitoreo detenido por el usuario', 'warning');
+    updateProgress(0, 'Detenido');
+}
+
+// Manejar envío del formulario de scraping con AJAX
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Página del scraper cargada');
+    
+    const scraperForm = document.getElementById('scraperForm');
+    const scraperBtn = document.getElementById('scraperBtn');
+    const scraperResult = document.getElementById('scraperResult');
+    const scraperMessage = document.getElementById('scraperMessage');
+    
+    if (scraperForm) {
+        scraperForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            // Evitar doble envío
+            if (window.scrapeSubmitting) {
+                console.log('Submit ignorado: ya en curso');
+                return;
+            }
+            window.scrapeSubmitting = true;
+
+            // Deshabilitar botón y mostrar spinner
+            disableScrapingButton();
+            
+            // Obtener CSRF token
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            
+            // Enviar petición AJAX
+            fetch(scraperForm.action, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrfToken
+                },
+                body: new URLSearchParams(new FormData(scraperForm))
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Si hay task_id, guardarlo y iniciar monitoreo
+                    if (data.task_id) {
+                        currentTaskId = data.task_id;
+                        localStorage.setItem('lastTaskId', data.task_id);
+                        
+                        // Limpiar logs del usuario en servidor antes de iniciar monitoreo
+                        fetch('/matching/clear-my-scraping-logs/', {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRFToken': csrfToken
+                            }
+                        })
+                        .catch(() => {})
+                        .finally(() => {
+                            // Limpiar panel local y comenzar monitoreo
+                            const statusLog = document.getElementById('statusLog');
+                            if (statusLog) {
+                                statusLog.innerHTML = '';
+                            }
+                            setTimeout(() => { startMonitoring(); }, 300);
+                        });
+                    }
+                } else {
+                    // Mostrar resultado solo en caso de error
+                    scraperResult.style.display = 'block';
+                    scraperMessage.textContent = data.message;
+                    scraperResult.querySelector('.alert').className = 'alert alert-danger';
+                    scraperResult.querySelector('i').className = 'bi bi-exclamation-triangle me-2';
+                    // Reactivar botón en caso de error
+                    enableScrapingButton();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                scraperResult.style.display = 'block';
+                scraperMessage.textContent = 'Error de conexión. Intenta nuevamente.';
+                scraperResult.querySelector('.alert').className = 'alert alert-danger';
+                scraperResult.querySelector('i').className = 'bi bi-exclamation-triangle me-2';
+                // Reactivar botón en caso de error
+                enableScrapingButton();
+            })
+            .finally(() => {
+                // Permitir reintento solo si no hubo task_id asignado
+                // Si hubo task_id, ya queda deshabilitado hasta terminar
+                setTimeout(() => { window.scrapeSubmitting = false; }, 500);
+            });
+        }, { once: true });
+    }
+    
+    // Siempre verificar el estado actual del scraping (independiente de localStorage)
+    checkCurrentScrapingStatus();
+    
+});
+})();
+</script>
+{% endblock %}
+

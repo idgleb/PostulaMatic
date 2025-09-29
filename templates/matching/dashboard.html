@@ -1,0 +1,197 @@
+{% extends 'matching/base.html' %}
+
+{% block matching_content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="h3 mb-4">
+            <i class="bi bi-speedometer2 me-2"></i>Dashboard
+        </h1>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-file-earmark-text text-primary" style="font-size: 2rem;"></i>
+                <h5 class="card-title mt-2">CVs Subidos</h5>
+                <h3 class="text-primary">{{ stats.total_cvs }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-graph-up text-success" style="font-size: 2rem;"></i>
+                <h5 class="card-title mt-2">Matches Encontrados</h5>
+                <h3 class="text-success">{{ stats.total_matches }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-envelope-check text-info" style="font-size: 2rem;"></i>
+                <h5 class="card-title mt-2">Emails Hoy</h5>
+                <h3 class="text-info">{{ stats.emails_sent_today }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-envelope-x text-danger" style="font-size: 2rem;"></i>
+                <h5 class="card-title mt-2">Errores</h5>
+                <h3 class="text-danger">{{ stats.emails_failed }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-gear me-2"></i>Estado del Sistema
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if profile.is_active %}
+                    <div class="alert alert-success">
+                        <i class="bi bi-play-circle me-2"></i>
+                        <strong>Sistema Activo</strong><br>
+                        PostulaMatic está enviando emails automáticamente.
+                    </div>
+                {% else %}
+                    <div class="alert alert-warning">
+                        <i class="bi bi-pause-circle me-2"></i>
+                        <strong>Sistema Pausado</strong><br>
+                        Configura tu perfil y activa el sistema para comenzar.
+                    </div>
+                {% endif %}
+                
+                <div class="row">
+                    <div class="col-6">
+                        <small class="text-muted">Umbral de coincidencia:</small><br>
+                        <strong>{{ profile.match_threshold }}%</strong>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">Límite diario:</small><br>
+                        <strong>{{ profile.daily_limit }} emails</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-lightning me-2"></i>Acciones Rápidas
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    {% if stats.total_cvs == 0 %}
+                        <a href="{% url 'upload_cv' %}" class="btn btn-primary">
+                            <i class="bi bi-upload me-2"></i>Subir mi primer CV
+                        </a>
+                    {% else %}
+                        <a href="{% url 'upload_cv' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-upload me-2"></i>Subir nuevo CV
+                        </a>
+                    {% endif %}
+                    
+                    <a href="{% url 'profile' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-gear me-2"></i>Configurar Perfil
+                    </a>
+                    
+                    <a href="{% url 'cv_list' %}" class="btn btn-outline-info">
+                        <i class="bi bi-file-earmark-text me-2"></i>Ver mis CVs
+                    </a>
+                    
+                    <a href="{% url 'test_scraper' %}" class="btn btn-outline-success">
+                        <i class="bi bi-robot me-2"></i>Probar Scraper
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Resultados del Scraping -->
+{% if recent_jobs or recent_matches %}
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-clock me-2"></i>Ofertas Recientes
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_jobs %}
+                    {% for job in recent_jobs %}
+                    <div class="border-bottom pb-2 mb-2">
+                        <h6 class="mb-1">{{ job.title }}</h6>
+                        <small class="text-muted">{{ job.company }} - {{ job.created_at|date:"d/m/Y" }}</small>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No hay ofertas disponibles</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-heart-fill me-2"></i>Mis Matches
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_matches %}
+                    {% for match in recent_matches %}
+                    <div class="border-bottom pb-2 mb-2">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1">{{ match.job_posting.title }}</h6>
+                                <small class="text-muted">{{ match.job_posting.company }}</small>
+                            </div>
+                            <span class="badge {% if match.score >= profile.match_threshold %}bg-success{% else %}bg-secondary{% endif %}">
+                                {{ match.score }}%
+                            </span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No se encontraron matches</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if stats.total_cvs == 0 %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-primary">
+            <div class="card-body text-center">
+                <i class="bi bi-info-circle text-primary" style="font-size: 3rem;"></i>
+                <h4 class="mt-3">¡Bienvenido a PostulaMatic!</h4>
+                <p class="text-muted">
+                    Para comenzar, sube tu CV y configura tu perfil con las credenciales de dvcarreras y tu cuenta SMTP.
+                </p>
+                <a href="{% url 'upload_cv' %}" class="btn btn-primary btn-lg">
+                    <i class="bi bi-upload me-2"></i>Subir mi CV
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -4,6 +4,36 @@ services:
     env_file: .env
     restart: unless-stopped
     networks: [web]
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+  worker:
+    build: .
+    env_file: .env
+    command: celery -A postulamatic worker -l info
+    restart: unless-stopped
+    networks: [web]
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+  beat:
+    build: .
+    env_file: .env
+    command: celery -A postulamatic beat -l info
+    restart: unless-stopped
+    networks: [web]
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    networks: [web]
 
 networks:
   web:

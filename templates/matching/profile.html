@@ -1,0 +1,778 @@
+{% extends 'matching/base.html' %}
+
+{% block matching_content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="h3 mb-4">
+            <i class="bi bi-person-circle me-2"></i>Mi Perfil
+        </h1>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-12">
+        <!-- Configuración SMTP -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-envelope me-2"></i>Configuración SMTP
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'profile' %}" id="smtp-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="section" value="smtp">
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ smtp_form.display_name.id_for_label }}" class="form-label">
+                                    Nombre para mostrar
+                                </label>
+                                {{ smtp_form.display_name }}
+                                {% if smtp_form.display_name.errors %}
+                                    <div class="text-danger small">{{ smtp_form.display_name.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text">Personalización de emails enviados a empleadores</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ smtp_form.smtp_host.id_for_label }}" class="form-label">
+                                    Servidor SMTP
+                                </label>
+                                {{ smtp_form.smtp_host }}
+                                {% if smtp_form.smtp_host.errors %}
+                                    <div class="text-danger small">{{ smtp_form.smtp_host.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text">Ej: smtp.gmail.com</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ smtp_form.smtp_port.id_for_label }}" class="form-label">
+                                    Puerto
+                                </label>
+                                {{ smtp_form.smtp_port }}
+                                {% if smtp_form.smtp_port.errors %}
+                                    <div class="text-danger small">{{ smtp_form.smtp_port.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ smtp_form.smtp_username.id_for_label }}" class="form-label">
+                                    Usuario SMTP
+                                </label>
+                                {{ smtp_form.smtp_username }}
+                                {% if smtp_form.smtp_username.errors %}
+                                    <div class="text-danger small">{{ smtp_form.smtp_username.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ smtp_form.smtp_password.id_for_label }}" class="form-label">
+                                    Contraseña SMTP
+                                </label>
+                                {{ smtp_form.smtp_password }}
+                                {% if smtp_form.smtp_password.errors %}
+                                    <div class="text-danger small">{{ smtp_form.smtp_password.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text">⚠️ Se almacena encriptada</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    {{ smtp_form.smtp_use_tls }}
+                                    <label for="{{ smtp_form.smtp_use_tls.id_for_label }}" class="form-check-label">
+                                        Usar TLS
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    {{ smtp_form.smtp_use_ssl }}
+                                    <label for="{{ smtp_form.smtp_use_ssl.id_for_label }}" class="form-check-label">
+                                        Usar SSL
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" name="save_smtp" class="btn btn-success" id="btn-smtp" disabled>
+                            <i class="bi bi-envelope-check me-2"></i>Guardar Configuración SMTP
+                        </button>
+                    </div>
+                    <div id="smtp-test-result" class="mt-2" style="display: none;"></div>
+                </form>
+
+                <!-- Formulario separado para probar email SMTP -->
+                <form method="post" action="{% url 'test_smtp_email' %}" class="mt-3" id="smtp-test-form">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-outline-secondary" id="btn-smtp-test">
+                            <i class="bi bi-send-check me-2"></i>Enviar email de prueba
+                        </button>
+                    </div>
+                    <div id="smtp-test-result" class="mt-2" style="display: none;"></div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Credenciales INTRANET DAVINCI -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-shield-lock me-2"></i>Credenciales INTRANET DAVINCI
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'profile' %}" id="dv-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="section" value="dv">
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ dv_form.dv_username.id_for_label }}" class="form-label">
+                                    Usuario INTRANET DAVINCI
+                                </label>
+                                {{ dv_form.dv_username }}
+                                {% if dv_form.dv_username.errors %}
+                                    <div class="text-danger small">{{ dv_form.dv_username.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ dv_form.dv_password.id_for_label }}" class="form-label">
+                                    Contraseña INTRANET DAVINCI
+                                </label>
+                                {{ dv_form.dv_password }}
+                                {% if dv_form.dv_password.errors %}
+                                    <div class="text-danger small">{{ dv_form.dv_password.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text">⚠️ Se almacena encriptada</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" name="save_dv" class="btn btn-success" id="btn-dv" disabled>
+                            <i class="bi bi-shield-check me-2"></i>Guardar Credenciales INTRANET DAVINCI
+                        </button>
+                    </div>
+                    <div id="dv-test-result" class="mt-2" style="display: none;"></div>
+                </form>
+
+                <!-- Formulario separado para probar login INTRANET DAVINCI -->
+                <form method="post" action="{% url 'test_dv_login' %}" class="mt-3" id="dv-test-form">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-outline-secondary" id="btn-dv-test">
+                            <i class="bi bi-person-check me-2"></i>Probar login INTRANET DAVINCI
+                        </button>
+                    </div>
+                    <div id="dv-test-result" class="mt-2" style="display: none;"></div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Configuración de Matching -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-graph-up me-2"></i>Configuración de Matching
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'profile' %}" id="matching-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="section" value="matching">
+                    
+                    <!-- Umbral de coincidencia -->
+                    <div class="card h-100 mb-4">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="bi bi-percent text-primary me-3"></i>
+                                <label for="{{ matching_form.match_threshold.id_for_label }}" class="form-label mb-0">
+                                    Umbral de coincidencia
+                                </label>
+                                <span class="badge bg-primary ms-3 fs-5" id="threshold-value">{{ matching_form.match_threshold.value|default:profile.match_threshold }}%</span>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                {{ matching_form.match_threshold }}
+                            </div>
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    <strong>¿Qué es?</strong> Porcentaje mínimo de coincidencia entre tu CV y una oferta para enviar email automático.
+                                    <br>
+                                    <strong>Recomendado:</strong> 50-70% para balance entre precisión y oportunidades.
+                                    <br>
+                                    <strong>Ejemplo:</strong> Con 60%, solo se enviarán emails si hay al menos 60% de coincidencia de habilidades.
+                                </small>
+                            </div>
+                            {% if matching_form.match_threshold.errors %}
+                                <div class="text-danger small">{{ matching_form.match_threshold.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" name="save_matching" class="btn btn-success" id="btn-matching" disabled>
+                            <i class="bi bi-gear me-2"></i>Guardar Configuración de Matching
+                        </button>
+                    </div>
+                    <div id="matching-result" class="mt-2" style="display: none;"></div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Configuración de Envíos de Emails -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-send me-2"></i>Configuración de Envíos de Emails
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'profile' %}" id="email-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="section" value="email">
+                    
+                    <!-- Límite diario de emails -->
+                    <div class="card h-100 mb-4">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="bi bi-envelope-check text-primary me-3"></i>
+                                <label for="{{ email_form.daily_limit.id_for_label }}" class="form-label mb-0">
+                                    Límite diario de emails
+                                </label>
+                                <span class="badge bg-primary ms-3 fs-5" id="limit-value">{{ email_form.daily_limit.value|default:10 }}</span>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                {{ email_form.daily_limit }}
+                            </div>
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    <strong>¿Qué es?</strong> Número máximo de emails que se enviarán por día para evitar spam.
+                                    <br>
+                                    <strong>Recomendado:</strong> 5-15 emails por día para mantener profesionalismo.
+                                    <br>
+                                    <strong>Importante:</strong> Respetar límites evita que tu cuenta sea marcada como spam.
+                                </small>
+                            </div>
+                            {% if email_form.daily_limit.errors %}
+                                <div class="text-danger small">{{ email_form.daily_limit.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Pausas (mínima y máxima en una fila) -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card h-100 mb-4">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="bi bi-clock text-primary me-3"></i>
+                                        <label for="{{ email_form.min_pause_seconds.id_for_label }}" class="form-label mb-0">
+                                            Pausa mínima (segundos)
+                                        </label>
+                                        <span class="badge bg-primary ms-3 fs-5" id="min-pause-value">{{ email_form.min_pause_seconds.value|default:30 }}s</span>
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        {{ email_form.min_pause_seconds }}
+                                    </div>
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            <i class="bi bi-info-circle me-1"></i>
+                                            <strong>¿Qué es?</strong> Tiempo mínimo de espera entre envío de emails para simular comportamiento humano.
+                                            <br>
+                                            <strong>Recomendado:</strong> 30-60 segundos para evitar detección de automatización.
+                                        </small>
+                                    </div>
+                                    {% if email_form.min_pause_seconds.errors %}
+                                        <div class="text-danger small">{{ email_form.min_pause_seconds.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card h-100 mb-4">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="bi bi-clock-history text-primary me-3"></i>
+                                        <label for="{{ email_form.max_pause_seconds.id_for_label }}" class="form-label mb-0">
+                                            Pausa máxima (segundos)
+                                        </label>
+                                        <span class="badge bg-primary ms-3 fs-5" id="max-pause-value">{{ email_form.max_pause_seconds.value|default:120 }}s</span>
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        {{ email_form.max_pause_seconds }}
+                                    </div>
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            <i class="bi bi-info-circle me-1"></i>
+                                            <strong>¿Qué es?</strong> Tiempo máximo de espera entre envío de emails para variar el comportamiento.
+                                            <br>
+                                            <strong>Recomendado:</strong> 120-300 segundos para mayor naturalidad.
+                                        </small>
+                                    </div>
+                                    {% if email_form.max_pause_seconds.errors %}
+                                        <div class="text-danger small">{{ email_form.max_pause_seconds.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Explicación adicional para las pausas -->
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Importante sobre las pausas:</strong> El sistema elegirá un tiempo aleatorio entre la pausa mínima y máxima para cada email. Esto hace que los envíos parezcan más naturales y evita la detección de automatización. La pausa máxima debe ser mayor que la mínima.
+                    </div>
+                    
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" name="save_email" class="btn btn-success" id="btn-email" disabled>
+                            <i class="bi bi-send me-2"></i>Guardar Configuración de Envíos
+                        </button>
+                    </div>
+                    <div id="email-result" class="mt-2" style="display: none;"></div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    'use strict';
+    
+    // Variables locales para formularios
+    let smtpForm, dvForm, matchingForm, emailForm;
+
+    // Función para activar/desactivar botones
+    function updateButtonStates() {
+        // Activar botón SMTP si hay cambios
+        const smtpBtn = document.getElementById('btn-smtp');
+        if (smtpForm && smtpBtn) {
+            const smtpInputs = smtpForm.querySelectorAll('input, select');
+            smtpInputs.forEach(input => {
+                // Remover event listeners existentes para evitar duplicados
+                input.removeEventListener('input', handleSmtpInput);
+                input.addEventListener('input', handleSmtpInput);
+            });
+        }
+
+        // Activar botón DV si hay cambios
+        const dvBtn = document.getElementById('btn-dv');
+        if (dvForm && dvBtn) {
+            const dvInputs = dvForm.querySelectorAll('input');
+            dvInputs.forEach(input => {
+                // Remover event listeners existentes para evitar duplicados
+                input.removeEventListener('input', handleDvInput);
+                input.addEventListener('input', handleDvInput);
+            });
+        }
+
+        // Activar botón Matching si hay cambios
+        const matchingBtn = document.getElementById('btn-matching');
+        if (matchingForm && matchingBtn) {
+            const matchingInputs = matchingForm.querySelectorAll('input');
+            matchingInputs.forEach(input => {
+                // Remover event listeners existentes para evitar duplicados
+                input.removeEventListener('input', handleMatchingInput);
+                input.addEventListener('input', handleMatchingInput);
+            });
+        }
+
+        // Activar botón Email si hay cambios
+        const emailBtn = document.getElementById('btn-email');
+        if (emailForm && emailBtn) {
+            const emailInputs = emailForm.querySelectorAll('input');
+            emailInputs.forEach(input => {
+                // Remover event listeners existentes para evitar duplicados
+                input.removeEventListener('input', handleEmailInput);
+                input.addEventListener('input', handleEmailInput);
+            });
+        }
+    }
+
+    // Funciones separadas para manejar inputs
+    function handleSmtpInput() {
+        const smtpBtn = document.getElementById('btn-smtp');
+        if (smtpBtn) smtpBtn.disabled = false;
+    }
+
+    function handleDvInput() {
+        const dvBtn = document.getElementById('btn-dv');
+        if (dvBtn) dvBtn.disabled = false;
+    }
+
+    function handleMatchingInput() {
+        const matchingBtn = document.getElementById('btn-matching');
+        if (matchingBtn) matchingBtn.disabled = false;
+    }
+
+    function handleEmailInput() {
+        const emailBtn = document.getElementById('btn-email');
+        if (emailBtn) emailBtn.disabled = false;
+    }
+
+    // Actualizar valores de sliders en tiempo real
+    function updateSliderValues() {
+        const thresholdSlider = document.querySelector('input[name="match_threshold"]');
+        const limitSlider = document.querySelector('input[name="daily_limit"]');
+        const minPauseSlider = document.querySelector('input[name="min_pause_seconds"]');
+        const maxPauseSlider = document.querySelector('input[name="max_pause_seconds"]');
+
+        if (thresholdSlider) {
+            thresholdSlider.addEventListener('input', function() {
+                const thresholdValue = document.getElementById('threshold-value');
+                if (thresholdValue) {
+                    thresholdValue.textContent = this.value + '%';
+                }
+            });
+        }
+
+        if (limitSlider) {
+            limitSlider.addEventListener('input', function() {
+                const limitValue = document.getElementById('limit-value');
+                if (limitValue) {
+                    limitValue.textContent = this.value;
+                }
+            });
+        }
+
+        if (minPauseSlider) {
+            minPauseSlider.addEventListener('input', function() {
+                const minPauseValue = document.getElementById('min-pause-value');
+                if (minPauseValue) {
+                    minPauseValue.textContent = this.value + 's';
+                }
+            });
+        }
+
+        if (maxPauseSlider) {
+            maxPauseSlider.addEventListener('input', function() {
+                const maxPauseValue = document.getElementById('max-pause-value');
+                if (maxPauseValue) {
+                    maxPauseValue.textContent = this.value + 's';
+                }
+            });
+        }
+    }
+
+    // Manejar envío de formularios con AJAX
+    function setupFormHandlers() {
+        // SMTP Form
+        if (smtpForm) {
+            smtpForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Validar contraseña SMTP
+                const smtpPassword = document.getElementById('id_smtp_password');
+                if (smtpPassword && (!smtpPassword.value || smtpPassword.value.trim() === '')) {
+                    showMessage('smtp-test-result', '❌ La contraseña SMTP es obligatoria.', 'error');
+                    return;
+                }
+                
+                // Desactivar botón y mostrar spinner
+                const btn = document.getElementById('btn-smtp');
+                if (btn) {
+                    // Usar texto hardcodeado para evitar problemas con el estado previo del botón
+                    const originalText = '<i class="bi bi-envelope-check me-2"></i>Guardar Configuración SMTP';
+                    console.log('SMTP - Texto original hardcodeado:', originalText);
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Guardando...';
+                    
+                    const formData = new FormData(this);
+                    
+                    fetch(this.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('SMTP - Restaurando texto original:', originalText);
+                        btn.innerHTML = originalText;
+                        if (data.success) {
+                            btn.disabled = true; // Desactivar después de guardado exitoso
+                            showMessage('smtp-test-result', data.message, 'success');
+                        } else {
+                            btn.disabled = false; // Reactivar si hay error
+                            showMessage('smtp-test-result', data.message, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        btn.innerHTML = originalText;
+                        btn.disabled = false; // Reactivar si hay error de conexión
+                        showMessage('smtp-test-result', 'Error de conexión: ' + error.message, 'error');
+                    });
+                }
+            });
+        }
+
+        // SMTP Test Form
+        const smtpTestForm = document.getElementById('smtp-test-form');
+        if (smtpTestForm) {
+            smtpTestForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Desactivar botón y mostrar spinner
+                const btn = document.getElementById('btn-smtp-test');
+                if (btn) {
+                    // Usar texto hardcodeado para evitar problemas con el estado previo del botón
+                    const originalText = '<i class="bi bi-send-check me-2"></i>Enviar email de prueba';
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Enviando...';
+                    
+                    const formData = new FormData(this);
+                    
+                    fetch(this.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showMessage('smtp-test-result', data.message, 'success');
+                        } else {
+                            showMessage('smtp-test-result', data.message, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        showMessage('smtp-test-result', 'Error de conexión: ' + error.message, 'error');
+                    })
+                    .finally(() => {
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.innerHTML = originalText;
+                        }
+                    });
+                }
+            });
+        }
+
+        // DV Form
+        if (dvForm) {
+            dvForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Validar contraseña INTRANET DAVINCI
+                const dvPassword = document.getElementById('id_dv_password');
+                if (dvPassword && (!dvPassword.value || dvPassword.value.trim() === '')) {
+                    showMessage('dv-test-result', '❌ La contraseña INTRANET DAVINCI es obligatoria.', 'error');
+                    return;
+                }
+                
+                // Desactivar botón y mostrar spinner
+                const btn = document.getElementById('btn-dv');
+                if (btn) {
+                    // Usar texto hardcodeado para evitar problemas con el estado previo del botón
+                    const originalText = '<i class="bi bi-shield-check me-2"></i>Guardar Credenciales INTRANET DAVINCI';
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Guardando...';
+                    
+                    const formData = new FormData(this);
+                    
+                    fetch(this.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        btn.innerHTML = originalText;
+                        if (data.success) {
+                            btn.disabled = true; // Desactivar después de guardado exitoso
+                            showMessage('dv-test-result', data.message, 'success');
+                        } else {
+                            btn.disabled = false; // Reactivar si hay error
+                            showMessage('dv-test-result', data.message, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        btn.innerHTML = originalText;
+                        btn.disabled = false; // Reactivar si hay error de conexión
+                        showMessage('dv-test-result', 'Error de conexión: ' + error.message, 'error');
+                    });
+                }
+            });
+        }
+
+        // DV Test Form
+        const dvTestForm = document.getElementById('dv-test-form');
+        if (dvTestForm) {
+            dvTestForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Desactivar botón y mostrar spinner
+                const btn = document.getElementById('btn-dv-test');
+                if (btn) {
+                    // Usar texto hardcodeado para evitar problemas con el estado previo del botón
+                    const originalText = '<i class="bi bi-person-check me-2"></i>Probar login INTRANET DAVINCI';
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Probando...';
+                    
+                    const formData = new FormData(this);
+                    
+                    fetch(this.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showMessage('dv-test-result', data.message, 'success');
+                        } else {
+                            showMessage('dv-test-result', data.message, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        showMessage('dv-test-result', 'Error de conexión: ' + error.message, 'error');
+                    })
+                    .finally(() => {
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.innerHTML = originalText;
+                        }
+                    });
+                }
+            });
+        }
+
+        // Matching Form
+        if (matchingForm) {
+            matchingForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Desactivar botón y mostrar spinner
+                const btn = document.getElementById('btn-matching');
+                if (btn) {
+                    // Usar texto hardcodeado para evitar problemas con el estado previo del botón
+                    const originalText = '<i class="bi bi-gear me-2"></i>Guardar Configuración de Matching';
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Guardando...';
+                    
+                    const formData = new FormData(this);
+                    
+                    fetch(this.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        btn.innerHTML = originalText;
+                        if (data.success) {
+                            btn.disabled = true; // Desactivar después de guardado exitoso
+                            showMessage('matching-result', data.message, 'success');
+                        } else {
+                            btn.disabled = false; // Reactivar si hay error
+                            showMessage('matching-result', data.message, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        btn.innerHTML = originalText;
+                        btn.disabled = false; // Reactivar si hay error de conexión
+                        showMessage('matching-result', 'Error de conexión: ' + error.message, 'error');
+                    });
+                }
+            });
+        }
+
+        // Email Form
+        if (emailForm) {
+            emailForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Desactivar botón y mostrar spinner
+                const btn = document.getElementById('btn-email');
+                if (btn) {
+                    // Usar texto hardcodeado para evitar problemas con el estado previo del botón
+                    const originalText = '<i class="bi bi-send me-2"></i>Guardar Configuración de Envíos';
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Guardando...';
+                    
+                    const formData = new FormData(this);
+                    
+                    fetch(this.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        btn.innerHTML = originalText;
+                        if (data.success) {
+                            btn.disabled = true; // Desactivar después de guardado exitoso
+                            showMessage('email-result', data.message, 'success');
+                        } else {
+                            btn.disabled = false; // Reactivar si hay error
+                            showMessage('email-result', data.message, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        btn.innerHTML = originalText;
+                        btn.disabled = false; // Reactivar si hay error de conexión
+                        showMessage('email-result', 'Error de conexión: ' + error.message, 'error');
+                    });
+                }
+            });
+        }
+    }
+
+    // Función para mostrar mensajes
+    function showMessage(containerId, message, type) {
+        const container = document.getElementById(containerId);
+        if (container) {
+            container.innerHTML = '<div class="alert alert-' + (type === 'success' ? 'success' : 'danger') + '">' + message + '</div>';
+            container.style.display = 'block';
+        }
+    }
+
+    // Inicializar cuando el DOM esté listo
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inicializar formularios
+        smtpForm = document.getElementById('smtp-form');
+        dvForm = document.getElementById('dv-form');
+        matchingForm = document.getElementById('matching-form');
+        emailForm = document.getElementById('email-form');
+        
+        updateButtonStates();
+        updateSliderValues();
+        setupFormHandlers();
+    });
+})();
+</script>
+{% endblock %}

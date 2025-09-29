@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resultados del Scraping - PostulaMatic</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container-fluid mt-4">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1 class="h3 mb-1">
+                            <i class="bi bi-search me-2"></i>Resultados del Scraping
+                        </h1>
+                        <p class="text-muted mb-0">Resultados del scraping automático de dvcarreras</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estadísticas -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h4 class="mb-0" id="totalJobs">0</h4>
+                                <p class="mb-0">Total Ofertas</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="bi bi-briefcase fs-1"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-info text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h4 class="mb-0" id="totalMatches">0</h4>
+                                <p class="mb-0">Total Matches</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="bi bi-graph-up fs-1"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h4 class="mb-0" id="aboveThreshold">0</h4>
+                                <p class="mb-0">Matches Sobresalientes</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="bi bi-star fs-1"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h4 class="mb-0">70%</h4>
+                                <p class="mb-0">Umbral Configurado</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="bi bi-sliders fs-1"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Matches del Usuario -->
+            <div class="col-lg-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-heart-fill me-2"></i>Mis Matches
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="matchesContainer">
+                            <div class="text-center py-4">
+                                <i class="bi bi-search fs-1 text-muted"></i>
+                                <p class="text-muted mt-2">No se encontraron matches aún</p>
+                                <p class="small text-muted">Ejecuta el scraper para buscar ofertas que coincidan con tus CVs</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ofertas Recientes -->
+            <div class="col-lg-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-clock me-2"></i>Ofertas Recientes
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="jobsContainer">
+                            <div class="text-center py-4">
+                                <i class="bi bi-briefcase fs-1 text-muted"></i>
+                                <p class="text-muted mt-2">No hay ofertas disponibles</p>
+                                <p class="small text-muted">Ejecuta el scraper para obtener ofertas de trabajo</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Acciones -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">¿Qué quieres hacer ahora?</h5>
+                        <p class="card-text">Gestiona tus matches y configura la automatización</p>
+                        <div class="d-flex justify-content-center gap-2 flex-wrap">
+                            <a href="http://localhost:8000/matching/probar-scraper/" class="btn btn-primary">
+                                <i class="bi bi-play-fill me-2"></i>Ejecutar Scraper
+                            </a>
+                            <a href="http://localhost:8000/matching/perfil/" class="btn btn-outline-primary">
+                                <i class="bi bi-gear me-2"></i>Configurar Perfil
+                            </a>
+                            <a href="http://localhost:8000/matching/mis-cvs/" class="btn btn-outline-secondary">
+                                <i class="bi bi-file-text me-2"></i>Mis CVs
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Simular datos de scraping
+        const mockJobs = [
+            {
+                title: "Desarrollador Android Senior",
+                company: "TechCorp Argentina",
+                location: "Buenos Aires, CABA",
+                url: "https://example.com/job1",
+                created_at: "2025-09-27",
+                source: "dvcarreras"
+            },
+            {
+                title: "Programador Kotlin",
+                company: "StartupXYZ",
+                location: "Remoto",
+                url: "https://example.com/job2",
+                created_at: "2025-09-27",
+                source: "dvcarreras"
+            },
+            {
+                title: "Mobile Developer",
+                company: "Digital Solutions",
+                location: "Buenos Aires, CABA",
+                url: "https://example.com/job3",
+                created_at: "2025-09-27",
+                source: "dvcarreras"
+            }
+        ];
+
+        const mockMatches = [
+            {
+                job_title: "Desarrollador Android Senior",
+                company: "TechCorp Argentina",
+                score: 85,
+                created_at: "2025-09-27"
+            },
+            {
+                job_title: "Programador Kotlin",
+                company: "StartupXYZ",
+                score: 78,
+                created_at: "2025-09-27"
+            },
+            {
+                job_title: "Mobile Developer",
+                company: "Digital Solutions",
+                score: 65,
+                created_at: "2025-09-27"
+            }
+        ];
+
+        function loadMockData() {
+            // Actualizar estadísticas
+            document.getElementById('totalJobs').textContent = mockJobs.length;
+            document.getElementById('totalMatches').textContent = mockMatches.length;
+            document.getElementById('aboveThreshold').textContent = mockMatches.filter(m => m.score >= 70).length;
+
+            // Cargar ofertas
+            const jobsContainer = document.getElementById('jobsContainer');
+            jobsContainer.innerHTML = '';
+            
+            mockJobs.forEach(job => {
+                const jobElement = document.createElement('div');
+                jobElement.className = 'border-bottom pb-3 mb-3';
+                jobElement.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">${job.title}</h6>
+                            <p class="text-muted mb-1">${job.company}</p>
+                            <small class="text-muted">${job.location}</small>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-secondary">${job.source}</span>
+                            <br>
+                            <small class="text-muted">${job.created_at}</small>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <a href="${job.url}" target="_blank" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-box-arrow-up-right me-1"></i>Ver Oferta
+                        </a>
+                    </div>
+                `;
+                jobsContainer.appendChild(jobElement);
+            });
+
+            // Cargar matches
+            const matchesContainer = document.getElementById('matchesContainer');
+            matchesContainer.innerHTML = '';
+            
+            mockMatches.forEach(match => {
+                const matchElement = document.createElement('div');
+                matchElement.className = 'border-bottom pb-3 mb-3';
+                matchElement.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">${match.job_title}</h6>
+                            <p class="text-muted mb-1">${match.company}</p>
+                            <small class="text-muted">${match.created_at}</small>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge ${match.score >= 70 ? 'bg-success' : 'bg-secondary'} fs-6">
+                                ${match.score}%
+                            </span>
+                            <br>
+                            <small class="text-muted">${match.created_at}</small>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <button class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-box-arrow-up-right me-1"></i>Ver Oferta
+                        </button>
+                    </div>
+                `;
+                matchesContainer.appendChild(matchElement);
+            });
+        }
+
+        // Cargar datos al iniciar
+        document.addEventListener('DOMContentLoaded', function() {
+            loadMockData();
+        });
+    </script>
+</body>
+</html>
