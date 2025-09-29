@@ -2,7 +2,7 @@ name: Deploy Postulamatic
 
 on:
   push:
-    branches: ["master"]
+    branches: ["main", "master"]
   workflow_dispatch:
 
 jobs:
