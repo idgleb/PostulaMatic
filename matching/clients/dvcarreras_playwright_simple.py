@@ -97,13 +97,25 @@ class DVCarrerasPlaywrightSimple:
     LOGIN_URL = "https://dvcarreras.davinci.edu.ar/login.html"
     JOB_BOARD_URL = "https://dvcarreras.davinci.edu.ar/job_board-0.html"
     
-    def __init__(self, username: str, password: str):
+    def __init__(self, username: str, password: str, log_callback=None):
         self.username = username
         self.password = password
         self.browser = None
         self.context = None
         self.page = None
         self._is_authenticated = False
+        self.login_attempts = 0
+        self.max_login_attempts = 2
+        self.log_callback = log_callback
+    
+    async def _log(self, message: str, log_type: str = 'info'):
+        """Envía un log a través del callback si está disponible."""
+        if self.log_callback:
+            try:
+                await self.log_callback(message, log_type)
+            except Exception as e:
+                logger.error(f"Error enviando log: {e}")
+        logger.info(f"[DVCarrerasPlaywright] {message}")
     
     async def __aenter__(self):
         """Context manager entry."""
@@ -173,9 +185,9 @@ class DVCarrerasPlaywrightSimple:
             logger.error(f"Error cerrando Playwright: {e}")
     
     async def login(self) -> bool:
-        """Realiza login usando navegador real."""
+        """Realiza login usando navegador real - un solo intento como en el perfil."""
         try:
-            logger.info(f"Iniciando login con Playwright para usuario: {self.username}")
+            await self._log(f"Conectando a INTRANET DAVINCI para usuario: {self.username}", 'info')
             
             # Navegar a la página de login
             await self.page.goto(self.LOGIN_URL, wait_until='networkidle')
@@ -184,7 +196,7 @@ class DVCarrerasPlaywrightSimple:
             # Verificar si hay Cloudflare
             page_content = await self.page.content()
             if "Just a moment" in page_content or "cloudflare" in page_content.lower():
-                logger.warning("Detectado Cloudflare, esperando...")
+                await self._log("Detectado Cloudflare, esperando...", 'warning')
                 await asyncio.sleep(10)  # Esperar más tiempo para Cloudflare
             
             # Buscar campos de login
@@ -192,7 +204,7 @@ class DVCarrerasPlaywrightSimple:
             password_field = await self.page.query_selector('input[type="password"]')
             
             if not username_field or not password_field:
-                logger.error("No se encontraron campos de usuario/contraseña")
+                await self._log("No se encontraron campos de usuario/contraseña en la página", 'error')
                 return False
             
             # Llenar campos
@@ -222,14 +234,14 @@ class DVCarrerasPlaywrightSimple:
             
             if self._is_login_successful(current_url, page_content):
                 self._is_authenticated = True
-                logger.info("Login exitoso con Playwright")
+                await self._log("✅ Conexión a INTRANET DAVINCI exitosa", 'success')
                 return True
             else:
-                logger.error("Login fallido - credenciales incorrectas")
+                await self._log("❌ Error de autenticación en INTRANET DAVINCI. Verifica usuario y contraseña.", 'error')
                 return False
                 
         except Exception as e:
-            logger.error(f"Error durante login con Playwright: {e}")
+            await self._log(f"❌ Error de conexión: {str(e)}", 'error')
             return False
     
     def _is_login_successful(self, current_url: str, page_content: str) -> bool:
@@ -483,18 +495,18 @@ class DVCarrerasPlaywrightSimple:
             # Iniciar navegador
             await self.start()
             
-            # Realizar login
+            # Realizar login - un solo intento como en el perfil
             login_success = await self.login()
             
             if login_success:
-                logger.info("✅ Prueba de login exitosa")
+                await self._log("✅ Conexión a INTRANET DAVINCI verificada correctamente", 'success')
                 return True
             else:
-                logger.error("❌ Prueba de login fallida - credenciales incorrectas")
+                await self._log("❌ Error de autenticación en INTRANET DAVINCI. Verifica usuario y contraseña.", 'error')
                 return False
                 
         except Exception as e:
-            logger.error(f"Error durante prueba de login asíncrona: {e}")
+            await self._log(f"❌ Error de conexión: {str(e)}", 'error')
             return False
         finally:
             # Cerrar navegador

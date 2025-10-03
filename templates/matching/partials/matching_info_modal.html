@@ -1,0 +1,159 @@
+<!-- Modal de información sobre Matching - Reutilizable -->
+<div class="modal fade" id="matchingInfoModal" tabindex="-1" aria-labelledby="matchingInfoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content matching-modal">
+            <div class="modal-header">
+                <h5 class="modal-title" id="matchingInfoModalLabel">
+                    <i class="bi bi-graph-up me-2"></i>¿Cómo funciona el Matching?
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            <i class="bi bi-lightbulb me-2"></i>
+                            <strong>En palabras simples:</strong> El sistema compara tu CV con las ofertas de trabajo para encontrar las que mejor se adaptan a tu perfil.
+                        </div>
+                    </div>
+                </div>
+
+                <h6 class="text-primary mb-3">
+                    <i class="bi bi-1-circle-fill me-2"></i>¿Qué hace el sistema?
+                </h6>
+                <div class="mb-4">
+                    <div class="d-flex align-items-start mb-3">
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 30px; height: 30px; font-size: 12px;">
+                            1
+                        </div>
+                        <div>
+                            <strong>Analiza tu CV:</strong> Extrae todas las habilidades técnicas, herramientas y tecnologías que mencionas.
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-start mb-3">
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 30px; height: 30px; font-size: 12px;">
+                            2
+                        </div>
+                        <div>
+                            <strong>Analiza cada oferta:</strong> Lee la descripción del trabajo y identifica qué habilidades están buscando.
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-start mb-3">
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 30px; height: 30px; font-size: 12px;">
+                            3
+                        </div>
+                        <div>
+                            <strong>Calcula la coincidencia:</strong> Compara ambas listas y calcula un porcentaje de compatibilidad.
+                        </div>
+                    </div>
+                </div>
+
+                <h6 class="text-success mb-3">
+                    <i class="bi bi-2-circle-fill me-2"></i>¿Cómo se calcula el porcentaje?
+                </h6>
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card h-100 border-success">
+                            <div class="card-body text-center">
+                                <i class="bi bi-check-circle-fill text-success fs-1 mb-2"></i>
+                                <h6 class="card-title">Habilidades que coinciden</h6>
+                                <p class="card-text small">Si la oferta busca 4 habilidades y tienes 3, obtienes 75% de coincidencia básica.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card h-100 border-warning">
+                            <div class="card-body text-center">
+                                <i class="bi bi-plus-circle-fill text-warning fs-1 mb-2"></i>
+                                <h6 class="card-title">Habilidades extra</h6>
+                                <p class="card-text small">Si tienes habilidades adicionales que no pidieron, obtienes puntos bonus (hasta +20%).</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card h-100 border-danger">
+                            <div class="card-body text-center">
+                                <i class="bi bi-x-circle-fill text-danger fs-1 mb-2"></i>
+                                <h6 class="card-title">Habilidades críticas faltantes</h6>
+                                <p class="card-text small">Si faltan habilidades muy importantes (como Python para un trabajo de Python), pierdes puntos (-15% cada una).</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card h-100 border-info">
+                            <div class="card-body text-center">
+                                <i class="bi bi-percent text-info fs-1 mb-2"></i>
+                                <h6 class="card-title">Resultado final</h6>
+                                <p class="card-text small">Se suma todo y se obtiene un porcentaje final entre 0% y 100%.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <h6 class="text-primary mb-3">
+                    <i class="bi bi-3-circle-fill me-2"></i>Ejemplo práctico:
+                </h6>
+                <div class="bg-light p-3 rounded mb-4">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-primary">📋 La oferta busca:</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="bi bi-check text-success"></i> Python</li>
+                                <li><i class="bi bi-check text-success"></i> Django</li>
+                                <li><i class="bi bi-x text-danger"></i> PostgreSQL</li>
+                                <li><i class="bi bi-x text-danger"></i> React</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-success">👤 Tu CV tiene:</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="bi bi-check text-success"></i> Python ✓</li>
+                                <li><i class="bi bi-check text-success"></i> Django ✓</li>
+                                <li><i class="bi bi-plus text-warning"></i> JavaScript (extra)</li>
+                                <li><i class="bi bi-plus text-warning"></i> MySQL (extra)</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="text-center">
+                        <h5 class="text-primary">
+                            <i class="bi bi-calculator me-2"></i>
+                            Cálculo: 2/4 = 50% + 2 habilidades extra = +10% = <strong>60% de coincidencia</strong>
+                        </h5>
+                    </div>
+                </div>
+
+                <h6 class="text-warning mb-3">
+                    <i class="bi bi-gear me-2"></i>¿Para qué sirve el umbral?
+                </h6>
+                <div class="alert alert-warning">
+                    <p class="mb-2"><strong>El umbral es tu filtro personal:</strong></p>
+                    <ul class="mb-0">
+                        <li><strong>60%:</strong> Solo recibirás emails de ofertas con al menos 60% de coincidencia</li>
+                        <li><strong>Más alto:</strong> Menos emails, pero más precisos</li>
+                        <li><strong>Más bajo:</strong> Más emails, pero algunos pueden no ser ideales</li>
+                        <li><strong>Recomendado:</strong> 50-70% para un buen balance</li>
+                    </ul>
+                </div>
+
+                <div class="alert alert-info">
+                    <i class="bi bi-question-circle me-2"></i>
+                    <strong>¿Por qué algunas ofertas tienen 50%?</strong> Cuando el sistema no puede detectar habilidades específicas en una oferta, asigna automáticamente un score neutro de 50% para no descartarla completamente. Esto puede pasar con ofertas muy generales o mal redactadas.
+                </div>
+
+                <div class="alert alert-success">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>💡 Consejo:</strong> Si no recibes muchos emails, baja el umbral. Si recibes demasiados emails irrelevantes, súbelo.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-custom-modal" data-bs-dismiss="modal">
+                    <i class="bi bi-check-circle me-2"></i>Entendido
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

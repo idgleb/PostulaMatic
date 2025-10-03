@@ -7,7 +7,8 @@ lxml
 spacy
 python-docx
 PyPDF2
-# django-cryptography  # Problemas de compatibilidad con Django 5.2
+cryptography
+django-environ
 celery
 redis
 django-celery-results

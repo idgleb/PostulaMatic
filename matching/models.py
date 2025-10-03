@@ -1,8 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.conf import settings
-# from django_cryptography.fields import encrypt  # Problemas de compatibilidad
 import json
+from .utils.encryption import encrypt_credential, decrypt_credential, is_credential_encrypted
 
 
 class UserProfile(models.Model):
@@ -16,11 +16,20 @@ class UserProfile(models.Model):
     smtp_use_tls = models.BooleanField(default=True)
     smtp_use_ssl = models.BooleanField(default=False)
     smtp_username = models.CharField(max_length=255, blank=True, null=True)
-    smtp_password = models.TextField(blank=True, null=True)  # TODO: Encriptar en aplicación
+    smtp_password = models.TextField(blank=True, null=True)  # Encriptado automáticamente
     
     # Credenciales dvcarreras
-    dv_username = models.CharField(max_length=255, blank=True, null=True)  # TODO: Encriptar en aplicación
-    dv_password = models.TextField(blank=True, null=True)  # TODO: Encriptar en aplicación
+    dv_username = models.CharField(max_length=255, blank=True, null=True)  # Usuario público (no encriptado)
+    dv_password = models.TextField(blank=True, null=True)  # Encriptado automáticamente
+    dv_connection_status = models.CharField(
+        max_length=20, 
+        choices=[
+            ('verified', 'Verificado'),
+            ('not_verified', 'No Verificado'),
+        ],
+        default='not_verified',
+        help_text="Estado de conexión a INTRANET DAVINCI"
+    )
     
     # Configuración de matching y límites
     match_threshold = models.IntegerField(default=70, help_text="Umbral de coincidencia 0-100")
@@ -40,6 +49,65 @@ class UserProfile(models.Model):
     
     def __str__(self):
         return f"{self.user.username} - {self.display_name or 'Sin nombre'}"
+    
+    # Métodos para manejar credenciales encriptadas
+    
+    def get_smtp_password(self):
+        """Retorna la contraseña SMTP desencriptada."""
+        if not self.smtp_password:
+            return ""
+        return decrypt_credential(self.smtp_password)
+    
+    def set_smtp_password(self, password):
+        """Establece la contraseña SMTP encriptada."""
+        if password:
+            self.smtp_password = encrypt_credential(password)
+        else:
+            self.smtp_password = ""
+    
+    def get_dv_username(self):
+        """Retorna el usuario DVCarreras (no encriptado)."""
+        return self.dv_username or ""
+    
+    def set_dv_username(self, username):
+        """Establece el usuario DVCarreras (no encriptado)."""
+        self.dv_username = username or ""
+    
+    def get_dv_password(self):
+        """Retorna la contraseña DVCarreras desencriptada."""
+        if not self.dv_password:
+            return ""
+        return decrypt_credential(self.dv_password)
+    
+    def set_dv_password(self, password):
+        """Establece la contraseña DVCarreras encriptada."""
+        if password:
+            self.dv_password = encrypt_credential(password)
+        else:
+            self.dv_password = ""
+    
+    def set_dv_connection_verified(self, verified=True):
+        """Establece el estado de conexión DV."""
+        if verified is True:
+            self.dv_connection_status = 'verified'
+        elif verified is False:
+            self.dv_connection_status = 'not_verified'
+        else:  # None o 'in_progress'
+            self.dv_connection_status = 'in_progress'
+    
+    def is_dv_connection_verified(self):
+        """Verifica si la conexión DV está verificada."""
+        return self.dv_connection_status == 'verified'
+    
+    def is_dv_connection_in_progress(self):
+        """Verifica si la conexión DV está en proceso."""
+        return self.dv_connection_status == 'in_progress'
+    
+    def save(self, *args, **kwargs):
+        """Override save para manejar encriptación automática."""
+        # Si los campos tienen valores nuevos, encriptarlos
+        # (esto se manejará principalmente desde los formularios)
+        super().save(*args, **kwargs)
     
     def clean(self):
         """Validar que no se usen TLS y SSL simultáneamente."""
@@ -86,7 +154,7 @@ class UserCV(models.Model):
     @property
     def is_processed(self):
         """Indica si el CV ha sido procesado."""
-        return bool(self.parsed_text) and bool(self.skills_list)
+        return bool(self.parsed_text)  # Procesado si tiene texto extraído, independientemente de las habilidades
 
 
 class ScrapingLog(models.Model):

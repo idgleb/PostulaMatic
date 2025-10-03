@@ -1,7 +1,7 @@
 services:
   postulamatic_web:
     build: .
-    env_file: .env
+    # env_file: .env
     restart: unless-stopped
     networks: [web]
     ports:
@@ -12,7 +12,7 @@ services:
       - redis
   worker:
     build: .
-    env_file: .env
+    # env_file: .env
     command: celery -A postulamatic worker -l info
     restart: unless-stopped
     networks: [web]
@@ -22,7 +22,7 @@ services:
       - redis
   beat:
     build: .
-    env_file: .env
+    # env_file: .env
     command: celery -A postulamatic beat -l info
     restart: unless-stopped
     networks: [web]

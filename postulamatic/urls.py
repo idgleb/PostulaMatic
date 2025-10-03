@@ -19,6 +19,7 @@ from django.urls import path, include
 from django.views.generic import TemplateView
 from django.conf import settings
 from django.conf.urls.static import static
+from matching.views import custom_404_view, custom_500_view
 
 urlpatterns = [
   path('admin/', admin.site.urls),
@@ -32,3 +33,7 @@ urlpatterns = [
 # Servir archivos media en desarrollo
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+# Manejo de errores personalizados
+handler404 = custom_404_view
+handler500 = custom_500_view

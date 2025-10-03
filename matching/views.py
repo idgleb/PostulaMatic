@@ -48,7 +48,10 @@ def dashboard_view(request):
 @login_required
 def profile_view(request):
     """Vista para editar perfil de usuario."""
+    # Forzar consulta fresca para obtener el estado actualizado
     profile, created = UserProfile.objects.get_or_create(user=request.user)
+    # Refrescar desde la base de datos para obtener el estado más reciente
+    profile.refresh_from_db()
     
     # Crear formularios separados
     smtp_form = SMTPConfigForm(instance=profile)
@@ -89,6 +92,9 @@ def profile_view(request):
             dv_form = DVCredentialsForm(request.POST, instance=profile)
             if dv_form.is_valid():
                 dv_form.save()
+                # Establecer estado "en proceso" al guardar credenciales
+                profile.set_dv_connection_verified(None)  # None = in_progress
+                profile.save()
                 if is_ajax:
                     return JsonResponse({
                         'success': True,
@@ -168,71 +174,73 @@ def profile_view(request):
 
 @login_required
 def upload_cv_view(request):
-    """Vista para subir CV con parsing automático."""
-    if request.method == 'POST':
-        form = CVUploadForm(request.POST, request.FILES)
-        if form.is_valid():
-            cv = form.save(commit=False)
-            cv.user = request.user
+    """Vista AJAX para subir CV con parsing automático."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Método no permitido'})
+    
+    # Solo manejar requests AJAX
+    if request.headers.get('X-Requested-With') != 'XMLHttpRequest':
+        return JsonResponse({'success': False, 'message': 'Solo se permiten requests AJAX'})
+    
+    form = CVUploadForm(request.POST, request.FILES)
+    if form.is_valid():
+        cv = form.save(commit=False)
+        cv.user = request.user
+        
+        # Guardar el CV primero
+        cv.save()
+        
+        # Procesar el archivo inmediatamente si es posible
+        try:
+            file_path = cv.original_file.path
             
-            # Guardar el CV primero
-            cv.save()
+            # Verificar que el formato es soportado
+            if cv_parser.is_supported(file_path):
+                logger.info(f"Procesando CV inmediatamente: {cv.original_file.name}")
+                
+                # Extraer texto del archivo
+                parse_result = cv_parser.parse_cv(file_path)
+                parsed_text = parse_result['text']
+                
+                # Procesar todos los archivos sin validación previa
+                skills_data = skills_extractor.extract_skills(parsed_text)
+                
+                # Guardar resultados
+                cv.parsed_text = parsed_text
+                cv.skills = skills_data
+                cv.save()
+                
+                logger.info(f"CV procesado: {cv.skills_count} skills detectadas")
+                
+                return JsonResponse({
+                    'success': True,
+                    'message': f'CV "{cv.original_file.name}" subido y procesado exitosamente.',
+                    'skills_count': cv.skills_count
+                })
+            else:
+                logger.warning(f"Formato no soportado: {cv.original_file.name}")
+                return JsonResponse({
+                    'success': False,
+                    'message': f'CV "{cv.original_file.name}" subido, pero el formato no es soportado para parsing automático.'
+                })
             
-            # Procesar el archivo inmediatamente si es posible
-            try:
-                file_path = cv.original_file.path
-                
-                # Verificar que el formato es soportado
-                if cv_parser.is_supported(file_path):
-                    logger.info(f"Procesando CV inmediatamente: {cv.original_file.name}")
-                    
-                    # Procesar el CV inmediatamente
-                    
-                    # Extraer texto del archivo
-                    parse_result = cv_parser.parse_cv(file_path)
-                    parsed_text = parse_result['text']
-                    
-                    # Detectar habilidades
-                    skills_data = skills_extractor.extract_skills(parsed_text)
-                    
-                    # Guardar resultados
-                    cv.parsed_text = parsed_text
-                    cv.skills = skills_data
-                    cv.save()
-                    
-                    logger.info(f"CV procesado inmediatamente: {cv.skills_count} skills detectadas")
-                    messages.success(
-                        request, 
-                        f'CV "{cv.original_file.name}" subido y procesado correctamente. '
-                        f'Habilidades detectadas: {cv.skills_count}'
-                    )
-                else:
-                    logger.warning(f"Formato no soportado: {cv.original_file.name}")
-                    messages.warning(
-                        request, 
-                        f'CV "{cv.original_file.name}" subido, pero el formato no es soportado para parsing automático.'
-                    )
-                
-            except Exception as e:
-                logger.error(f"Error procesando CV {cv.original_file.name}: {e}")
-                messages.error(
-                    request, 
-                    f'Error procesando el CV: {str(e)}'
-                )
-            return redirect('cv_list')
+        except Exception as e:
+            logger.error(f"Error procesando CV {cv.original_file.name}: {e}")
+            return JsonResponse({
+                'success': False,
+                'message': f'Error procesando el CV: {str(e)}'
+            })
     else:
-        form = CVUploadForm()
-    
-    # Lista de CVs del usuario
-    user_cvs = UserCV.objects.filter(user=request.user).order_by('-created_at')
-    
-    context = {
-        'form': form,
-        'user_cvs': user_cvs,
-        'title': 'Subir CV',
-        'supported_formats': cv_parser.get_supported_formats()
-    }
-    return render(request, 'matching/upload_cv.html', context)
+        # Errores de validación del formulario
+        error_messages = []
+        for field, errors in form.errors.items():
+            for error in errors:
+                error_messages.append(f"Error en {field}: {error}")
+        
+        return JsonResponse({
+            'success': False,
+            'message': '; '.join(error_messages)
+        })
 
 
 @login_required
@@ -403,8 +411,12 @@ def test_scraper_view(request):
     try:
         profile = UserProfile.objects.get(user=request.user)
         has_credentials = bool(profile.dv_username and profile.dv_password)
+        credentials_verified = profile.is_dv_connection_verified() if has_credentials else False
+        credentials_in_progress = profile.is_dv_connection_in_progress() if has_credentials else False
     except UserProfile.DoesNotExist:
         has_credentials = False
+        credentials_verified = False
+        credentials_in_progress = False
     
     from .models import JobPosting, MatchScore
     
@@ -412,7 +424,16 @@ def test_scraper_view(request):
         'total_jobs': JobPosting.objects.count(),
         'user_matches': MatchScore.objects.filter(user=request.user).count() if has_credentials else 0,
         'has_credentials': has_credentials,
+        'credentials_verified': credentials_verified,
+        'credentials_in_progress': credentials_in_progress,
     }
+    
+    # Si es petición AJAX, devolver solo las estadísticas
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({
+            'success': True,
+            'stats': stats
+        })
     
     context = {
         'title': 'Probar Scraper',
@@ -421,6 +442,30 @@ def test_scraper_view(request):
     }
     
     return render(request, 'matching/test_scraper.html', context)
+
+
+@login_required
+@require_http_methods(["GET"])
+def dv_connection_status_view(request):
+    """Vista AJAX para obtener el estado de conexión DV."""
+    try:
+        profile = UserProfile.objects.get(user=request.user)
+        
+        return JsonResponse({
+            'success': True,
+            'credentials_verified': profile.is_dv_connection_verified(),
+            'credentials_in_progress': profile.is_dv_connection_in_progress(),
+            'has_credentials': bool(profile.dv_username and profile.dv_password),
+            'dv_connection_status': profile.dv_connection_status
+        })
+    except UserProfile.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'credentials_verified': False,
+            'credentials_in_progress': False,
+            'has_credentials': False,
+            'dv_connection_status': 'not_verified'
+        })
 
 
 @login_required
@@ -478,8 +523,8 @@ def scraper_status_view(request, task_id):
                         'traceback': getattr(task_result, 'traceback', None),
                         'info': getattr(task_result, 'info', None)
                     }
-                except:
-                    result_info = {'error': 'Error desconocido en la tarea'}
+                except Exception as e:
+                    result_info = {'error': f'Error desconocido en la tarea: {str(e)}'}
         else:
             # Si la tarea no está lista, incluir información de meta si está disponible
             try:
@@ -490,8 +535,8 @@ def scraper_status_view(request, task_id):
                         'progress_info': meta_info.get('progress_info'),
                         'progress_percentage': meta_info.get('progress_percentage')
                     }
-            except:
-                pass
+            except Exception as e:
+                logger.warning(f"Error obteniendo meta info: {e}")
         
         status_data = {
             'task_id': task_id,
@@ -553,37 +598,205 @@ def task_status_view(request):
 @login_required
 def scraping_results_view(request):
     """Vista para mostrar los resultados del scraping."""
-    # Obtener ofertas recientes
-    recent_jobs = JobPosting.objects.all().order_by('-created_at')[:20]
-    
-    # Obtener matches del usuario
-    user_matches = MatchScore.objects.filter(user=request.user).order_by('-created_at')[:10]
+    user_profile = UserProfile.objects.get_or_create(user=request.user)[0]
     
     # Estadísticas
     total_jobs = JobPosting.objects.count()
     total_matches = MatchScore.objects.filter(user=request.user).count()
-    above_threshold_matches = MatchScore.objects.filter(
-        user=request.user, 
-        score__gte=request.user.profile.match_threshold
-    ).count()
     
     context = {
         'title': 'Resultados del Scraping',
-        'recent_jobs': recent_jobs,
-        'user_matches': user_matches,
+        'user_profile': user_profile,
         'stats': {
             'total_jobs': total_jobs,
             'total_matches': total_matches,
-            'above_threshold_matches': above_threshold_matches,
         }
     }
     return render(request, 'matching/scraping_results.html', context)
 
 
+@login_required
+def paginated_matches_view(request):
+    """Vista AJAX para obtener matches paginados."""
+    try:
+        page = int(request.GET.get('page', 1))
+        per_page = 10
+        
+        # Obtener matches del usuario con información del CV
+        matches_query = MatchScore.objects.filter(user=request.user).select_related('cv', 'job_posting').order_by('-created_at')
+        
+        # Calcular paginación
+        total_matches = matches_query.count()
+        total_pages = (total_matches + per_page - 1) // per_page
+        offset = (page - 1) * per_page
+        
+        matches = matches_query[offset:offset + per_page]
+        
+        # Formatear datos para el frontend
+        matches_data = []
+        for match in matches:
+            matches_data.append({
+                'id': match.id,
+                'job_id': match.job_posting.id,
+                'job_title': match.job_posting.title,
+                'job_email': match.job_posting.email,
+                'job_description': match.job_posting.description,
+                'job_created_at': match.job_posting.created_at.strftime('%Y-%m-%d %H:%M'),
+                'job_external_id': match.job_posting.external_id,
+                'score': match.score,
+                'is_above_threshold': match.is_above_threshold,
+                'cv_id': match.cv.id,
+                'cv_filename': match.cv.original_file.name.split('/')[-1],  # Solo el nombre del archivo
+                'created_at': match.created_at.strftime('%Y-%m-%d %H:%M'),
+            })
+        
+        # Obtener estadísticas adicionales
+        from .models import JobPosting
+        total_jobs = JobPosting.objects.count()
+        
+        return JsonResponse({
+            'success': True,
+            'matches': matches_data,
+            'pagination': {
+                'current_page': page,
+                'total_pages': total_pages,
+                'total_matches': total_matches,
+                'total_jobs': total_jobs,
+                'has_prev': page > 1,
+                'has_next': page < total_pages,
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error en paginated_matches_view: {e}")
+        return JsonResponse({
+            'success': False,
+            'error': 'Error al cargar matches'
+        })
+
+
+@login_required
+def paginated_jobs_view(request):
+    """Vista AJAX para obtener ofertas paginadas."""
+    try:
+        page = int(request.GET.get('page', 1))
+        per_page = 10
+        
+        # Obtener ofertas
+        jobs_query = JobPosting.objects.all().order_by('-created_at')
+        
+        # Calcular paginación
+        total_jobs = jobs_query.count()
+        total_pages = (total_jobs + per_page - 1) // per_page
+        offset = (page - 1) * per_page
+        
+        jobs = jobs_query[offset:offset + per_page]
+        
+        # Formatear datos para el frontend
+        jobs_data = []
+        for job in jobs:
+            jobs_data.append({
+                'id': job.id,
+                'title': job.title,
+                'email': job.email,
+                'description': job.description,
+                'created_at': job.created_at.strftime('%Y-%m-%d %H:%M'),
+                'external_id': job.external_id,
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'jobs': jobs_data,
+            'pagination': {
+                'current_page': page,
+                'total_pages': total_pages,
+                'total_jobs': total_jobs,
+                'has_prev': page > 1,
+                'has_next': page < total_pages,
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error en paginated_jobs_view: {e}")
+        return JsonResponse({
+            'success': False,
+            'error': 'Error al cargar ofertas'
+        })
+
+
 def logout_view(request):
     """Vista para cerrar sesión."""
     logout(request)
-    return redirect('http://localhost:8000/matching/login/')
+
+
+def custom_404_view(request, exception):
+    """Vista personalizada para errores 404."""
+    return render(request, '404.html', status=404)
+
+
+def custom_500_view(request):
+    """Vista personalizada para errores 500."""
+    return render(request, '500.html', status=500)
+
+
+@login_required
+@require_http_methods(["DELETE"])
+def delete_job_view(request, job_id):
+    """Eliminar oferta de trabajo (AJAX)."""
+    try:
+        job = get_object_or_404(JobPosting, id=job_id)
+        job_title = job.title
+        job.delete()
+        
+        # Obtener estadísticas actualizadas
+        total_jobs = JobPosting.objects.count()
+        total_matches = MatchScore.objects.filter(user=request.user).count()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Oferta "{job_title}" eliminada correctamente.',
+            'updated_totals': {
+                'total_jobs': total_jobs,
+                'total_matches': total_matches,
+            },
+            'matches_deleted': 0  # TODO: Implementar contador de matches eliminados
+        })
+        
+    except Exception as e:
+        logger.error(f"Error eliminando oferta {job_id}: {e}")
+        return JsonResponse({
+            'success': False,
+            'error': f'Error al eliminar la oferta: {str(e)}'
+        })
+
+
+@login_required
+def delete_all_jobs_view(request):
+    """Eliminar todas las ofertas de trabajo."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'})
+    
+    try:
+        # Contar ofertas antes de eliminar
+        jobs_count = JobPosting.objects.count()
+        matches_count = MatchScore.objects.filter(user=request.user).count()
+        
+        # Eliminar todas las ofertas (esto también eliminará los matches por CASCADE)
+        JobPosting.objects.all().delete()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'{jobs_count} ofertas eliminadas correctamente.',
+            'jobs_deleted': jobs_count,
+            'matches_deleted': matches_count
+        })
+        
+    except Exception as e:
+        logger.error(f"Error eliminando todas las ofertas: {e}")
+        return JsonResponse({
+            'success': False,
+            'error': f'Error al eliminar las ofertas: {str(e)}'
+        })
 
 
 def login_view(request):
@@ -630,7 +843,7 @@ def test_smtp_email_view(request):
         smtp_server = user_profile.smtp_host
         smtp_port = user_profile.smtp_port
         smtp_username = user_profile.smtp_username
-        smtp_password = user_profile.smtp_password
+        smtp_password = user_profile.get_smtp_password()  # Usar método que desencripta
         
         # Crear el mensaje de prueba
         msg = MIMEMultipart()
@@ -712,8 +925,8 @@ def test_dv_login_view(request):
         
         # Crear instancia del cliente
         client = DVCarrerasPlaywrightSimple(
-            username=user_profile.dv_username,
-            password=user_profile.dv_password
+            username=user_profile.get_dv_username(),
+            password=user_profile.get_dv_password()
         )
         
         # Probar login real
@@ -722,17 +935,29 @@ def test_dv_login_view(request):
             success = client.test_login()
             
             if success:
+                # Actualizar estado de conexión en la base de datos
+                user_profile.set_dv_connection_verified(True)
+                user_profile.save()
+                
                 return JsonResponse({
                     'success': True,
                     'message': f'✅ Conexión a INTRANET DAVINCI verificada correctamente (Playwright). Usuario: {user_profile.dv_username}'
                 })
             else:
+                # Actualizar estado de conexión en la base de datos
+                user_profile.set_dv_connection_verified(False)
+                user_profile.save()
+                
                 return JsonResponse({
                     'success': False,
                     'message': '❌ Error de autenticación en INTRANET DAVINCI. Verifica usuario y contraseña.'
                 })
                 
         except Exception as login_error:
+            # Actualizar estado de conexión en la base de datos
+            user_profile.set_dv_connection_verified(False)
+            user_profile.save()
+            
             return JsonResponse({
                 'success': False,
                 'message': f'❌ Error de conexión: {str(login_error)}'
@@ -744,31 +969,6 @@ def test_dv_login_view(request):
         return JsonResponse({'success': False, 'message': f'Error: {str(e)}'})
 
 
-def delete_all_jobs_view(request):
-    """Vista para eliminar todas las ofertas de trabajo."""
-    if not request.user.is_authenticated:
-        return JsonResponse({'success': False, 'message': 'Usuario no autenticado'})
-    
-    if request.method != 'POST':
-        return JsonResponse({'success': False, 'message': 'Método no permitido'})
-    
-    try:
-        # Eliminar todas las ofertas de trabajo (MatchScore se borra por CASCADE)
-        deleted_jobs = JobPosting.objects.all().delete()[0]
-
-        # Eliminar todos los logs de scraping
-        from .models import ScrapingLog
-        deleted_logs = ScrapingLog.objects.all().delete()[0]
-        
-        return JsonResponse({
-            'success': True,
-            'message': f'Se eliminaron {deleted_jobs} ofertas y {deleted_logs} logs de scraping.',
-            'deleted_jobs': deleted_jobs,
-            'deleted_logs': deleted_logs,
-        })
-        
-    except Exception as e:
-        return JsonResponse({'success': False, 'message': f'Error: {str(e)}'})
 
 
 @login_required

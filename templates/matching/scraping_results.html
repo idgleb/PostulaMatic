@@ -3,81 +3,56 @@
 
 {% block title %}{{ title }} - PostulaMatic{% endblock %}
 
-{% block content %}
-<div class="container-fluid">
-    <!-- Header -->
-    <div class="row mb-4">
+{% block matching_content %}
+<style>
+    #matchesCount, #jobsCount {
+        margin: 1rem !important;
+    }
+</style>
+<!-- Header Section -->
+<div class="row mb-5">
         <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h1 class="h3 mb-1">
-                        <i class="bi bi-search me-2"></i>{{ title }}
+        <div class="text-center">
+            <h1 class="display-4 fw-bold mb-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                <i class="bi bi-search me-3"></i>{{ title }}
                     </h1>
-                    <p class="text-muted mb-0">Resultados del scraping automático de dvcarreras</p>
-                </div>
+            <p class="lead text-muted">Resultados del scraping automático de dvcarreras</p>
             </div>
         </div>
     </div>
 
-    <!-- Estadísticas -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card bg-primary text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h4 class="mb-0">{{ stats.total_jobs }}</h4>
-                            <p class="mb-0">Total Ofertas</p>
+<!-- Stats Cards -->
+<div class="row mb-5">
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card stats-card h-100">
+            <div class="card-body text-center">
+                <div class="stats-icon mb-3">
+                    <i class="bi bi-briefcase"></i>
                         </div>
-                        <div class="align-self-center">
-                            <i class="bi bi-briefcase fs-1"></i>
+                <h6 class="card-title text-muted mb-2">Total Ofertas</h6>
+                <h2 id="totalJobsCard" class="fw-bold text-primary mb-0">{{ stats.total_jobs }}</h2>
                         </div>
                     </div>
                 </div>
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card stats-card h-100">
+            <div class="card-body text-center">
+                <div class="stats-icon mb-3">
+                    <i class="bi bi-graph-up"></i>
             </div>
+                <h6 class="card-title text-muted mb-2">Total Matches</h6>
+                <h2 id="totalMatchesCard" class="fw-bold text-success mb-0">{{ stats.total_matches }}</h2>
         </div>
-        <div class="col-md-3">
-            <div class="card bg-info text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h4 class="mb-0">{{ stats.total_matches }}</h4>
-                            <p class="mb-0">Total Matches</p>
                         </div>
-                        <div class="align-self-center">
-                            <i class="bi bi-graph-up fs-1"></i>
                         </div>
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card stats-card h-100">
+            <div class="card-body text-center">
+                <div class="stats-icon mb-3">
+                    <i class="bi bi-sliders"></i>
                     </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-success text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h4 class="mb-0">{{ stats.above_threshold_matches }}</h4>
-                            <p class="mb-0">Matches Sobresalientes</p>
-                        </div>
-                        <div class="align-self-center">
-                            <i class="bi bi-star fs-1"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-warning text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h4 class="mb-0">{{ user_profile.match_threshold }}%</h4>
-                            <p class="mb-0">Umbral Configurado</p>
-                        </div>
-                        <div class="align-self-center">
-                            <i class="bi bi-sliders fs-1"></i>
-                        </div>
-                    </div>
+                <h6 class="card-title text-muted mb-2">Umbral Configurado</h6>
+                <h2 class="fw-bold text-info mb-0">{{ user_profile.match_threshold }}%</h2>
                 </div>
             </div>
         </div>
@@ -88,61 +63,51 @@
         <div class="col-lg-6 mb-4">
             <div class="card">
                 <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
                         <i class="bi bi-heart-fill me-2"></i>Mis Matches
+                            <span id="matchesCount" class="badge bg-secondary" style="margin: 1rem !important;">Cargando...</span>
                     </h5>
+                        <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#matchingInfoModal">
+                            <i class="bi bi-info-circle me-1"></i>Más información
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body">
-                    {% if user_matches %}
-                        {% for match in user_matches %}
-                        <div class="border-bottom pb-3 mb-3" 
-                             data-job-id="{{ match.job_posting.id }}" 
-                             data-job-title="{{ match.job_posting.title }}" 
-                             data-job-email="{{ match.job_posting.email }}" 
-                             data-job-description="{{ match.job_posting.description }}" 
-                             data-job-created="{{ match.job_posting.created_at|date:'d/m/Y H:i' }}" 
-                             data-job-external-id="{{ match.job_posting.external_id }}">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div class="flex-grow-1">
-                                    <h6 class="mb-1">{{ match.job_posting.title }}</h6>
-                                    {% if match.job_posting.email %}
-                                    <p class="text-muted mb-1">
-                                        <i class="bi bi-envelope me-1"></i>{{ match.job_posting.email }}
-                                    </p>
-                                    {% endif %}
-                                    <small class="text-muted">
-                                        {{ match.job_posting.description|truncatewords:15 }}
-                                    </small>
+                    <!-- Loading spinner -->
+                    <div id="matchesLoading" class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando...</span>
                                 </div>
-                                <div class="text-end">
-                                    <span class="badge {% if match.score >= user_profile.match_threshold %}bg-success{% else %}bg-secondary{% endif %} fs-6">
-                                        {{ match.score }}%
-                                    </span>
-                                    <br>
-                                    <small class="text-muted">{{ match.created_at|date:"d/m/Y" }}</small>
+                        <p class="text-muted mt-2">Cargando matches...</p>
                                 </div>
+                    
+                    <!-- Matches container -->
+                    <div id="matchesContainer" style="display: none;">
+                        <!-- Matches will be loaded here via AJAX -->
                             </div>
-                            <div class="mt-2">
-                                <button type="button" class="btn btn-sm btn-outline-info" 
-                                        onclick="showJobDetails('{{ match.job_posting.id }}')">
-                                    <i class="bi bi-eye me-1"></i>Ver Detalles
+                    
+                    <!-- Pagination for matches -->
+                    <div id="matchesPagination" class="mt-3" style="display: none;">
+                        <nav aria-label="Paginación de matches">
+                            <ul class="pagination pagination-sm justify-content-center">
+                                <li class="page-item">
+                                    <button class="page-link pagination-btn-custom" id="matchesPrevBtn" onclick="loadMatchesPage(currentMatchesPage - 1)">
+                                        <i class="bi bi-chevron-left"></i>
                                 </button>
-                                {% if match.job_posting.email %}
-                                <a href="mailto:{{ match.job_posting.email }}" class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-envelope me-1"></i>Contactar
-                                </a>
-                                {% endif %}
+                                </li>
+                                <li class="page-item active">
+                                    <span class="page-link pagination-info-custom" id="matchesPageInfo">Página 1</span>
+                                </li>
+                                <li class="page-item">
+                                    <button class="page-link pagination-btn-custom" id="matchesNextBtn" onclick="loadMatchesPage(currentMatchesPage + 1)">
+                                        <i class="bi bi-chevron-right"></i>
+                                    </button>
+                                </li>
+                            </ul>
+                        </nav>
                             </div>
                         </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="text-center py-4">
-                            <i class="bi bi-search fs-1 text-muted"></i>
-                            <p class="text-muted mt-2">No se encontraron matches aún</p>
-                            <p class="small text-muted">Ejecuta el scraper para buscar ofertas que coincidan con tus CVs</p>
-                        </div>
-                    {% endif %}
-                </div>
             </div>
         </div>
 
@@ -153,65 +118,48 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">
                             <i class="bi bi-clock me-2"></i>Ofertas Recientes
+                            <span id="jobsCount" class="badge bg-secondary" style="margin: 1rem !important;">Cargando...</span>
                         </h5>
-                        {% if recent_jobs %}
                         <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteJobsModal">
                             <i class="bi bi-trash me-1"></i>Borrar Ofertas
                         </button>
-                        {% else %}
-                        <small class="text-muted">(No hay ofertas para mostrar)</small>
-                        {% endif %}
                     </div>
                 </div>
                 <div class="card-body">
-                    {% if recent_jobs %}
-                        {% for job in recent_jobs %}
-                        <div class="border-bottom pb-3 mb-3" 
-                             data-job-id="{{ job.id }}" 
-                             data-job-title="{{ job.title }}" 
-                             data-job-email="{{ job.email }}" 
-                             data-job-description="{{ job.description }}" 
-                             data-job-created="{{ job.created_at|date:'d/m/Y H:i' }}" 
-                             data-job-external-id="{{ job.external_id }}">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div class="flex-grow-1">
-                                    <h6 class="mb-1">{{ job.title }}</h6>
-                                    {% if job.email %}
-                                    <p class="text-muted mb-1">
-                                        <i class="bi bi-envelope me-1"></i>{{ job.email }}
-                                    </p>
-                                    {% endif %}
-                                    <small class="text-muted">
-                                        {{ job.description|truncatewords:20 }}
-                                    </small>
+                    <!-- Loading spinner -->
+                    <div id="jobsLoading" class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando...</span>
                                 </div>
-                                <div class="text-end">
-                                    <span class="badge bg-primary">Nueva</span>
-                                    <br>
-                                    <small class="text-muted">{{ job.created_at|date:"d/m/Y" }}</small>
+                        <p class="text-muted mt-2">Cargando ofertas...</p>
                                 </div>
+                    
+                    <!-- Jobs container -->
+                    <div id="jobsContainer" style="display: none;">
+                        <!-- Jobs will be loaded here via AJAX -->
                             </div>
-                            <div class="mt-2">
-                                <button type="button" class="btn btn-sm btn-outline-info" 
-                                        onclick="showJobDetails('{{ job.id }}')">
-                                    <i class="bi bi-eye me-1"></i>Ver Detalles
+                    
+                    <!-- Pagination for jobs -->
+                    <div id="jobsPagination" class="mt-3" style="display: none;">
+                        <nav aria-label="Paginación de ofertas">
+                            <ul class="pagination pagination-sm justify-content-center">
+                                <li class="page-item">
+                                    <button class="page-link pagination-btn-custom" id="jobsPrevBtn" onclick="loadJobsPage(currentJobsPage - 1)">
+                                        <i class="bi bi-chevron-left"></i>
                                 </button>
-                                {% if job.email %}
-                                <a href="mailto:{{ job.email }}" class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-envelope me-1"></i>Contactar
-                                </a>
-                                {% endif %}
+                                </li>
+                                <li class="page-item active">
+                                    <span class="page-link pagination-info-custom" id="jobsPageInfo">Página 1</span>
+                                </li>
+                                <li class="page-item">
+                                    <button class="page-link pagination-btn-custom" id="jobsNextBtn" onclick="loadJobsPage(currentJobsPage + 1)">
+                                        <i class="bi bi-chevron-right"></i>
+                                    </button>
+                                </li>
+                            </ul>
+                        </nav>
                             </div>
                         </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="text-center py-4">
-                            <i class="bi bi-briefcase fs-1 text-muted"></i>
-                            <p class="text-muted mt-2">No hay ofertas disponibles</p>
-                            <p class="small text-muted">Ejecuta el scraper para obtener ofertas de trabajo</p>
-                        </div>
-                    {% endif %}
-                </div>
             </div>
         </div>
     </div>
@@ -224,13 +172,13 @@
                     <h5 class="card-title">¿Qué quieres hacer ahora?</h5>
                     <p class="card-text">Gestiona tus matches y configura la automatización</p>
                     <div class="d-flex justify-content-center gap-2 flex-wrap">
-                        <a href="{% url 'test_scraper' %}" class="btn btn-primary">
+                        <a href="{% url 'test_scraper' %}" class="btn btn-custom-404">
                             <i class="bi bi-play-fill me-2"></i>Ejecutar Scraper
                         </a>
-                        <a href="{% url 'profile' %}" class="btn btn-outline-primary">
+                        <a href="{% url 'profile' %}" class="btn btn-custom-404">
                             <i class="bi bi-gear me-2"></i>Configurar Perfil
                         </a>
-                        <a href="{% url 'cv_list' %}" class="btn btn-outline-secondary">
+                        <a href="{% url 'cv_list' %}" class="btn btn-custom-404">
                             <i class="bi bi-file-text me-2"></i>Mis CVs
                         </a>
                     </div>
@@ -238,76 +186,840 @@
             </div>
         </div>
     </div>
-</div>
 
-<!-- Modal de Confirmación para Borrar Ofertas -->
-<div class="modal fade" id="deleteJobsModal" tabindex="-1" aria-labelledby="deleteJobsModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="deleteJobsModalLabel">
-                    <i class="bi bi-exclamation-triangle text-warning me-2"></i>Confirmar Eliminación
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p><strong>¿Estás seguro de que quieres eliminar todas las ofertas de la base de datos?</strong></p>
-                <p class="text-muted">Esta acción eliminará:</p>
-                <ul class="text-muted">
-                    <li>Todas las ofertas de trabajo guardadas</li>
-                    <li>Todos los matches asociados</li>
-                    <li>Los datos de scraping anteriores</li>
-                </ul>
-                <div class="alert alert-warning">
-                    <i class="bi bi-exclamation-triangle me-2"></i>
-                    <strong>¡Atención!</strong> Esta acción no se puede deshacer.
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="bi bi-x-circle me-1"></i>Cancelar
-                </button>
-                <button type="button" class="btn btn-danger" onclick="deleteAllJobs()">
-                    <i class="bi bi-trash me-1"></i>Sí, Eliminar Todo
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- Modal para mostrar detalles de ofertas -->
-<div class="modal fade" id="jobDetailsModal" tabindex="-1" aria-labelledby="jobDetailsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="jobDetailsModalLabel">
-                    <i class="bi bi-briefcase me-2"></i>Detalles de la Oferta
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div id="jobDetailsContent">
-                    <!-- El contenido se cargará dinámicamente -->
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="bi bi-x-circle me-1"></i>Cerrar
-                </button>
-                <button type="button" class="btn btn-primary" id="contactButton" style="display: none;">
-                    <i class="bi bi-envelope me-1"></i>Contactar
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+
 {% endblock %}
 
 {% block extra_js %}
+<style>
+    /* Estilos para botones de paginación con estilo 404 */
+    .pagination-btn-custom {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        border: none !important;
+        border-radius: 50px !important;
+        padding: 12px 20px !important;
+        font-weight: 600 !important;
+        color: white !important;
+        transition: all 0.3s ease !important;
+        margin: 0 5px !important;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2) !important;
+    }
+    
+    .pagination-btn-custom:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3) !important;
+        color: white !important;
+    }
+    
+    .pagination-btn-custom:disabled {
+        background: linear-gradient(135deg, #6c757d 0%, #495057 100%) !important;
+        transform: none !important;
+        box-shadow: 0 2px 8px rgba(108, 117, 125, 0.2) !important;
+        opacity: 0.6 !important;
+    }
+    
+    .pagination-info-custom {
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%) !important;
+        border: 1px solid rgba(102, 126, 234, 0.2) !important;
+        border-radius: 50px !important;
+        padding: 12px 20px !important;
+        font-weight: 600 !important;
+        color: #667eea !important;
+        margin: 0 5px !important;
+        backdrop-filter: blur(10px) !important;
+    }
+    
+    .pagination {
+        margin-bottom: 0 !important;
+    }
+    
+    /* Estilos para botones de acciones con estilo 404 - Solo iconos en row */
+    .btn-custom-details {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        border: none !important;
+        border-radius: 50px !important;
+        padding: 10px !important;
+        font-weight: 600 !important;
+        color: white !important;
+        transition: all 0.3s ease !important;
+        margin: 0 !important;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2) !important;
+        width: 38px !important;
+        height: 38px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    
+    .btn-custom-details:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3) !important;
+        color: white !important;
+    }
+    
+    .btn-custom-contact {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
+        border: none !important;
+        border-radius: 50px !important;
+        padding: 10px !important;
+        font-weight: 600 !important;
+        color: white !important;
+        transition: all 0.3s ease !important;
+        margin: 0 !important;
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.2) !important;
+        width: 38px !important;
+        height: 38px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    
+    .btn-custom-contact:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 8px 20px rgba(40, 167, 69, 0.3) !important;
+        color: white !important;
+    }
+    
+    .btn-custom-delete {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%) !important;
+        border: none !important;
+        border-radius: 50px !important;
+        padding: 10px !important;
+        font-weight: 600 !important;
+        color: white !important;
+        transition: all 0.3s ease !important;
+        margin: 0 !important;
+        box-shadow: 0 4px 15px rgba(220, 53, 69, 0.2) !important;
+        width: 38px !important;
+        height: 38px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    
+    .btn-custom-delete:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 8px 20px rgba(220, 53, 69, 0.3) !important;
+        color: white !important;
+    }
+    
+    /* Estilo para botones 404 */
+    .btn-custom-404 {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        border: none !important;
+        border-radius: 50px !important;
+        padding: 12px 24px !important;
+        font-weight: 600 !important;
+        color: white !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2) !important;
+    }
+    
+    .btn-custom-404:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3) !important;
+        color: white !important;
+    }
+</style>
 <script>
+// Variables globales para paginación
+let currentJobsPage = 1;
+let currentMatchesPage = 1;
+
+// Función para cargar ofertas con paginación
+function loadJobsPage(page) {
+    if (page < 1) return;
+    
+    // Mostrar loading
+    document.getElementById('jobsLoading').style.display = 'block';
+    document.getElementById('jobsContainer').style.display = 'none';
+    document.getElementById('jobsPagination').style.display = 'none';
+    
+    // Hacer petición AJAX
+    fetch(`{% url 'paginated_jobs' %}?page=${page}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                currentJobsPage = page;
+                renderJobs(data.jobs);
+                updateJobsPagination(data.pagination);
+                
+                // Actualizar contador
+                document.getElementById('jobsCount').textContent = `${data.pagination.total_jobs} ofertas`;
+            } else {
+                showAlert('danger', 'Error', 'No se pudieron cargar las ofertas');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('danger', 'Error de conexión', 'No se pudo conectar con el servidor');
+        })
+        .finally(() => {
+            document.getElementById('jobsLoading').style.display = 'none';
+            document.getElementById('jobsContainer').style.display = 'block';
+            document.getElementById('jobsPagination').style.display = 'block';
+        });
+}
+
+// Función para renderizar ofertas
+function renderJobs(jobs) {
+    const container = document.getElementById('jobsContainer');
+    
+    if (jobs.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-4">
+                <i class="bi bi-briefcase fs-1 text-muted"></i>
+                <p class="text-muted mt-2">No hay ofertas disponibles</p>
+                <p class="small text-muted">Ejecuta el scraper para obtener ofertas de trabajo</p>
+</div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    jobs.forEach(job => {
+        console.log('Rendering job:', job.title, 'Email:', job.email); // Debug log
+        
+        html += `
+            <div class="border-bottom pb-3 mb-3" 
+                 data-job-id="${job.id}" 
+                 data-job-title="${job.title}" 
+                 data-job-email="${job.email || ''}" 
+                 data-job-description="${job.description}" 
+                 data-job-created="${job.created_at}" 
+                 data-job-external-id="${job.external_id}">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">${job.title}</h6>
+                        ${job.email ? `
+                        <p class="text-muted mb-1">
+                            <i class="bi bi-envelope me-1"></i>${job.email}
+                        </p>
+                        ` : ''}
+                        <small class="text-muted">
+                            ${job.description.substring(0, 150)}${job.description.length > 150 ? '...' : ''}
+                        </small>
+            </div>
+                    <div class="text-end">
+                        <span class="badge bg-primary">Nueva</span>
+                        <br>
+                        <small class="text-muted">${job.created_at.split(' ')[0]}</small>
+                </div>
+            </div>
+                <div class="mt-2">
+                    <div class="row g-1 justify-content-center">
+                        <div class="col-auto">
+                            <button type="button" class="btn btn-sm btn-custom-details" 
+                                    onclick="showJobDetails('${job.id}')"
+                                    title="Ver Detalles">
+                                <i class="bi bi-eye"></i>
+                </button>
+            </div>
+                        <div class="col-auto">
+                            ${job.email && job.email.trim() !== '' ? `
+                            <button type="button" class="btn btn-sm btn-custom-contact" 
+                                    onclick="contactJob('${job.email.replace(/'/g, "\\'")}')"
+                                    title="Contactar">
+                                <i class="bi bi-envelope"></i>
+                </button>
+                            ` : '<span class="text-muted small">Sin email</span>'}
+            </div>
+                        <div class="col-auto">
+                            <button type="button" class="btn btn-sm btn-custom-delete" 
+                                    onclick="deleteJob(${job.id}, '${job.title.replace(/'/g, "\\'")}', '${(job.company || 'Empresa no especificada').replace(/'/g, "\\'")}')"
+                                    title="Eliminar">
+                                <i class="bi bi-trash"></i>
+                </button>
+        </div>
+    </div>
+</div>
+</div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+// Función para actualizar paginación de ofertas
+function updateJobsPagination(pagination) {
+    document.getElementById('jobsPageInfo').textContent = `Página ${pagination.current_page} de ${pagination.total_pages}`;
+    
+    // Habilitar/deshabilitar botones
+    document.getElementById('jobsPrevBtn').disabled = !pagination.has_prev;
+    document.getElementById('jobsNextBtn').disabled = !pagination.has_next;
+    
+    // Mostrar/ocultar paginación
+    if (pagination.total_pages > 1) {
+        document.getElementById('jobsPagination').style.display = 'block';
+    } else {
+        document.getElementById('jobsPagination').style.display = 'none';
+    }
+}
+
+// Función para cargar matches con paginación
+function loadMatchesPage(page) {
+    if (page < 1) return;
+    
+    // Mostrar loading
+    document.getElementById('matchesLoading').style.display = 'block';
+    document.getElementById('matchesContainer').style.display = 'none';
+    document.getElementById('matchesPagination').style.display = 'none';
+    
+    // Hacer petición AJAX
+    fetch(`{% url 'paginated_matches' %}?page=${page}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                currentMatchesPage = page;
+                renderMatches(data.matches);
+                updateMatchesPagination(data.pagination);
+                
+                // Actualizar contador
+                document.getElementById('matchesCount').textContent = `${data.pagination.total_matches} matches`;
+            } else {
+                showAlert('danger', 'Error', 'No se pudieron cargar los matches');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('danger', 'Error de conexión', 'No se pudo conectar con el servidor');
+        })
+        .finally(() => {
+            document.getElementById('matchesLoading').style.display = 'none';
+            document.getElementById('matchesContainer').style.display = 'block';
+            document.getElementById('matchesPagination').style.display = 'block';
+        });
+}
+
+// Función para renderizar matches
+function renderMatches(matches) {
+    const container = document.getElementById('matchesContainer');
+    
+    if (matches.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-4">
+                <i class="bi bi-search fs-1 text-muted"></i>
+                <p class="text-muted mt-2">No se encontraron matches aún</p>
+                <p class="small text-muted">Ejecuta el scraper para buscar ofertas que coincidan con tus CVs</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    matches.forEach(match => {
+        console.log('Rendering match:', match.job_title, 'Email:', match.job_email); // Debug log
+        
+        const badgeClass = match.is_above_threshold ? 'bg-success' : 'bg-secondary';
+        html += `
+            <div class="border-bottom pb-3 mb-3" 
+                 data-job-id="${match.job_id}" 
+                 data-job-title="${match.job_title}" 
+                 data-job-email="${match.job_email || ''}" 
+                 data-job-description="${match.job_description}" 
+                 data-job-created="${match.job_created_at}" 
+                 data-job-external-id="${match.job_external_id}">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">${match.job_title}</h6>
+                        ${match.job_email ? `
+                        <p class="text-muted mb-1">
+                            <i class="bi bi-envelope me-1"></i>${match.job_email}
+                        </p>
+                        ` : ''}
+                        <small class="text-muted">
+                            ${match.job_description.substring(0, 100)}${match.job_description.length > 100 ? '...' : ''}
+                        </small>
+                </div>
+                    <div class="text-end">
+                        <span class="badge ${badgeClass} fs-6" title="Porcentaje de coincidencia con tu CV">
+                            ${match.score}%
+                        </span>
+                        <br>
+                        <small class="text-muted">
+                            <a href="{% url 'cv_list' %}" class="text-decoration-none" title="Ver CV usado para este match: ${match.cv_filename}">
+                                <i class="bi bi-file-earmark-text me-1"></i>${match.cv_filename}
+                            </a>
+                        </small>
+                        <br>
+                        <small class="text-muted">${match.created_at.split(' ')[0]}</small>
+            </div>
+                </div>
+                <div class="mt-2">
+                    <div class="row g-1 justify-content-center">
+                        <div class="col-auto">
+                            <button type="button" class="btn btn-sm btn-custom-details" 
+                                    onclick="showJobDetails('${match.job_id}')"
+                                    title="Ver Detalles">
+                                <i class="bi bi-eye"></i>
+                </button>
+                        </div>
+                        <div class="col-auto">
+                            ${match.job_email && match.job_email.trim() !== '' ? `
+                            <button type="button" class="btn btn-sm btn-custom-contact"
+                                    onclick="contactJob('${match.job_email.replace(/'/g, "\\'")}')"
+                                    title="Contactar">
+                                <i class="bi bi-envelope"></i>
+                </button>
+                            ` : '<span class="text-muted small">Sin email</span>'}
+            </div>
+        </div>
+    </div>
+</div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+// Función para actualizar paginación de matches
+function updateMatchesPagination(pagination) {
+    document.getElementById('matchesPageInfo').textContent = `Página ${pagination.current_page} de ${pagination.total_pages}`;
+    
+    // Habilitar/deshabilitar botones
+    document.getElementById('matchesPrevBtn').disabled = !pagination.has_prev;
+    document.getElementById('matchesNextBtn').disabled = !pagination.has_next;
+    
+    // Mostrar/ocultar paginación
+    if (pagination.total_pages > 1) {
+        document.getElementById('matchesPagination').style.display = 'block';
+    } else {
+        document.getElementById('matchesPagination').style.display = 'none';
+    }
+}
+
+// Función para mostrar notificación de contacto
+function showContactNotification(email, clientOpened) {
+    // Crear elemento de notificación
+    const notification = document.createElement('div');
+    notification.className = 'contact-notification';
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #d1ecf1;
+        border: 1px solid #bee5eb;
+        border-radius: 8px;
+        padding: 16px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 9999;
+        max-width: 350px;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        animation: slideInRight 0.3s ease-out;
+    `;
+    
+    // Contenido de la notificación
+    const icon = clientOpened ? '📧' : '📋';
+    const title = clientOpened ? 'Cliente de email abierto' : 'Email copiado';
+    const message = clientOpened ? 
+        `Se intentó abrir tu cliente de email predeterminado. El email <strong>${email}</strong> también se copió al portapapeles.` :
+        `Email <strong>${email}</strong> copiado al portapapeles.`;
+    
+    notification.innerHTML = `
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+            <div style="font-size: 20px; flex-shrink: 0;">${icon}</div>
+            <div style="flex: 1;">
+                <div style="font-weight: 600; margin-bottom: 4px; color: #0c5460;">${title}</div>
+                <div style="font-size: 14px; color: #0c5460; line-height: 1.4;">${message}</div>
+            </div>
+            <button onclick="closeContactNotification(this)" 
+                    style="background: none; border: none; font-size: 18px; cursor: pointer; color: #6c757d; padding: 0; margin-left: 8px; flex-shrink: 0;">
+                ×
+            </button>
+        </div>
+    `;
+    
+    // Agregar animación CSS si no existe
+    if (!document.getElementById('contact-notification-styles')) {
+        const style = document.createElement('style');
+        style.id = 'contact-notification-styles';
+        style.textContent = `
+            @keyframes slideInRight {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+            @keyframes slideOutRight {
+                from {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+            }
+            .contact-notification button:hover {
+                color: #495057 !important;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    // Agregar al DOM
+    document.body.appendChild(notification);
+    
+    // Auto-cerrar después de 5 segundos
+    setTimeout(() => {
+        if (notification.parentNode) {
+            closeContactNotification(notification.querySelector('button'));
+        }
+    }, 5000);
+}
+
+// Función para cerrar notificación
+function closeContactNotification(button) {
+    const notification = button.closest('.contact-notification');
+    if (notification) {
+        notification.style.animation = 'slideOutRight 0.3s ease-in';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }
+}
+
+// Función para contactar (abrir cliente de email)
+function contactJob(email) {
+    console.log('Contacting job with email:', email);
+    
+    if (!email || email.trim() === '') {
+        showAlert('warning', 'Sin email', 'Esta oferta no tiene email de contacto disponible.');
+        return;
+    }
+    
+    // Crear enlace mailto y hacer click en él
+    const mailtoLink = document.createElement('a');
+    mailtoLink.href = `mailto:${email}`;
+    mailtoLink.style.display = 'none';
+    
+    // Agregar al DOM temporalmente
+    document.body.appendChild(mailtoLink);
+    
+    try {
+        // Hacer click en el enlace
+        mailtoLink.click();
+        console.log('Mailto link clicked for:', email);
+        
+        // Mostrar notificación cerca del botón
+        showContactNotification(email, true);
+        
+        // Como backup, también copiar al portapapeles
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(email).then(() => {
+                console.log('Email copied to clipboard:', email);
+            }).catch(err => {
+                console.log('Could not copy to clipboard:', err);
+            });
+        }
+        
+    } catch (error) {
+        console.error('Error opening email client:', error);
+        showAlert('error', 'Error', 'No se pudo abrir el cliente de email. El email se copió al portapapeles.');
+        
+        // Fallback: copiar al portapapeles
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(email).then(() => {
+                showContactNotification(email, false);
+            });
+        }
+    } finally {
+        // Limpiar el enlace temporal
+        document.body.removeChild(mailtoLink);
+    }
+}
+
+// Variables globales para el modal de eliminación
+let currentJobToDelete = null;
+
+// Función para eliminar una oferta
+function deleteJob(jobId, jobTitle, jobCompany = 'Empresa no especificada') {
+    console.log('Attempting to delete job:', jobId, jobTitle);
+    
+    // Guardar datos de la oferta a eliminar
+    currentJobToDelete = { id: jobId, title: jobTitle, company: jobCompany };
+    
+    // Actualizar el contenido del modal
+    document.getElementById('deleteJobTitle').textContent = jobTitle;
+    document.getElementById('deleteJobCompany').textContent = jobCompany;
+    
+    // Mostrar el modal personalizado
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteJobModal'));
+    deleteModal.show();
+}
+
+// Función para confirmar la eliminación (llamada desde el modal)
+function confirmJobDeletion() {
+    if (!currentJobToDelete) {
+        console.error('No job selected for deletion');
+        return;
+    }
+    
+    const { id: jobId, title: jobTitle } = currentJobToDelete;
+    
+    // Cerrar el modal
+    const deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteJobModal'));
+    deleteModal.hide();
+    
+    // Mostrar spinner en el botón
+    const deleteBtn = document.getElementById('confirmDeleteJob');
+    const originalText = deleteBtn.innerHTML;
+    deleteBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Eliminando...';
+    deleteBtn.disabled = true;
+    deleteBtn.disabled = true;
+    
+    // Realizar petición AJAX
+    fetch(`{% url 'delete_job' 0 %}`.replace('0', jobId), {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Mostrar notificación de éxito
+            showDeleteNotification(data.message, true);
+            
+            // Actualizar las tarjetas de totales
+            if (data.updated_totals) {
+                updateTotalCards(data.updated_totals);
+                console.log('Updated totals:', data.updated_totals);
+            }
+            
+            // Recargar la página actual de ofertas
+            loadJobsPage(currentJobsPage);
+            
+            // Si se eliminaron matches, recargar también la sección de matches
+            if (data.matches_deleted && data.matches_deleted > 0) {
+                console.log('Matches deleted, reloading matches section:', data.matches_deleted);
+                loadMatchesPage(currentMatchesPage);
+            }
+            
+            console.log('Job deleted successfully:', jobId);
+        } else {
+            // Mostrar error
+            showDeleteNotification(data.error || 'Error al eliminar la oferta', false);
+            console.error('Error deleting job:', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showDeleteNotification('Error de conexión. No se pudo eliminar la oferta.', false);
+    })
+    .finally(() => {
+        // Restaurar botón
+        deleteBtn.innerHTML = originalText;
+        deleteBtn.disabled = false;
+    });
+}
+
+// Función para mostrar notificación de eliminación personalizada
+function showDeleteNotification(message, success) {
+    // Crear elemento de notificación
+    const notification = document.createElement('div');
+    notification.className = 'delete-notification';
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${success ? 'linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%)' : 'linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%)'};
+        border: none;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08);
+        z-index: 10000;
+        max-width: 400px;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        animation: slideInRightBounce 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        backdrop-filter: blur(10px);
+        border-left: 4px solid ${success ? '#28a745' : '#dc3545'};
+    `;
+    
+    // Contenido de la notificación mejorada
+    const icon = success ? '🗑️' : '⚠️';
+    const title = success ? '¡Eliminación exitosa!' : 'Error en eliminación';
+    const iconBg = success ? '#28a745' : '#dc3545';
+    
+    notification.innerHTML = `
+        <div style="display: flex; align-items: flex-start; gap: 16px;">
+            <div style="
+                background: ${iconBg}; 
+                border-radius: 50%; 
+                width: 40px; 
+                height: 40px; 
+                display: flex; 
+                align-items: center; 
+                justify-content: center; 
+                font-size: 18px;
+                flex-shrink: 0;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            ">${icon}</div>
+            <div style="flex: 1; min-width: 0;">
+                <div style="
+                    font-weight: 700; 
+                    margin-bottom: 6px; 
+                    color: ${success ? '#155724' : '#721c24'}; 
+                    font-size: 16px;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                ">
+                    ${title}
+                    ${success ? '<span style="font-size: 12px; background: #28a745; color: white; padding: 2px 6px; border-radius: 10px;">COMPLETADO</span>' : ''}
+                </div>
+                <div style="
+                    font-size: 14px; 
+                    color: ${success ? '#155724' : '#721c24'}; 
+                    line-height: 1.5; 
+                    opacity: 0.9;
+                ">${message}</div>
+    </div>
+            <button onclick="closeDeleteNotification(this)" 
+                    style="
+                        background: rgba(255,255,255,0.8); 
+                        border: none; 
+                        border-radius: 50%; 
+                        width: 28px; 
+                        height: 28px; 
+                        display: flex; 
+                        align-items: center; 
+                        justify-content: center; 
+                        cursor: pointer; 
+                        color: #6c757d; 
+                        font-size: 16px; 
+                        font-weight: bold;
+                        transition: all 0.2s ease;
+                        flex-shrink: 0;
+                    "
+                    onmouseover="this.style.background='rgba(255,255,255,1)'; this.style.color='#dc3545'"
+                    onmouseout="this.style.background='rgba(255,255,255,0.8)'; this.style.color='#6c757d'">
+                ×
+            </button>
+</div>
+    `;
+    
+    // Agregar estilos CSS personalizados si no existen
+    if (!document.getElementById('delete-notification-styles')) {
+        const style = document.createElement('style');
+        style.id = 'delete-notification-styles';
+        style.textContent = `
+            @keyframes slideInRightBounce {
+                0% {
+                    transform: translateX(100%) scale(0.8);
+                    opacity: 0;
+                }
+                60% {
+                    transform: translateX(-10px) scale(1.05);
+                    opacity: 1;
+                }
+                80% {
+                    transform: translateX(5px) scale(0.95);
+                }
+                100% {
+                    transform: translateX(0) scale(1);
+                    opacity: 1;
+                }
+            }
+            
+            @keyframes slideOutRightBounce {
+                0% {
+                    transform: translateX(0) scale(1);
+                    opacity: 1;
+                }
+                100% {
+                    transform: translateX(100%) scale(0.8);
+                    opacity: 0;
+                }
+            }
+            
+            .delete-notification {
+                transition: all 0.3s ease;
+            }
+            
+            .delete-notification:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 12px 40px rgba(0,0,0,0.15), 0 4px 12px rgba(0,0,0,0.1) !important;
+            }
+            
+            .delete-notification button {
+                transition: all 0.2s ease !important;
+            }
+            
+            .delete-notification button:hover {
+                transform: scale(1.1) !important;
+            }
+            
+            .delete-notification button:active {
+                transform: scale(0.95) !important;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    // Agregar al DOM
+    document.body.appendChild(notification);
+    
+    // Auto-cerrar después de 4 segundos
+    setTimeout(() => {
+        if (notification.parentNode) {
+            closeDeleteNotification(notification.querySelector('button'));
+        }
+    }, 4000);
+}
+
+// Función para cerrar notificación de eliminación
+function closeDeleteNotification(button) {
+    const notification = button.closest('.delete-notification');
+    if (notification) {
+        notification.style.animation = 'slideOutRightBounce 0.3s ease-in forwards';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }
+}
+
+// Función para actualizar las tarjetas de totales
+function updateTotalCards(totals) {
+    if (!totals) return;
+    
+    // Actualizar Total Ofertas
+    const totalJobsElement = document.querySelector('.card.bg-primary .card-body h4');
+    if (totalJobsElement && totals.total_jobs !== undefined) {
+        totalJobsElement.textContent = totals.total_jobs;
+        console.log('Updated total jobs to:', totals.total_jobs);
+    }
+    
+    // Actualizar Total Matches
+    const totalMatchesElement = document.querySelector('.card.bg-info .card-body h4');
+    if (totalMatchesElement && totals.total_matches !== undefined) {
+        totalMatchesElement.textContent = totals.total_matches;
+        console.log('Updated total matches to:', totals.total_matches);
+    }
+}
+
+// Cargar datos iniciales cuando se carga la página
+document.addEventListener('DOMContentLoaded', function() {
+    loadJobsPage(1);
+    loadMatchesPage(1);
+    
+    // Event listener para el botón de confirmar eliminación
+    document.getElementById('confirmDeleteJob').addEventListener('click', confirmJobDeletion);
+});
+
 function deleteAllJobs() {
     // Mostrar spinner de carga
-    const deleteBtn = document.querySelector('#deleteJobsModal .btn-danger');
+    const deleteBtn = document.querySelector('#deleteJobsModal .btn-custom-danger');
     const originalText = deleteBtn.innerHTML;
     deleteBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Eliminando...';
     deleteBtn.disabled = true;
@@ -324,25 +1036,27 @@ function deleteAllJobs() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Mostrar mensaje de éxito
-            showAlert('success', '¡Ofertas eliminadas correctamente!', 'Todas las ofertas han sido eliminadas de la base de datos.');
-            
-            // Cerrar modal
+            // Cerrar modal primero
             const modal = bootstrap.Modal.getInstance(document.getElementById('deleteJobsModal'));
             modal.hide();
             
-            // Recargar la página después de un breve delay
-            setTimeout(() => {
-                location.reload();
-            }, 1500);
+            // Mostrar notificación de éxito en el mismo lugar que eliminación individual
+            showDeleteNotification(`Se eliminaron ${data.jobs_deleted || 'todas las'} ofertas de trabajo correctamente.`, true);
+            
+            // Actualizar contadores sin recargar la página
+            updateCountersAfterDeletion(data.jobs_deleted || 0, data.matches_deleted || 0);
+            
+            // Limpiar contenido de ofertas y matches
+            clearJobAndMatchContent();
+            
         } else {
-            // Mostrar error
-            showAlert('danger', 'Error al eliminar ofertas', data.error || 'Ocurrió un error inesperado');
+            // Mostrar error en el mismo lugar que eliminación individual
+            showDeleteNotification(data.error || 'Ocurrió un error inesperado al eliminar ofertas', false);
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        showAlert('danger', 'Error de conexión', 'No se pudo conectar con el servidor');
+        showDeleteNotification('Error de conexión. No se pudo conectar con el servidor', false);
     })
     .finally(() => {
         // Restaurar botón
@@ -351,12 +1065,103 @@ function deleteAllJobs() {
     });
 }
 
+// Función para actualizar contadores después de eliminación masiva
+function updateCountersAfterDeletion(jobsDeleted, matchesDeleted) {
+    // Actualizar contador de ofertas
+    const jobsCountElement = document.getElementById('jobsCount');
+    if (jobsCountElement) {
+        const currentCount = parseInt(jobsCountElement.textContent) || 0;
+        const newCount = Math.max(0, currentCount - jobsDeleted);
+        jobsCountElement.textContent = `${newCount} ofertas`;
+    }
+    
+    // Actualizar contador de matches
+    const matchesCountElement = document.getElementById('matchesCount');
+    if (matchesCountElement) {
+        const currentCount = parseInt(matchesCountElement.textContent) || 0;
+        const newCount = Math.max(0, currentCount - matchesDeleted);
+        matchesCountElement.textContent = `${newCount} matches`;
+    }
+    
+    // Actualizar tarjetas de estadísticas principales
+    const totalJobsCard = document.getElementById('totalJobsCard');
+    if (totalJobsCard) {
+        const currentTotal = parseInt(totalJobsCard.textContent) || 0;
+        const newTotal = Math.max(0, currentTotal - jobsDeleted);
+        totalJobsCard.textContent = newTotal;
+    }
+    
+    const totalMatchesCard = document.getElementById('totalMatchesCard');
+    if (totalMatchesCard) {
+        const currentTotal = parseInt(totalMatchesCard.textContent) || 0;
+        const newTotal = Math.max(0, currentTotal - matchesDeleted);
+        totalMatchesCard.textContent = newTotal;
+    }
+}
+
+// Función para limpiar contenido de ofertas y matches
+function clearJobAndMatchContent() {
+    // Limpiar lista de ofertas
+    const jobsContainer = document.getElementById('jobsContainer');
+    if (jobsContainer) {
+        jobsContainer.innerHTML = `
+            <div class="text-center py-5">
+                <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
+                <h5 class="text-muted mt-3">No hay ofertas disponibles</h5>
+                <p class="text-muted">Todas las ofertas han sido eliminadas. Ejecuta el scraper para obtener nuevas ofertas.</p>
+            </div>
+        `;
+        // Mostrar el contenedor
+        jobsContainer.style.display = 'block';
+    }
+    
+    // Limpiar lista de matches
+    const matchesContainer = document.getElementById('matchesContainer');
+    if (matchesContainer) {
+        matchesContainer.innerHTML = `
+            <div class="text-center py-5">
+                <i class="bi bi-heart text-muted" style="font-size: 3rem;"></i>
+                <h5 class="text-muted mt-3">No hay matches disponibles</h5>
+                <p class="text-muted">No se encontraron coincidencias. Ejecuta el scraper para obtener nuevas ofertas y calcular matches.</p>
+            </div>
+        `;
+        // Mostrar el contenedor
+        matchesContainer.style.display = 'block';
+    }
+    
+    // Ocultar paginación
+    const jobsPagination = document.getElementById('jobsPagination');
+    const matchesPagination = document.getElementById('matchesPagination');
+    if (jobsPagination) jobsPagination.style.display = 'none';
+    if (matchesPagination) matchesPagination.style.display = 'none';
+    
+    // Ocultar spinners de carga
+    const jobsLoading = document.getElementById('jobsLoading');
+    const matchesLoading = document.getElementById('matchesLoading');
+    if (jobsLoading) jobsLoading.style.display = 'none';
+    if (matchesLoading) matchesLoading.style.display = 'none';
+}
+
 function showAlert(type, title, message) {
-    // Crear alerta
+    // Crear alerta más prominente
     const alertHtml = `
-        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-            <strong>${title}</strong> ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert" style="
+            font-size: 1.1rem;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            border: none;
+            backdrop-filter: blur(10px);
+        ">
+            <div class="d-flex align-items-center">
+                <i class="bi ${type === 'success' ? 'bi-check-circle-fill' : type === 'danger' ? 'bi-exclamation-triangle-fill' : 'bi-info-circle-fill'} me-3" style="font-size: 1.5rem;"></i>
+                <div>
+                    <strong style="font-size: 1.2rem;">${title}</strong><br>
+                    <span style="opacity: 0.9;">${message}</span>
+                </div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" style="position: absolute; top: 15px; right: 15px;"></button>
         </div>
     `;
     
@@ -364,14 +1169,15 @@ function showAlert(type, title, message) {
     const container = document.querySelector('.container-fluid');
     container.insertAdjacentHTML('afterbegin', alertHtml);
     
-    // Auto-dismiss después de 5 segundos
+    // Auto-dismiss después de 10 segundos para mensajes de éxito (más tiempo sin recarga)
+    const dismissTime = type === 'success' ? 10000 : 5000;
     setTimeout(() => {
         const alert = container.querySelector('.alert');
         if (alert) {
             const bsAlert = new bootstrap.Alert(alert);
             bsAlert.close();
         }
-    }, 5000);
+    }, dismissTime);
 }
 
 function showJobDetails(jobId) {
@@ -388,30 +1194,55 @@ function showJobDetails(jobId) {
             return;
         }
         
-        // Construir el contenido del modal
+        // Construir el contenido del modal con estilo moderno
         const content = `
-            <div class="mb-3">
-                <h4>${jobData.title}</h4>
+            <div class="job-header">
+                <h4 class="text-primary mb-0">
+                    <i class="bi bi-briefcase me-2"></i>${jobData.title}
+                </h4>
+                ${jobData.company ? `<p class="text-muted mb-0 mt-1"><i class="bi bi-building me-1"></i>${jobData.company}</p>` : ''}
             </div>
             
-            ${jobData.email ? `
-            <div class="mb-3">
-                <h6><i class="bi bi-envelope me-2"></i>Email de Contacto:</h6>
-                <p class="text-primary"><strong>${jobData.email}</strong></p>
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="job-info-item">
+                        <i class="bi bi-calendar3"></i>
+                        <div>
+                            <strong>Fecha de creación:</strong><br>
+                            <small class="text-muted">${jobData.created_at}</small>
             </div>
-            ` : ''}
-            
-            <div class="mb-3">
-                <h6><i class="bi bi-file-text me-2"></i>Descripción:</h6>
-                <div class="bg-light p-3 rounded" style="max-height: 400px; overflow-y: auto;">
-                    <p style="white-space: pre-wrap; line-height: 1.6;">${jobData.description}</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="job-info-item">
+                        <i class="bi bi-hash"></i>
+                        <div>
+                            <strong>ID Externo:</strong><br>
+                            <small class="text-muted">${jobData.external_id}</small>
+                        </div>
+                    </div>
                 </div>
             </div>
             
-            <div class="mb-3">
-                <h6><i class="bi bi-calendar me-2"></i>Información:</h6>
-                <p><strong>Fecha de creación:</strong> ${jobData.created_at}</p>
-                <p><strong>ID:</strong> ${jobData.external_id}</p>
+            ${jobData.email ? `
+            <div class="alert alert-success">
+                <i class="bi bi-envelope me-2"></i>
+                <strong>Contacto:</strong> ${jobData.email}
+                </div>
+            ` : `
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                <strong>Sin email</strong>
+            </div>
+            `}
+            
+            <div class="job-description">
+                <h6 class="text-primary mb-3">
+                    <i class="bi bi-file-text-fill me-2"></i>Descripción del Puesto
+                </h6>
+                <div style="line-height: 1.6;">
+                    <p style="white-space: pre-wrap; margin-bottom: 0;">${jobData.description}</p>
+                </div>
             </div>
         `;
         
@@ -430,7 +1261,7 @@ function showJobDetails(jobId) {
         if (contactButton) {
             if (jobData.email) {
                 contactButton.style.display = 'inline-block';
-                contactButton.onclick = () => window.open(`mailto:${jobData.email}`, '_blank');
+                contactButton.onclick = () => contactJob(jobData.email);
             } else {
                 contactButton.style.display = 'none';
             }
@@ -486,5 +1317,46 @@ function findJobData(jobId) {
         external_id: jobId
     };
 }
+
+// Función para actualizar estadísticas dinámicamente
+function updateStats() {
+    fetch('{% url "paginated_matches" %}?page=1&per_page=1', {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.pagination) {
+            console.log('Estadísticas actualizadas:', data.pagination);
+            
+            // Actualizar Total Ofertas
+            const totalJobsElement = document.getElementById('totalJobsCard');
+            if (totalJobsElement && data.pagination.total_jobs !== undefined) {
+                totalJobsElement.textContent = data.pagination.total_jobs;
+            }
+            
+            // Actualizar Total Matches
+            const totalMatchesElement = document.getElementById('totalMatchesCard');
+            if (totalMatchesElement && data.pagination.total_matches !== undefined) {
+                totalMatchesElement.textContent = data.pagination.total_matches;
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error actualizando estadísticas:', error);
+    });
+}
+
+// Iniciar actualización automática cada 2 segundos
+setInterval(updateStats, 2000);
 </script>
+
+<!-- Modal de información sobre Matching - Reutilizable -->
+{% include 'matching/partials/matching_info_modal.html' %}
+{% include 'matching/partials/job_details_modal.html' %}
+{% include 'matching/partials/delete_job_modal.html' %}
+{% include 'matching/partials/delete_all_jobs_modal.html' %}
+
 {% endblock %}

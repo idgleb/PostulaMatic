@@ -1,6 +1,7 @@
 from django import forms
 from django.core.exceptions import ValidationError
 from .models import UserProfile, UserCV
+from .utils.encryption import encrypt_credential
 
 
 class UserProfileForm(forms.ModelForm):
@@ -85,8 +86,15 @@ class CVUploadForm(forms.ModelForm):
                 raise ValidationError(
                     "El archivo no puede ser mayor a 10MB."
                 )
+            
+            # No filtrar por nombre de archivo - procesar todos los archivos
         
         return file
+    
+    def save(self, commit=True):
+        """Guarda el CV normalmente."""
+        instance = super().save(commit)
+        return instance
 
 
 class SMTPConfigForm(forms.ModelForm):
@@ -135,10 +143,16 @@ class SMTPConfigForm(forms.ModelForm):
     
     def save(self, commit=True):
         instance = super().save(commit=False)
-        # Si no se proporciona contraseña, mantener la existente
-        if not self.cleaned_data.get('smtp_password'):
-            if self.instance and self.instance.smtp_password:
-                instance.smtp_password = self.instance.smtp_password
+        
+        # Manejar encriptación de contraseña SMTP
+        smtp_password = self.cleaned_data.get('smtp_password')
+        if smtp_password:
+            # Encriptar nueva contraseña
+            instance.smtp_password = encrypt_credential(smtp_password)
+        elif self.instance and self.instance.smtp_password:
+            # Mantener contraseña existente si no se proporciona una nueva
+            instance.smtp_password = self.instance.smtp_password
+        
         if commit:
             instance.save()
         return instance
@@ -185,10 +199,29 @@ class DVCredentialsForm(forms.ModelForm):
     
     def save(self, commit=True):
         instance = super().save(commit=False)
-        # Si no se proporciona contraseña, mantener la existente
-        if not self.cleaned_data.get('dv_password'):
-            if self.instance and self.instance.dv_password:
-                instance.dv_password = self.instance.dv_password
+        
+        # Manejar encriptación de credenciales DVCarreras
+        dv_username = self.cleaned_data.get('dv_username')
+        dv_password = self.cleaned_data.get('dv_password')
+        
+        if dv_username:
+            # Establecer usuario (no encriptado)
+            instance.dv_username = dv_username
+        elif self.instance and self.instance.dv_username:
+            # Mantener usuario existente si no se proporciona uno nuevo
+            instance.dv_username = self.instance.dv_username
+        
+        if dv_password:
+            # Encriptar nueva contraseña
+            instance.dv_password = encrypt_credential(dv_password)
+        elif self.instance and self.instance.dv_password:
+            # Mantener contraseña existente si no se proporciona una nueva
+            instance.dv_password = self.instance.dv_password
+        
+        # Resetear estado de conexión cuando se cambian las credenciales
+        if dv_username or dv_password:
+            instance.set_dv_connection_verified(False)
+        
         if commit:
             instance.save()
         return instance

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Elementos Flotantes</title>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .test-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 3rem;
+            text-align: center;
+            max-width: 600px;
+            margin: 2rem auto;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .floating-elements {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+            pointer-events: none;
+        }
+        
+        .floating-element {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            animation: floatBackground 8s ease-in-out infinite;
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1);
+        }
+        
+        .floating-element:nth-child(1) {
+            width: 80px;
+            height: 80px;
+            top: 20%;
+            left: 10%;
+            animation-delay: 0s;
+            animation-duration: 8s;
+        }
+        
+        .floating-element:nth-child(2) {
+            width: 120px;
+            height: 120px;
+            top: 60%;
+            right: 10%;
+            animation-delay: 2s;
+            animation-duration: 10s;
+        }
+        
+        .floating-element:nth-child(3) {
+            width: 60px;
+            height: 60px;
+            bottom: 20%;
+            left: 20%;
+            animation-delay: 4s;
+            animation-duration: 12s;
+        }
+        
+        .floating-element:nth-child(4) {
+            width: 100px;
+            height: 100px;
+            top: 10%;
+            right: 30%;
+            animation-delay: 1s;
+            animation-duration: 9s;
+        }
+        
+        .floating-element:nth-child(5) {
+            width: 70px;
+            height: 70px;
+            bottom: 40%;
+            right: 20%;
+            animation-delay: 3s;
+            animation-duration: 11s;
+        }
+        
+        .floating-element:nth-child(6) {
+            width: 90px;
+            height: 90px;
+            top: 40%;
+            left: 5%;
+            animation-delay: 5s;
+            animation-duration: 7s;
+        }
+        
+        .floating-element:nth-child(7) {
+            width: 50px;
+            height: 50px;
+            top: 30%;
+            right: 40%;
+            animation-delay: 1.5s;
+            animation-duration: 6s;
+            background: rgba(102, 126, 234, 0.3);
+        }
+        
+        .floating-element:nth-child(8) {
+            width: 70px;
+            height: 70px;
+            bottom: 10%;
+            right: 50%;
+            animation-delay: 3.5s;
+            animation-duration: 9s;
+            background: rgba(118, 75, 162, 0.3);
+        }
+        
+        .floating-element:nth-child(9) {
+            width: 40px;
+            height: 40px;
+            top: 70%;
+            left: 40%;
+            animation-delay: 4.5s;
+            animation-duration: 5s;
+            background: rgba(255, 255, 255, 0.4);
+        }
+        
+        @keyframes floatBackground {
+            0%, 100% {
+                transform: translateY(0px) rotate(0deg) scale(1);
+                opacity: 0.3;
+            }
+            25% {
+                transform: translateY(-15px) rotate(90deg) scale(1.1);
+                opacity: 0.5;
+            }
+            50% {
+                transform: translateY(-25px) rotate(180deg) scale(0.9);
+                opacity: 0.4;
+            }
+            75% {
+                transform: translateY(-10px) rotate(270deg) scale(1.05);
+                opacity: 0.5;
+            }
+        }
+        
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+        }
+        
+        p {
+            color: #6c757d;
+            font-size: 1.1rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Elementos flotantes animados -->
+    <div class="floating-elements">
+        <div class="floating-element"></div>
+        <div class="floating-element"></div>
+        <div class="floating-element"></div>
+        <div class="floating-element"></div>
+        <div class="floating-element"></div>
+        <div class="floating-element"></div>
+        <div class="floating-element"></div>
+        <div class="floating-element"></div>
+        <div class="floating-element"></div>
+    </div>
+    
+    <div class="test-container">
+        <h1>🎯 Test de Elementos Flotantes</h1>
+        <p>Si puedes ver círculos flotantes animándose en el fondo, la animación está funcionando correctamente.</p>
+        <p>Deberías ver 9 círculos de diferentes tamaños moviéndose suavemente con rotación y escalado.</p>
+        <p><strong>Colores:</strong> Blanco, azul (#667eea) y púrpura (#764ba2)</p>
+    </div>
+</body>
+</html>

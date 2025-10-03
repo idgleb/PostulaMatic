@@ -41,8 +41,8 @@ def scrape_dvcarreras_jobs_advanced(self, user_id: int):
         
         # Realizar scraping con cliente avanzado
         with DVCarrerasAdvancedClient(
-            username=user_profile.dv_username,
-            password=user_profile.dv_password,
+            username=user_profile.get_dv_username(),
+            password=user_profile.get_dv_password(),
             use_proxies=False  # Cambiar a True si tienes proxies configurados
         ) as client:
             

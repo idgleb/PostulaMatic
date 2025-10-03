@@ -2,61 +2,69 @@
 
 {% block matching_content %}
 <!-- Header Section -->
-<div class="row mb-4">
+<div class="row mb-5">
     <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <h1 class="h3 mb-1">
-                    <i class="bi bi-robot me-2 text-primary"></i>Probar Scraper
-                </h1>
-                <p class="text-muted mb-0">Prueba el scraping automático de dvcarreras</p>
-            </div>
+        <div class="text-center">
+            <h1 class="display-4 fw-bold mb-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                <i class="bi bi-robot me-3"></i>Probar Scraper
+            </h1>
+            <p class="lead text-muted">Prueba el scraping automático de dvcarreras</p>
         </div>
     </div>
 </div>
 
 <!-- Stats Section -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="row g-3">
-            <div class="col-md-4">
-                <div class="card bg-info text-white">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <i class="bi bi-briefcase fs-1 me-3"></i>
-                            <div>
-                                <h4 class="mb-0">{{ stats.total_jobs }}</h4>
-                                <small>Total Ofertas</small>
-                            </div>
-                        </div>
-                    </div>
+<div class="row mb-5">
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card stats-card h-100">
+            <div class="card-body text-center">
+                <div class="stats-icon mb-3">
+                    <i class="bi bi-briefcase"></i>
                 </div>
+                <h6 class="card-title text-muted mb-2">Total Ofertas</h6>
+                <h2 id="totalJobsStats" class="fw-bold text-primary mb-0">{{ stats.total_jobs }}</h2>
             </div>
-            <div class="col-md-4">
-                <div class="card bg-success text-white">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <i class="bi bi-check-circle fs-1 me-3"></i>
-                            <div>
-                                <h4 class="mb-0">{{ stats.user_matches }}</h4>
-                                <small>Mis Matches</small>
-                            </div>
-                        </div>
-                    </div>
+        </div>
+    </div>
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card stats-card h-100">
+            <div class="card-body text-center">
+                <div class="stats-icon mb-3">
+                    <i class="bi bi-check-circle"></i>
                 </div>
+                <h6 class="card-title text-muted mb-2">Mis Matches</h6>
+                <h2 id="totalMatchesStats" class="fw-bold text-success mb-0">{{ stats.user_matches }}</h2>
             </div>
-            <div class="col-md-4">
-                <div class="card {% if stats.has_credentials %}bg-success{% else %}bg-warning{% endif %} text-white">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <i class="bi bi-{% if stats.has_credentials %}check-circle{% else %}exclamation-triangle{% endif %} fs-1 me-3"></i>
-                            <div>
-                                <h4 class="mb-0">{% if stats.has_credentials %}✓{% else %}✗{% endif %}</h4>
-                                <small>Credenciales</small>
-                            </div>
-                        </div>
-                    </div>
+        </div>
+    </div>
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card stats-card h-100">
+            <div class="card-body text-center">
+                <div class="stats-icon mb-3">
+                    {% if stats.credentials_verified %}
+                        <i class="bi bi-check-circle"></i>
+                    {% elif stats.has_credentials %}
+                        <i class="bi bi-exclamation-triangle"></i>
+                    {% else %}
+                        <i class="bi bi-x-circle"></i>
+                    {% endif %}
                 </div>
+                <h6 class="card-title text-muted mb-2">Credenciales</h6>
+                {% if stats.credentials_verified %}
+                    <h2 class="fw-bold text-success mb-0" id="credentials-icon">✓</h2>
+                    <span class="badge bg-success" id="credentials-card-badge">Verificadas</span>
+                {% elif stats.credentials_in_progress %}
+                    <h2 class="fw-bold text-info mb-0" id="credentials-icon">⟳</h2>
+                    <span class="badge bg-info" id="credentials-card-badge">
+                        <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>En proceso
+                    </span>
+                {% elif stats.has_credentials %}
+                    <h2 class="fw-bold text-warning mb-0" id="credentials-icon">⚠</h2>
+                    <span class="badge bg-warning" id="credentials-card-badge">No verificadas</span>
+                {% else %}
+                    <h2 class="fw-bold text-danger mb-0" id="credentials-icon">✗</h2>
+                    <span class="badge bg-danger" id="credentials-card-badge">No configuradas</span>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -91,6 +99,17 @@
                         <h6>Configuración actual:</h6>
                         <ul class="list-unstyled">
                             <li><strong>Usuario:</strong> {{ profile.dv_username }}</li>
+                            <li><strong>Estado conexión:</strong> 
+                                {% if stats.credentials_verified %}
+                                    <span class="badge bg-success" id="connection-status-badge">Verificado</span>
+                                {% elif stats.credentials_in_progress %}
+                                    <span class="badge bg-info" id="connection-status-badge">
+                                        <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>En proceso
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-warning" id="connection-status-badge">No verificado</span>
+                                {% endif %}
+                            </li>
                             <li><strong>Umbral de matching:</strong> {{ profile.match_threshold }}%</li>
                             <li><strong>Límite diario:</strong> {{ profile.daily_limit }} emails</li>
                         </ul>
@@ -132,10 +151,10 @@
                             </div>
                             <div class="card-body">
                                 
-                                <div class="progress mb-3" style="height: 25px;">
+                                <div class="progress mb-3" style="height: 30px !important;">
                                     <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
                                          role="progressbar" style="width: 0%">
-                                        <span id="progressText">Iniciando...</span>
+                                        <span id="progressText" style="font-weight: bold; font-size: 14px; line-height: 1.5;">Iniciando...</span>
                                     </div>
                                 </div>
                                 
@@ -201,7 +220,7 @@
                 </h5>
             </div>
             <div class="card-body">
-                <a href="{% url 'profile' %}" class="btn btn-outline-primary btn-sm w-100">
+                <a href="{% url 'profile' %}" class="btn btn-custom-404 btn-sm w-100">
                     <i class="bi bi-pencil me-1"></i>Editar Perfil
                 </a>
             </div>
@@ -233,6 +252,25 @@
 {% endblock %}
 
 {% block extra_js %}
+<style>
+    /* Estilo para botón 404 */
+    .btn-custom-404 {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        border: none !important;
+        border-radius: 50px !important;
+        padding: 8px 16px !important;
+        font-weight: 600 !important;
+        color: white !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2) !important;
+    }
+    
+    .btn-custom-404:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3) !important;
+        color: white !important;
+    }
+</style>
 <script>
 // Versión: 2025-09-28-17:30
 (function() {
@@ -579,6 +617,9 @@ function updateProgressBar(percentage, text, colorType) {
     
     progressBar.style.width = percentage + '%';
     progressText.textContent = text;
+    progressText.style.fontWeight = 'bold';
+    progressText.style.fontSize = '14px';
+    progressText.style.lineHeight = '1.5';
     
     // Aplicar color según el tipo de estado
     switch (colorType) {
@@ -888,6 +929,103 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Siempre verificar el estado actual del scraping (independiente de localStorage)
     checkCurrentScrapingStatus();
+    
+    // Función para actualizar el estado de conexión DV dinámicamente
+    function updateDVConnectionStatus() {
+        fetch('{% url "dv_connection_status" %}', {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+            }
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Estado DV actualizado:', data);
+                
+                // Actualizar badge de estado de conexión
+                const connectionStatusBadge = document.getElementById('connection-status-badge');
+                if (connectionStatusBadge) {
+                    if (data.credentials_verified) {
+                        connectionStatusBadge.className = 'badge bg-success';
+                        connectionStatusBadge.textContent = 'Verificado';
+                    } else if (data.credentials_in_progress) {
+                        connectionStatusBadge.className = 'badge bg-info';
+                        connectionStatusBadge.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>En proceso';
+                    } else {
+                        connectionStatusBadge.className = 'badge bg-warning';
+                        connectionStatusBadge.textContent = 'No verificado';
+                    }
+                }
+                
+                // Actualizar badge de tarjeta de credenciales
+                const credentialsCardBadge = document.getElementById('credentials-card-badge');
+                const credentialsIcon = document.getElementById('credentials-icon');
+                
+                if (credentialsCardBadge && credentialsIcon) {
+                    if (data.credentials_verified) {
+                        credentialsCardBadge.className = 'badge bg-success';
+                        credentialsCardBadge.textContent = 'Verificadas';
+                        credentialsIcon.className = 'fw-bold text-success mb-0';
+                        credentialsIcon.textContent = '✓';
+                    } else if (data.credentials_in_progress) {
+                        credentialsCardBadge.className = 'badge bg-info';
+                        credentialsCardBadge.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>En proceso';
+                        credentialsIcon.className = 'fw-bold text-info mb-0';
+                        credentialsIcon.textContent = '⟳';
+                    } else if (data.has_credentials) {
+                        credentialsCardBadge.className = 'badge bg-warning';
+                        credentialsCardBadge.textContent = 'No verificadas';
+                        credentialsIcon.className = 'fw-bold text-warning mb-0';
+                        credentialsIcon.textContent = '⚠';
+                    } else {
+                        credentialsCardBadge.className = 'badge bg-danger';
+                        credentialsCardBadge.textContent = 'No configuradas';
+                        credentialsIcon.className = 'fw-bold text-danger mb-0';
+                        credentialsIcon.textContent = '✗';
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error actualizando estado de conexión DV:', error);
+            });
+    }
+    
+    // Función para actualizar estadísticas dinámicamente
+    function updateStats() {
+        fetch('{% url "test_scraper" %}', {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.stats) {
+                console.log('Estadísticas actualizadas:', data.stats);
+                
+                // Actualizar Total Ofertas
+                const totalJobsElement = document.getElementById('totalJobsStats');
+                if (totalJobsElement && data.stats.total_jobs !== undefined) {
+                    totalJobsElement.textContent = data.stats.total_jobs;
+                }
+                
+                // Actualizar Mis Matches
+                const totalMatchesElement = document.getElementById('totalMatchesStats');
+                if (totalMatchesElement && data.stats.user_matches !== undefined) {
+                    totalMatchesElement.textContent = data.stats.user_matches;
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error actualizando estadísticas:', error);
+        });
+    }
+    
+    // Actualizar estado cada 2 segundos para mayor responsividad
+    setInterval(() => {
+        updateDVConnectionStatus();
+        updateStats();
+    }, 2000);
     
 });
 })();

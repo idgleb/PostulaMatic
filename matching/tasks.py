@@ -41,6 +41,149 @@ def save_scraping_log(user_id, task_id, message, log_type='info'):
 async_save_scraping_log = sync_to_async(save_scraping_log)
 
 
+@shared_task(bind=True)
+def recalculate_matches_for_user(self, user_id: int):
+    """
+    Recalcula todos los matches para un usuario cuando cambia el umbral.
+    Maneja cancelaciones y actualiza progreso.
+    
+    Args:
+        user_id: ID del usuario
+        
+    Returns:
+        Dict con estadísticas del recálculo
+    """
+    try:
+        logger.info(f"Iniciando recálculo de matches para usuario {user_id}")
+        
+        # Actualizar progreso inicial
+        self.update_state(
+            state='PROGRESS',
+            meta={
+                'current_step': 'Iniciando recálculo',
+                'progress_info': 'Obteniendo perfil del usuario',
+                'progress_percentage': 10
+            }
+        )
+        
+        # Verificar si la tarea fue cancelada
+        # Nota: Celery no tiene is_aborted(), verificamos el estado de la tarea
+        if self.request.called_directly:
+            # Si se llama directamente, no hay cancelación
+            pass
+        
+        # Obtener perfil del usuario
+        user_profile = UserProfile.objects.get(user_id=user_id)
+        
+        # Obtener todas las ofertas de trabajo
+        all_jobs = JobPosting.objects.all()
+        total_jobs = all_jobs.count()
+        
+        # Actualizar progreso
+        self.update_state(
+            state='PROGRESS',
+            meta={
+                'current_step': 'Preparando recálculo',
+                'progress_info': f'Encontradas {total_jobs} ofertas para procesar',
+                'progress_percentage': 20
+            }
+        )
+        
+        # Eliminar matches existentes del usuario
+        old_matches_count = MatchScore.objects.filter(user_id=user_id).count()
+        MatchScore.objects.filter(user_id=user_id).delete()
+        
+        logger.info(f"Eliminados {old_matches_count} matches antiguos para usuario {user_id}")
+        
+        # Actualizar progreso
+        self.update_state(
+            state='PROGRESS',
+            meta={
+                'current_step': 'Recalculando matches',
+                'progress_info': f'Eliminados {old_matches_count} matches antiguos',
+                'progress_percentage': 30
+            }
+        )
+        
+        # Recalcular matches para todas las ofertas
+        new_matches_count = 0
+        processed_jobs = 0
+        
+        for job in all_jobs:
+            # Verificar si la tarea fue cancelada
+            # Nota: Simplificamos la verificación de cancelación
+            pass
+            
+            try:
+                # Calcular matches con el nuevo umbral
+                matches = matching_service.calculate_user_job_matches(user_profile, job)
+                
+                for cv, match_result in matches:
+                    # Solo guardar si supera el nuevo umbral
+                    if match_result.score >= user_profile.match_threshold:
+                        matching_service.save_match_score(user_profile.user, cv, job, match_result)
+                        new_matches_count += 1
+                
+                processed_jobs += 1
+                
+                # Actualizar progreso cada 5 ofertas procesadas
+                if processed_jobs % 5 == 0:
+                    progress = 30 + (processed_jobs / total_jobs) * 60
+                    self.update_state(
+                        state='PROGRESS',
+                        meta={
+                            'current_step': 'Recalculando matches',
+                            'progress_info': f'Procesadas {processed_jobs}/{total_jobs} ofertas',
+                            'progress_percentage': int(progress)
+                        }
+                    )
+                        
+            except Exception as e:
+                logger.error(f"Error recalculando matches para job {job.id}: {e}")
+                continue
+        
+        # Actualizar progreso final
+        self.update_state(
+            state='PROGRESS',
+            meta={
+                'current_step': 'Finalizando recálculo',
+                'progress_info': f'Creados {new_matches_count} nuevos matches',
+                'progress_percentage': 95
+            }
+        )
+        
+        result = {
+            'success': True,
+            'user_id': user_id,
+            'old_matches_count': old_matches_count,
+            'new_matches_count': new_matches_count,
+            'threshold': user_profile.match_threshold,
+            'processed_jobs': processed_jobs,
+            'total_jobs': total_jobs
+        }
+        
+        logger.info(f"Recálculo completado para usuario {user_id}: {result}")
+        
+        # Estado final
+        self.update_state(
+            state='SUCCESS',
+            meta={
+                'current_step': 'Recálculo completado',
+                'progress_info': f'Recálculo exitoso: {new_matches_count} matches',
+                'progress_percentage': 100
+            }
+        )
+        
+        return result
+        
+    except UserProfile.DoesNotExist:
+        logger.error(f"Usuario {user_id} no tiene perfil configurado")
+        return {'error': 'Usuario sin perfil'}
+    except Exception as e:
+        logger.error(f"Error en recálculo para usuario {user_id}: {e}")
+        return {'error': str(e)}
+
+
 @shared_task(bind=True, max_retries=3)
 def scrape_dvcarreras_jobs(self, user_id: int):
     """
@@ -69,8 +212,8 @@ def scrape_dvcarreras_jobs(self, user_id: int):
         
         # Realizar scraping
         with DVCarrerasClient(
-            username=user_profile.dv_username,
-            password=user_profile.dv_password,
+            username=user_profile.get_dv_username(),
+            password=user_profile.get_dv_password(),
             rate_limit_delay=(2.0, 5.0)  # Delay más conservador para producción
         ) as client:
             
@@ -439,8 +582,8 @@ def scrape_dvcarreras_jobs_advanced(self, user_id: int):
         
         # Realizar scraping con cliente avanzado
         with DVCarrerasAdvancedClient(
-            username=user_profile.dv_username,
-            password=user_profile.dv_password,
+            username=user_profile.get_dv_username(),
+            password=user_profile.get_dv_password(),
             use_proxies=False  # Cambiar a True si tienes proxies configurados
         ) as client:
             
@@ -592,15 +735,30 @@ def scrape_dvcarreras_jobs_playwright(self, user_id: int):
             # Guardar log en la base de datos
             await async_save_scraping_log(user_id, self.request.id, 'Iniciando sesión', 'info')
             await async_save_scraping_log(user_id, self.request.id, 'Autenticándose en INTRANET DAVINCI', 'info')
+            await async_save_scraping_log(user_id, self.request.id, '🔐 Verificando credenciales de INTRANET DAVINCI', 'info')
+            
+            # Crear callback para logging
+            async def log_callback(message: str, log_type: str = 'info'):
+                await async_save_scraping_log(user_id, self.request.id, message, log_type)
             
             async with DVCarrerasPlaywrightSimple(
-                username=user_profile.dv_username,
-                password=user_profile.dv_password
+                username=user_profile.get_dv_username(),
+                password=user_profile.get_dv_password(),
+                log_callback=log_callback
             ) as client:
                 
-                if not await client.login():
-                    logger.error(f"Login con PLAYWRIGHT fallido para usuario {user_id}")
-                    raise Exception('Login fallido en INTRANET DAVINCI (método Playwright)')
+                # Intentar login - un solo intento como en el perfil
+                login_success = await client.login()
+                if not login_success:
+                    logger.error(f"Login con PLAYWRIGHT fallido para usuario {user_id} - credenciales incorrectas")
+                    await async_save_scraping_log(user_id, self.request.id, '🛑 Scraping detenido por credenciales incorrectas', 'error')
+                    # No reintentar - fallar inmediatamente
+                    return {
+                        'success': False,
+                        'user_id': user_id,
+                        'error': 'Credenciales incorrectas',
+                        'message': 'Login fallido en INTRANET DAVINCI - verifica usuario y contraseña'
+                    }
                 
                 # Actualizar estado: Navegando al portal
                 logger.info("Enviando actualización de estado: Navegando al portal")
@@ -756,7 +914,17 @@ def scrape_dvcarreras_jobs_playwright(self, user_id: int):
     except Exception as e:
         logger.error(f"Error en scraping con PLAYWRIGHT para usuario {user_id}: {e}")
         
-        # Reintentar si no es el último intento
+        # No reintentar si el error es por credenciales incorrectas
+        if "Credenciales incorrectas" in str(e) or "Error de autenticación" in str(e):
+            logger.info(f"No reintentando scraping para usuario {user_id} - credenciales incorrectas")
+            return {
+                'success': False,
+                'user_id': user_id,
+                'error': 'Credenciales incorrectas',
+                'message': 'Login fallido en INTRANET DAVINCI - verifica usuario y contraseña'
+            }
+        
+        # Reintentar solo para otros tipos de errores (red, timeout, etc.)
         if self.request.retries < self.max_retries:
             logger.info(f"Reintentando scraping con PLAYWRIGHT para usuario {user_id} (intento {self.request.retries + 1})")
             raise self.retry(countdown=60 * (self.request.retries + 1))

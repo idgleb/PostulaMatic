@@ -2,78 +2,74 @@
 
 {% block matching_content %}
 <!-- Header Section -->
-<div class="row mb-4">
+<div class="row mb-5">
     <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-            <h1 class="h3 mb-1">
-                <i class="bi bi-file-earmark-text me-2 text-primary"></i>Mis CVs
+        <div class="text-center">
+            <h1 class="display-4 fw-bold mb-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                <i class="bi bi-file-earmark-text me-3"></i>Mis CVs
             </h1>
-            <p class="text-muted mb-0">Gestiona tus CVs y visualiza las habilidades detectadas</p>
-            </div>
-            <a href="{% url 'upload_cv' %}" class="btn btn-primary btn-lg">
+            <p class="lead text-muted">Gestiona tus CVs y visualiza las habilidades detectadas</p>
+            <button type="button" class="btn btn-primary btn-lg mt-3" onclick="triggerFileUpload()">
                 <i class="bi bi-plus-lg me-2"></i>Subir nuevo CV
-            </a>
+            </button>
         </div>
     </div>
 </div>
 
+<!-- Hidden file input -->
+<input type="file" id="hiddenFileInput" accept=".pdf,.docx" style="display: none;" onchange="handleFileSelection(this)">
+
+<!-- Simple form for testing -->
+<form id="simpleUploadForm" action="{% url 'upload_cv' %}" method="post" enctype="multipart/form-data" style="display: none;">
+    {% csrf_token %}
+    <input type="file" name="original_file" accept=".pdf,.docx">
+    <button type="submit">Upload</button>
+</form>
+
 <!-- Stats Section -->
 {% if user_cvs %}
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="row g-3">
-            <div class="col-md-3">
-                <div class="card bg-primary text-white">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <i class="bi bi-file-earmark-text fs-1 me-3"></i>
-                            <div>
-                                <h4 class="mb-0">{{ user_cvs|length }}</h4>
-                                <small>Total CVs</small>
-                            </div>
-                        </div>
-                    </div>
+<div class="row mb-5">
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card stats-card h-100">
+            <div class="card-body text-center">
+                <div class="stats-icon mb-3">
+                    <i class="bi bi-file-earmark-text"></i>
                 </div>
+                <h6 class="card-title text-muted mb-2">Total CVs</h6>
+                <h2 class="fw-bold text-primary mb-0">{{ user_cvs|length }}</h2>
             </div>
-            <div class="col-md-3">
-                <div class="card bg-success text-white">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <i class="bi bi-check-circle fs-1 me-3"></i>
-                            <div>
-                                <h4 class="mb-0">{{ user_cvs|length }}</h4>
-                                <small>CVs Procesados</small>
                             </div>
                         </div>
-                    </div>
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card stats-card h-100">
+            <div class="card-body text-center">
+                <div class="stats-icon mb-3">
+                    <i class="bi bi-check-circle"></i>
                 </div>
+                <h6 class="card-title text-muted mb-2">CVs Procesados</h6>
+                <h2 class="fw-bold text-success mb-0">{{ user_cvs|length }}</h2>
             </div>
-            <div class="col-md-3">
-                <div class="card bg-info text-white">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <i class="bi bi-tags fs-1 me-3"></i>
-                            <div>
-                                <h4 class="mb-0">{{ total_skills }}</h4>
-                                <small>Total Skills</small>
                             </div>
                         </div>
-                    </div>
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card stats-card h-100">
+            <div class="card-body text-center">
+                <div class="stats-icon mb-3">
+                    <i class="bi bi-tags"></i>
                 </div>
+                <h6 class="card-title text-muted mb-2">Total Skills</h6>
+                <h2 class="fw-bold text-info mb-0">{{ total_skills }}</h2>
             </div>
-            <div class="col-md-3">
-                <div class="card bg-warning text-white">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <i class="bi bi-graph-up fs-1 me-3"></i>
-                            <div>
-                                <h4 class="mb-0">100%</h4>
-                                <small>Procesamiento</small>
                             </div>
                         </div>
-                    </div>
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card stats-card h-100">
+            <div class="card-body text-center">
+                <div class="stats-icon mb-3">
+                    <i class="bi bi-graph-up"></i>
                 </div>
+                <h6 class="card-title text-muted mb-2">Procesamiento</h6>
+                <h2 class="fw-bold text-warning mb-0">100%</h2>
             </div>
         </div>
     </div>
@@ -91,18 +87,18 @@
                 <div class="d-flex align-items-center">
                     <div class="flex-shrink-0">
                         {% if cv.original_file.name|slice:"-4:" == ".pdf" %}
-                            <div class="bg-danger bg-opacity-10 rounded-circle p-3">
-                                <i class="bi bi-file-earmark-pdf text-danger fs-3"></i>
+                            <div class="bg-danger rounded-circle p-3" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                                <i class="bi bi-file-earmark-pdf text-white fs-3"></i>
                             </div>
                         {% else %}
-                            <div class="bg-primary bg-opacity-10 rounded-circle p-3">
-                                <i class="bi bi-file-earmark-word text-primary fs-3"></i>
+                            <div class="bg-primary rounded-circle p-3" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                                <i class="bi bi-file-earmark-word text-white fs-3"></i>
                             </div>
                         {% endif %}
                     </div>
                     <div class="flex-grow-1 ms-3">
                         <h6 class="card-title mb-1 fw-bold">{{ cv.original_file.name|truncatechars:30 }}</h6>
-                        <small class="text-muted">
+                        <small style="color: #f8f9fa; opacity: 0.8;">
                             <i class="bi bi-calendar3 me-1"></i>{{ cv.created_at|date:"d/m/Y H:i" }}
                         </small>
                     </div>
@@ -113,7 +109,9 @@
             <div class="card-body pt-3">
                 <!-- Skills Section -->
                 <div class="mb-3">
+                    {% if cv.is_processed %}
                     {% if cv.skills_count > 0 %}
+                            <!-- CV procesado con habilidades -->
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <h6 class="mb-0 text-success">
                                 <i class="bi bi-check-circle me-1"></i>Procesado
@@ -124,10 +122,10 @@
                         <div class="mb-3">
                             <div class="d-flex flex-wrap gap-1">
                                 {% for skill in cv.skills.skills|slice:":4" %}
-                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">{{ skill }}</span>
+                                        <span class="badge bg-primary bg-opacity-10 border border-primary border-opacity-25" style="color: #f8f9fa; opacity: 0.8;">{{ skill }}</span>
                                 {% endfor %}
                                 {% if cv.skills_count > 4 %}
-                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">
+                                        <span class="badge bg-secondary bg-opacity-10 border border-secondary border-opacity-25" style="color: #f8f9fa; opacity: 0.8;">
                                         +{{ cv.skills_count|add:"-4" }} más
                                     </span>
                                 {% endif %}
@@ -148,6 +146,19 @@
                             </div>
                         {% endif %}
                     {% else %}
+                            <!-- CV procesado sin habilidades -->
+                            <div class="text-center py-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="mb-0 text-warning">
+                                        <i class="bi bi-exclamation-triangle me-1"></i>Procesado
+                                    </h6>
+                                    <span class="badge bg-warning fs-6">Sin skills</span>
+                                </div>
+                                <small class="text-muted">No se detectaron habilidades. Verifica que sea un CV profesional.</small>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <!-- CV no procesado -->
                         <div class="text-center py-3">
                             <div class="spinner-border spinner-border-sm text-warning me-2" role="status">
                                 <span class="visually-hidden">Procesando...</span>
@@ -163,7 +174,7 @@
                         <h6 class="text-muted mb-2">
                             <i class="bi bi-eye me-1"></i>Vista previa del texto
                         </h6>
-                        <div class="bg-light rounded p-3" style="max-height: 80px; overflow: hidden;">
+                        <div class="bg-light rounded p-3">
                             <small class="text-muted" style="white-space: pre-wrap; line-height: 1.4;">{{ cv.parsed_text|truncatechars:120 }}</small>
                         </div>
                     </div>
@@ -172,147 +183,34 @@
             
             <!-- Card Footer -->
             <div class="card-footer bg-white border-0 pt-0">
-                <div class="d-grid gap-2 d-md-flex">
-                    <button type="button" class="btn btn-outline-primary flex-fill" 
-                            data-bs-toggle="modal" data-bs-target="#cvModal{{ cv.id }}">
-                        <i class="bi bi-eye me-1"></i>Ver detalles
+                <div class="row g-1 justify-content-center">
+                    <div class="col-auto">
+                        <button type="button" class="btn btn-sm btn-custom-details" 
+                                onclick="showCVDetails({{ cv.id }}, '{{ cv.original_file.name }}', '{{ cv.created_at|date:"d/m/Y H:i" }}', {{ cv.skills_count }}, '{{ cv.is_processed }}')"
+                                title="Ver detalles">
+                            <i class="bi bi-eye"></i>
                     </button>
+                    </div>
                     {% if not cv.is_processed %}
-                        <a href="{% url 'process_cv' cv.id %}" class="btn btn-outline-warning flex-fill">
-                            <i class="bi bi-gear me-1"></i>Procesar
+                    <div class="col-auto">
+                        <a href="{% url 'process_cv' cv.id %}" class="btn btn-sm btn-custom-process"
+                           title="Procesar">
+                            <i class="bi bi-gear"></i>
                         </a>
+                    </div>
                     {% endif %}
-                    <button type="button" class="btn btn-outline-danger flex-fill" 
-                            onclick="deleteCV({{ cv.id }}, '{{ cv.original_file.name }}')">
-                        <i class="bi bi-trash me-1"></i>Eliminar
+                    <div class="col-auto">
+                        <button type="button" class="btn btn-sm btn-custom-delete" 
+                                onclick="deleteCV({{ cv.id }}, '{{ cv.original_file.name }}')"
+                                title="Eliminar">
+                            <i class="bi bi-trash"></i>
                     </button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
     
-    <!-- Enhanced Modal -->
-    <div class="modal fade" id="cvModal{{ cv.id }}" tabindex="-1" aria-labelledby="cvModalLabel{{ cv.id }}">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title" id="cvModalLabel{{ cv.id }}">
-                        <i class="bi bi-file-earmark-text me-2"></i>{{ cv.original_file.name }}
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row">
-                        <!-- Left Column - Info -->
-                        <div class="col-lg-4">
-                            <div class="card border-0 bg-light">
-                                <div class="card-body">
-                                    <h6 class="card-title">
-                                        <i class="bi bi-info-circle me-2"></i>Información del CV
-                                    </h6>
-                                    <ul class="list-unstyled">
-                                        <li class="mb-2">
-                                            <strong><i class="bi bi-calendar3 me-1"></i>Fecha:</strong><br>
-                                            <small class="text-muted">{{ cv.created_at|date:"d/m/Y H:i" }}</small>
-                                        </li>
-                                        <li class="mb-2">
-                                            <strong><i class="bi bi-file-earmark me-1"></i>Archivo:</strong><br>
-                                            <small class="text-muted">{{ cv.original_file.name }}</small>
-                                        </li>
-                                        <li class="mb-2">
-                                            <strong><i class="bi bi-tags me-1"></i>Skills detectadas:</strong><br>
-                                            <span class="badge bg-success fs-6">{{ cv.skills_list|length }}</span>
-                                        </li>
-                                        <li class="mb-2">
-                                            <strong><i class="bi bi-check-circle me-1"></i>Estado:</strong><br>
-                                            {% if cv.is_processed %}
-                                                <span class="badge bg-success">Procesado</span>
-                                            {% else %}
-                                                <span class="badge bg-warning">Pendiente</span>
-                                            {% endif %}
-                                        </li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Right Column - Skills -->
-                        <div class="col-lg-8">
-                            <div class="card border-0">
-                                <div class="card-body">
-                                    <h6 class="card-title">
-                                        <i class="bi bi-tags me-2"></i>Habilidades detectadas
-                                    </h6>
-                                    
-                                    {% if cv.skills_list %}
-                                        <!-- All Skills -->
-                                        <div class="mb-4">
-                                            <h6 class="text-muted mb-3">Todas las habilidades:</h6>
-                                            <div class="d-flex flex-wrap gap-2">
-                                                {% for skill in cv.skills_list %}
-                                                    <span class="badge bg-primary fs-6 px-3 py-2">{{ skill }}</span>
-                                                {% endfor %}
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Skills by Category -->
-                                        {% if cv.skills_categories %}
-                                            <div>
-                                                <h6 class="text-muted mb-3">Por categorías:</h6>
-                                                {% for category, skills in cv.skills_categories.items %}
-                                                    {% if skills %}
-                                                        <div class="mb-3">
-                                                            <h6 class="text-capitalize mb-2">{{ category|title }}</h6>
-                                                            <div class="d-flex flex-wrap gap-1">
-                                                                {% for skill in skills %}
-                                                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border">{{ skill }}</span>
-                                                                {% endfor %}
-                                                            </div>
-                                                        </div>
-                                                    {% endif %}
-                                                {% endfor %}
-                                            </div>
-                                        {% endif %}
-                                    {% else %}
-                                        <div class="text-center py-4">
-                                            <i class="bi bi-hourglass-split text-warning fs-1"></i>
-                                            <p class="text-muted mt-2">Pendiente de procesar</p>
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Text Content -->
-                    {% if cv.parsed_text %}
-                        <div class="row mt-4">
-                            <div class="col-12">
-                                <div class="card border-0 bg-light">
-                                    <div class="card-body">
-                                        <h6 class="card-title">
-                                            <i class="bi bi-file-text me-2"></i>Texto extraído del CV
-                                        </h6>
-                                        <div class="bg-white p-4 rounded border" style="max-height: 300px; overflow-y: auto;">
-                                            <small class="text-muted" style="white-space: pre-wrap; line-height: 1.5;">{{ cv.parsed_text }}</small>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    {% endif %}
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="bi bi-x-lg me-1"></i>Cerrar
-                    </button>
-                    <a href="{% url 'upload_cv' %}" class="btn btn-primary">
-                        <i class="bi bi-plus-lg me-1"></i>Subir otro CV
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
     {% endfor %}
 </div>
 
@@ -330,40 +228,645 @@
                     Sube tu primer CV para comenzar a recibir ofertas de trabajo automáticamente.<br>
                     El sistema detectará automáticamente tus habilidades y las utilizará para encontrar coincidencias.
                 </p>
-                <a href="{% url 'upload_cv' %}" class="btn btn-primary btn-lg px-4">
+                <button type="button" class="btn btn-primary btn-lg px-4" onclick="triggerFileUpload()">
                     <i class="bi bi-upload me-2"></i>Subir mi primer CV
-                </a>
+                </button>
             </div>
         </div>
     </div>
 </div>
 {% endif %}
+
 {% endblock %}
 
 {% block extra_js %}
+<style>
+    /* Estilos para botones de acciones con estilo 404 - Solo iconos en row */
+    .btn-custom-details {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        border: none !important;
+        border-radius: 50px !important;
+        padding: 10px !important;
+        font-weight: 600 !important;
+        color: white !important;
+        transition: all 0.3s ease !important;
+        margin: 0 !important;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2) !important;
+        width: 38px !important;
+        height: 38px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    
+    .btn-custom-details:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3) !important;
+        color: white !important;
+    }
+    
+    .btn-custom-process {
+        background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%) !important;
+        border: none !important;
+        border-radius: 50px !important;
+        padding: 10px !important;
+        font-weight: 600 !important;
+        color: white !important;
+        transition: all 0.3s ease !important;
+        margin: 0 !important;
+        box-shadow: 0 4px 15px rgba(255, 193, 7, 0.2) !important;
+        width: 38px !important;
+        height: 38px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-decoration: none !important;
+    }
+    
+    .btn-custom-process:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 8px 20px rgba(255, 193, 7, 0.3) !important;
+        color: white !important;
+    }
+    
+    .btn-custom-delete {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%) !important;
+        border: none !important;
+        border-radius: 50px !important;
+        padding: 10px !important;
+        font-weight: 600 !important;
+        color: white !important;
+        transition: all 0.3s ease !important;
+        margin: 0 !important;
+        box-shadow: 0 4px 15px rgba(220, 53, 69, 0.2) !important;
+        width: 38px !important;
+        height: 38px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    
+    .btn-custom-delete:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 8px 20px rgba(220, 53, 69, 0.3) !important;
+        color: white !important;
+    }
+    
+    /* Estilos para modales modernos */
+    @keyframes bounce {
+        0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+        40% { transform: translateY(-10px); }
+        60% { transform: translateY(-5px); }
+    }
+    
+    .matching-modal {
+        max-height: 90vh !important;
+        background: rgba(255, 255, 255, 0.95) !important;
+        backdrop-filter: blur(10px) !important;
+        border-radius: 20px !important;
+        border: none !important;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    .matching-modal .modal-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        border-radius: 20px 20px 0 0 !important;
+        border: none !important;
+        padding: 1.5rem !important;
+    }
+    
+    .matching-modal .modal-header.modal-header-danger {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%) !important;
+    }
+    
+    .matching-modal .modal-title {
+        font-size: 1.5rem !important;
+        color: white !important;
+        font-weight: bold !important;
+    }
+    
+    .matching-modal .modal-title i {
+        animation: bounce 2s infinite;
+    }
+    
+    .matching-modal .btn-close-white {
+        filter: brightness(0) invert(1) !important;
+    }
+    
+    .matching-modal .modal-body {
+        max-height: calc(90vh - 120px) !important;
+        overflow-y: auto !important;
+        background: transparent !important;
+    }
+    
+    .matching-modal .modal-footer {
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%) !important;
+        border-radius: 0 0 20px 20px !important;
+        border: none !important;
+        padding: 1.5rem !important;
+    }
+    
+    .matching-modal .modal-footer.modal-footer-danger {
+        background: linear-gradient(135deg, rgba(220, 53, 69, 0.05) 0%, rgba(200, 35, 51, 0.05) 100%) !important;
+    }
+    
+    .matching-modal .alert {
+        border-radius: 15px !important;
+        border: none !important;
+        backdrop-filter: blur(10px) !important;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    .matching-modal .alert-info {
+        background: linear-gradient(135deg, rgba(13, 202, 240, 0.1) 0%, rgba(102, 126, 234, 0.1) 100%) !important;
+        border-left: 4px solid #0dcaf0 !important;
+    }
+    
+    .matching-modal .alert-warning {
+        background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(253, 126, 20, 0.1) 100%) !important;
+        border-left: 4px solid #ffc107 !important;
+    }
+    
+    .matching-modal .alert-success {
+        background: linear-gradient(135deg, rgba(25, 135, 84, 0.1) 0%, rgba(40, 167, 69, 0.1) 100%) !important;
+        border-left: 4px solid #28a745 !important;
+    }
+    
+    .matching-modal .bg-light {
+        background: linear-gradient(135deg, rgba(248, 249, 250, 0.8) 0%, rgba(233, 236, 239, 0.8) 100%) !important;
+        border-radius: 15px !important;
+        border: 1px solid rgba(102, 126, 234, 0.1) !important;
+    }
+    
+    .matching-modal .btn-custom-modal {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        border: none !important;
+        border-radius: 50px !important;
+        padding: 12px 30px !important;
+        font-weight: 600 !important;
+        color: white !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .matching-modal .btn-custom-modal:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3) !important;
+        color: white !important;
+    }
+    
+    .matching-modal .btn-custom-danger {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%) !important;
+        border: none !important;
+        border-radius: 50px !important;
+        padding: 12px 30px !important;
+        font-weight: 600 !important;
+        color: white !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .matching-modal .btn-custom-danger:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 10px 20px rgba(220, 53, 69, 0.3) !important;
+        color: white !important;
+    }
+    
+    /* Sobrescribir flex de card-body */
+    .card-body {
+        flex: none !important;
+    }
+</style>
 <script>
+// Global variables for upload process
+let uploadProgressInterval;
+let selectedFile = null;
+
+// Trigger file selection
+function triggerFileUpload() {
+    document.getElementById('hiddenFileInput').click();
+}
+
+// Handle file selection
+function handleFileSelection(input) {
+    const file = input.files[0];
+    if (!file) return;
+    
+    console.log('📁 Archivo seleccionado:', file.name, file.size);
+    
+    // Validate file type
+    const allowedTypes = ['.pdf', '.docx'];
+    const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+    
+    if (!allowedTypes.includes(fileExtension)) {
+        showToast('Solo se permiten archivos PDF y DOCX.', 'error');
+        return;
+    }
+    
+    // Validate file size (10MB max)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+        showToast('El archivo no puede ser mayor a 10MB.', 'error');
+        return;
+    }
+    
+    selectedFile = file;
+    showUploadModal();
+    startUpload();
+}
+
+// Show upload modal
+function showUploadModal() {
+    if (!selectedFile) return;
+    
+    // Crear modal de upload dinámicamente
+    const modal = `
+        <div class="modal fade" id="uploadProgressModal" tabindex="-1" aria-labelledby="uploadProgressModalLabel" data-bs-backdrop="static" data-bs-keyboard="false">
+            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content matching-modal">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="uploadProgressModalLabel">
+                            <i class="bi bi-upload me-2"></i>Subiendo CV
+                    </h5>
+                    </div>
+                    <div class="modal-body text-center py-4">
+                        <!-- File Info -->
+                        <div class="mb-4">
+                            <div class="d-flex align-items-center justify-content-center mb-3">
+                                <i class="bi bi-file-earmark-text text-primary fs-1 me-3"></i>
+                                <div class="text-start">
+                                    <h6 class="mb-1" id="fileName">${selectedFile.name}</h6>
+                                    <small class="text-muted" id="fileSize">${formatFileSize(selectedFile.size)}</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Progress Bar -->
+                        <div class="mb-4">
+                            <div class="progress" style="height: 30px !important;">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" 
+                                     id="progressBar" role="progressbar" style="width: 0%">
+                                    <span id="progressText">0%</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Status Message -->
+                        <div id="statusMessage">
+                            <div class="spinner-border text-primary me-2" role="status">
+                                <span class="visually-hidden">Procesando...</span>
+                            </div>
+                            <span id="statusText">Iniciando upload...</span>
+                        </div>
+                        
+                        <!-- Success/Error Messages -->
+                        <div id="resultMessage" class="d-none">
+                            <div class="alert alert-success" id="successAlert">
+                                <i class="bi bi-check-circle me-2"></i>
+                                <span id="successText">CV subido exitosamente</span>
+                            </div>
+                            <div class="alert alert-danger" id="errorAlert">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                <span id="errorText">Error al subir el CV</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer" id="modalFooter">
+                        <button type="button" class="btn btn-outline-secondary" id="cancelBtn" data-bs-dismiss="modal">
+                            <i class="bi bi-x-lg me-1"></i>Cancelar
+                        </button>
+                        <button type="button" class="btn btn-custom-modal d-none" id="closeBtn" data-bs-dismiss="modal">
+                            <i class="bi bi-check-lg me-1"></i>Cerrar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remover modal anterior si existe
+    const existingModal = document.getElementById('uploadProgressModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Agregar nuevo modal al DOM
+    document.body.insertAdjacentHTML('beforeend', modal);
+    
+    // Mostrar modal
+    const uploadModal = new bootstrap.Modal(document.getElementById('uploadProgressModal'));
+    uploadModal.show();
+    
+    // Limpiar modal cuando se cierre
+    document.getElementById('uploadProgressModal').addEventListener('hidden.bs.modal', function() {
+        // Reset file input
+        document.getElementById('hiddenFileInput').value = '';
+        selectedFile = null;
+        
+        // Clear any running intervals
+        if (uploadProgressInterval) {
+            clearInterval(uploadProgressInterval);
+        }
+        
+        // Remove modal
+        this.remove();
+    });
+}
+
+// Start upload process
+function startUpload() {
+    if (!selectedFile) return;
+    
+    console.log('🎯 Iniciando proceso de upload...');
+    console.log('📄 Archivo seleccionado:', selectedFile.name, selectedFile.size);
+    
+    // Update status
+    document.getElementById('statusText').textContent = 'Subiendo archivo...';
+    
+    // Start progress simulation
+    let progress = 0;
+    uploadProgressInterval = setInterval(() => {
+        progress += Math.random() * 10;
+        if (progress > 85) progress = 85; // Stop at 85% until server responds
+        
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        progressBar.style.width = progress + '%';
+        progressText.textContent = Math.round(progress) + '%';
+    }, 200);
+    
+    // Set timeout to prevent hanging
+    const uploadTimeout = setTimeout(() => {
+        if (uploadProgressInterval) {
+            clearInterval(uploadProgressInterval);
+        }
+        showUploadError('Timeout: El upload está tardando demasiado. Inténtalo de nuevo.');
+    }, 60000); // 60 seconds timeout
+    
+    // Create FormData
+    const formData = new FormData();
+    formData.append('original_file', selectedFile);
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    
+    // Upload file
+    console.log('🚀 Iniciando upload...');
+    console.log('📁 Archivo:', selectedFile.name, selectedFile.size);
+    
+    // Simple XMLHttpRequest instead of fetch for better error handling
+    const xhr = new XMLHttpRequest();
+    
+    xhr.onreadystatechange = function() {
+        console.log('📡 XHR State:', xhr.readyState, 'Status:', xhr.status);
+        
+        if (xhr.readyState === 4) {
+            clearInterval(uploadProgressInterval);
+            clearTimeout(uploadTimeout);
+            
+            // Complete progress bar
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            progressBar.style.width = '100%';
+            progressText.textContent = '100%';
+            
+            if (xhr.status === 200) {
+                try {
+                    const data = JSON.parse(xhr.responseText);
+                    console.log('✅ JSON Response:', data);
+                    
+                    if (data.success) {
+                        // Success
+                        progressBar.classList.remove('bg-primary');
+                        progressBar.classList.add('bg-success');
+                        
+                        document.getElementById('statusMessage').classList.add('d-none');
+                        document.getElementById('resultMessage').classList.remove('d-none');
+                        document.getElementById('successAlert').classList.remove('d-none');
+                        document.getElementById('errorAlert').classList.add('d-none');
+                        document.getElementById('successText').textContent = data.message;
+                        
+                        document.getElementById('cancelBtn').classList.add('d-none');
+                        document.getElementById('closeBtn').classList.remove('d-none');
+                        
+                        // Auto-close and reload after 2 seconds
+                        setTimeout(() => {
+                            const modal = bootstrap.Modal.getInstance(document.getElementById('uploadProgressModal'));
+                            modal.hide();
+                            location.reload();
+                        }, 2000);
+                    } else {
+                        throw new Error(data.message || 'Error al procesar el archivo');
+                    }
+                } catch (e) {
+                    console.error('❌ Error parsing JSON:', e);
+                    console.error('❌ Response text:', xhr.responseText);
+                    showUploadError('Error en la respuesta del servidor: ' + e.message);
+                }
+            } else {
+                console.error('❌ HTTP Error:', xhr.status, xhr.statusText);
+                console.error('❌ Response text:', xhr.responseText);
+                showUploadError(`Error del servidor (${xhr.status}): ${xhr.statusText}`);
+            }
+        }
+    };
+    
+    xhr.onerror = function() {
+        console.error('❌ Network Error');
+        clearInterval(uploadProgressInterval);
+        clearTimeout(uploadTimeout);
+        showUploadError('Error de conexión. Verifica tu internet.');
+    };
+    
+    xhr.open('POST', '{% url "upload_cv" %}', true);
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    xhr.send(formData);
+}
+
+// Show upload error
+function showUploadError(errorMessage) {
+    const progressBar = document.getElementById('progressBar');
+    progressBar.classList.remove('bg-primary');
+    progressBar.classList.add('bg-danger');
+    
+    document.getElementById('statusMessage').classList.add('d-none');
+    document.getElementById('resultMessage').classList.remove('d-none');
+    document.getElementById('successAlert').classList.add('d-none');
+    document.getElementById('errorAlert').classList.remove('d-none');
+    document.getElementById('errorText').textContent = errorMessage;
+    
+    document.getElementById('cancelBtn').classList.add('d-none');
+    document.getElementById('closeBtn').classList.remove('d-none');
+}
+
+// Format file size
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// Reset when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize page
+    console.log('CV List page loaded');
+});
+
+function showCVDetails(cvId, fileName, createdDate, skillsCount, isProcessed) {
+    // Crear modal de detalles dinámicamente
+    const modal = `
+        <div class="modal fade" id="cvDetailsModal" tabindex="-1">
+            <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content matching-modal">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="bi bi-file-earmark-text me-2"></i>${fileName}
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <!-- Left Column - Info -->
+                        <div class="col-lg-4">
+                            <div class="card border-0 bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <i class="bi bi-info-circle me-2"></i>Información del CV
+                                    </h6>
+                                    <ul class="list-unstyled">
+                                        <li class="mb-2">
+                                            <strong><i class="bi bi-calendar3 me-1"></i>Fecha:</strong><br>
+                                                <small class="text-muted">${createdDate}</small>
+                                        </li>
+                                        <li class="mb-2">
+                                            <strong><i class="bi bi-file-earmark me-1"></i>Archivo:</strong><br>
+                                                <small class="text-muted">${fileName}</small>
+                                        </li>
+                                        <li class="mb-2">
+                                            <strong><i class="bi bi-tags me-1"></i>Skills detectadas:</strong><br>
+                                                <span class="badge bg-success fs-6">${skillsCount}</span>
+                                        </li>
+                                        <li class="mb-2">
+                                            <strong><i class="bi bi-check-circle me-1"></i>Estado:</strong><br>
+                                                ${isProcessed === 'True' ? 
+                                                    '<span class="badge bg-success">Procesado</span>' : 
+                                                    '<span class="badge bg-warning">Pendiente</span>'
+                                                }
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Right Column - Skills -->
+                        <div class="col-lg-8">
+                            <div class="card border-0">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <i class="bi bi-tags me-2"></i>Habilidades detectadas
+                                    </h6>
+                                    
+                                        ${skillsCount > 0 ? 
+                                            `<div class="text-center py-4">
+                                                <div class="alert alert-success">
+                                                    <i class="bi bi-check-circle me-2"></i>
+                                                    <strong>CV procesado correctamente</strong><br>
+                                                    Se detectaron ${skillsCount} habilidades en este CV.
+                                            </div>
+                                                <p class="text-muted">Las habilidades se utilizan para encontrar coincidencias con ofertas de trabajo.</p>
+                                            </div>` :
+                                            `<div class="text-center py-4">
+                                                ${isProcessed === 'True' ?
+                                                    `<div class="alert alert-warning">
+                                                        <i class="bi bi-exclamation-triangle me-2"></i>
+                                                        <strong>CV procesado sin habilidades</strong><br>
+                                                        No se detectaron habilidades en este CV.
+                                        </div>
+                                                    <small class="text-muted">Verifica que sea un CV profesional con información sobre experiencia y habilidades.</small>` :
+                                                    `<div class="alert alert-info">
+                                                        <i class="bi bi-hourglass-split me-2"></i>
+                                                        <strong>Pendiente de procesar</strong><br>
+                                                        Este CV aún no ha sido procesado.
+                                                            </div>
+                                                    <small class="text-muted">El procesamiento se realiza automáticamente o puedes hacerlo manualmente.</small>`
+                                                }
+                                            </div>`
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                </div>
+                <div class="modal-footer">
+                        <button type="button" class="btn btn-custom-modal" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg me-1"></i>Cerrar
+                    </button>
+                        <button type="button" class="btn btn-custom-modal" onclick="triggerFileUpload()" data-bs-dismiss="modal">
+                        <i class="bi bi-plus-lg me-1"></i>Subir otro CV
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remover modal anterior si existe
+    const existingModal = document.getElementById('cvDetailsModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Agregar nuevo modal al DOM
+    document.body.insertAdjacentHTML('beforeend', modal);
+    
+    // Mostrar modal
+    const cvDetailsModal = new bootstrap.Modal(document.getElementById('cvDetailsModal'));
+    cvDetailsModal.show();
+    
+    // Limpiar modal cuando se cierre
+    document.getElementById('cvDetailsModal').addEventListener('hidden.bs.modal', function() {
+        this.remove();
+    });
+}
+
 function deleteCV(cvId, fileName) {
     // Crear modal de confirmación personalizado
     const modal = `
         <div class="modal fade" id="deleteModal" tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header bg-danger text-white">
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content matching-modal">
+                    <div class="modal-header modal-header-danger">
                         <h5 class="modal-title">
                             <i class="bi bi-exclamation-triangle me-2"></i>Confirmar eliminación
                         </h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
-                        <p>¿Estás seguro de que quieres eliminar el CV <strong>"${fileName}"</strong>?</p>
                         <div class="alert alert-warning">
-                            <i class="bi bi-info-circle me-2"></i>
-                            Esta acción no se puede deshacer y se perderán todas las habilidades detectadas.
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            <strong>¡Atención!</strong> Esta acción no se puede deshacer.
+                        </div>
+                        
+                        <p class="mb-3 text-muted">
+                            ¿Estás seguro de que quieres eliminar el siguiente CV?
+                        </p>
+                        
+                        <div class="bg-light p-3 rounded mb-3">
+                            <h6 class="mb-1 fw-bold text-dark">${fileName}</h6>
+                        </div>
+                        
+                        <div class="text-muted small">
+                            <strong>Esta acción eliminará:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>El archivo CV seleccionado</li>
+                                <li>Todas las habilidades detectadas</li>
+                                <li>Los datos de procesamiento</li>
+                            </ul>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="button" class="btn btn-danger" onclick="confirmDelete(${cvId})">
+                    <div class="modal-footer modal-footer-danger">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle me-1"></i>Cancelar
+                        </button>
+                        <button type="button" class="btn btn-custom-danger" onclick="confirmDelete(${cvId})">
                             <i class="bi bi-trash me-1"></i>Eliminar CV
                         </button>
                     </div>
