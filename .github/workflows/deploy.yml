@@ -1,56 +1,129 @@
-name: Deploy Postulamatic
+name: Deploy to Production Server
 
 on:
   push:
-    branches: ["main", "master"]
-  workflow_dispatch:
+    branches: [ master ]
+  workflow_dispatch: # Permite ejecutar manualmente
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
+    
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Preparar SSH (clave + known_hosts dinámico)
-        env:
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
-        run: |
-          set -e
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-
-          # Genera known_hosts con la huella del server (IPv4/IPv6 si aplica)
-          touch ~/.ssh/known_hosts
-          ssh-keyscan -H "$SERVER_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
-          ssh-keyscan -H -4 "$SERVER_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
-          ssh-keyscan -H -6 "$SERVER_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
-          chmod 644 ~/.ssh/known_hosts
-
-      - name: Sincronizar código al servidor (rsync)
-        run: |
-          rsync -az --delete \
-            --exclude ".git/" \
-            --exclude "__pycache__/" \
-            --exclude ".venv/" \
-            --exclude "node_modules/" \
-            --exclude ".env" \
-            ./ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:~/apps/postulamatic/
+    - name: Checkout code
+      uses: actions/checkout@v4
       
-
-      - name: Build & restart con Docker Compose en el servidor
-        env:
-          SERVER_USER: ${{ secrets.SERVER_USER }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
-        run: |
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.7.0
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+        
+    - name: Add server to known hosts
+      run: |
+        ssh-keyscan -H 178.156.188.95 >> ~/.ssh/known_hosts
+        
+    - name: Deploy to server
+      run: |
+        ssh deploy@178.156.188.95 << "EOF"
           set -e
-          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=yes \
-            "${SERVER_USER}@${SERVER_HOST}" bash -se <<'EOSSH'
-          set -euo pipefail
-          cd ~/apps/postulamatic
-          docker compose build --pull
-          docker compose up -d
-          EOSSH
-      
+          
+          echo "🚀 Iniciando despliegue automático..."
+          
+          # Navegar al directorio del proyecto
+          cd /home/deploy/PostulaMatic || {
+            echo "❌ Directorio del proyecto no encontrado. Clonando..."
+            git clone https://github.com/idgleb/PostulaMatic.git
+            cd PostulaMatic
+          }
+          
+          # Backup de base de datos (si existe)
+          echo "📦 Haciendo backup de base de datos..."
+          if [ -f ".env" ] && grep -q "DATABASE_URL" .env; then
+            source .env
+            if command -v pg_dump &> /dev/null && [ ! -z "$DATABASE_URL" ]; then
+              pg_dump "$DATABASE_URL" > backup_$(date +%Y%m%d_%H%M%S).sql
+              echo "✅ Backup completado"
+            else
+              echo "⚠️ pg_dump no disponible, saltando backup"
+            fi
+          fi
+          
+          # Actualizar código
+          echo "📥 Actualizando código desde GitHub..."
+          git fetch origin
+          git reset --hard origin/master
+          
+          # Verificar si existe .env
+          if [ ! -f ".env" ]; then
+            echo "⚠️ Archivo .env no encontrado. Creando desde template..."
+            cp env.production.example .env
+            echo "🔧 IMPORTANTE: Debes configurar manualmente el archivo .env con tus valores reales"
+          fi
+          
+          # Detener contenedores
+          echo "🛑 Deteniendo contenedores..."
+          docker-compose down || true
+          
+          # Reconstruir contenedores
+          echo "🔨 Reconstruyendo contenedores..."
+          docker-compose build --no-cache
+          
+          # Iniciar servicios
+          echo "🚀 Iniciando servicios..."
+          docker-compose up -d
+          
+          # Esperar a que los servicios estén listos
+          echo "⏳ Esperando a que los servicios estén listos..."
+          sleep 15
+          
+          # Aplicar migraciones
+          echo "🗄️ Aplicando migraciones..."
+          docker-compose exec -T postulamatic_web python manage.py migrate
+          
+          # Recopilar archivos estáticos
+          echo "📁 Recopilando archivos estáticos..."
+          docker-compose exec -T postulamatic_web python manage.py collectstatic --noinput
+          
+          # Verificar servicios
+          echo "🔍 Verificando servicios..."
+          
+          # Verificar web
+          if curl -f -s http://localhost:8000/ > /dev/null; then
+            echo "✅ Servicio web funcionando"
+          else
+            echo "❌ Servicio web no responde"
+            exit 1
+          fi
+          
+          # Verificar Redis
+          if docker-compose exec -T redis redis-cli ping | grep -q "PONG"; then
+            echo "✅ Redis funcionando"
+          else
+            echo "❌ Redis no responde"
+            exit 1
+          fi
+          
+          # Verificar Celery Worker
+          if docker-compose ps worker | grep -q "Up"; then
+            echo "✅ Celery Worker funcionando"
+          else
+            echo "❌ Celery Worker no está funcionando"
+          fi
+          
+          # Limpiar imágenes no utilizadas
+          echo "🧹 Limpiando imágenes Docker no utilizadas..."
+          docker image prune -f
+          
+          echo "🎉 Despliegue completado exitosamente!"
+          echo "📊 Estado de contenedores:"
+          docker-compose ps
+        EOF
+        
+    - name: Notify deployment status
+      if: always()
+      run: |
+        if [ $? -eq 0 ]; then
+          echo "✅ Despliegue exitoso"
+        else
+          echo "❌ Despliegue falló"
+        fi
