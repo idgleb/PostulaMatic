@@ -22,7 +22,7 @@ env = environ.Env(
 )
 
 # reading .env file
-environ.Env.read_env()
+environ.Env.read_env(Path(__file__).resolve().parent.parent / '.env')
 
 # Force DEBUG=False to enable custom error pages
 DEBUG = False
