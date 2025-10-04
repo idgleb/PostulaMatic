@@ -1,6 +1,0 @@
-﻿# Este workflow estÃ¡ desactivado
-# Usar unified-ci-cd.yml en su lugar
-
-name: Deploy to Production (DISABLED)
-on: []
-jobs: {}
