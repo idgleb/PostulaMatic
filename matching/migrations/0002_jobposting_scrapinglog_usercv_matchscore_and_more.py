@@ -8,103 +8,303 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('matching', '0001_initial'),
+        ("matching", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='JobPosting',
+            name="JobPosting",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('external_id', models.CharField(help_text='ID único en la fuente externa', max_length=255, unique=True)),
-                ('title', models.CharField(max_length=255)),
-                ('description', models.TextField(help_text='Descripción completa del puesto')),
-                ('email', models.EmailField(blank=True, help_text='Email de contacto (decodificado de Cloudflare)', max_length=254)),
-                ('raw_html', models.TextField(blank=True, help_text='HTML crudo para debugging')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "external_id",
+                    models.CharField(
+                        help_text="ID único en la fuente externa",
+                        max_length=255,
+                        unique=True,
+                    ),
+                ),
+                ("title", models.CharField(max_length=255)),
+                (
+                    "description",
+                    models.TextField(help_text="Descripción completa del puesto"),
+                ),
+                (
+                    "email",
+                    models.EmailField(
+                        blank=True,
+                        help_text="Email de contacto (decodificado de Cloudflare)",
+                        max_length=254,
+                    ),
+                ),
+                (
+                    "raw_html",
+                    models.TextField(blank=True, help_text="HTML crudo para debugging"),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
             ],
             options={
-                'verbose_name': 'Oferta de Trabajo',
-                'verbose_name_plural': 'Ofertas de Trabajo',
-                'ordering': ['-created_at'],
-                'indexes': [models.Index(fields=['external_id'], name='matching_jo_externa_123e34_idx'), models.Index(fields=['email'], name='matching_jo_email_55163c_idx')],
+                "verbose_name": "Oferta de Trabajo",
+                "verbose_name_plural": "Ofertas de Trabajo",
+                "ordering": ["-created_at"],
+                "indexes": [
+                    models.Index(
+                        fields=["external_id"], name="matching_jo_externa_123e34_idx"
+                    ),
+                    models.Index(fields=["email"], name="matching_jo_email_55163c_idx"),
+                ],
             },
         ),
         migrations.CreateModel(
-            name='ScrapingLog',
+            name="ScrapingLog",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('task_id', models.CharField(help_text='ID de la tarea de Celery', max_length=255)),
-                ('message', models.TextField(help_text='Mensaje del log')),
-                ('log_type', models.CharField(choices=[('info', 'Información'), ('success', 'Éxito'), ('error', 'Error'), ('warning', 'Advertencia')], default='info', max_length=20)),
-                ('timestamp', models.DateTimeField(auto_now_add=True)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='scraping_logs', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "task_id",
+                    models.CharField(
+                        help_text="ID de la tarea de Celery", max_length=255
+                    ),
+                ),
+                ("message", models.TextField(help_text="Mensaje del log")),
+                (
+                    "log_type",
+                    models.CharField(
+                        choices=[
+                            ("info", "Información"),
+                            ("success", "Éxito"),
+                            ("error", "Error"),
+                            ("warning", "Advertencia"),
+                        ],
+                        default="info",
+                        max_length=20,
+                    ),
+                ),
+                ("timestamp", models.DateTimeField(auto_now_add=True)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="scraping_logs",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Log de Scraping',
-                'verbose_name_plural': 'Logs de Scraping',
-                'ordering': ['-timestamp'],
+                "verbose_name": "Log de Scraping",
+                "verbose_name_plural": "Logs de Scraping",
+                "ordering": ["-timestamp"],
             },
         ),
         migrations.CreateModel(
-            name='UserCV',
+            name="UserCV",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('original_file', models.FileField(help_text='Archivo PDF o DOCX original', upload_to='cvs/%Y/%m/%d/')),
-                ('parsed_text', models.TextField(blank=True, help_text='Texto extraído del CV')),
-                ('skills', models.JSONField(default=dict, help_text='Datos de habilidades detectadas con confianza')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='cvs', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "original_file",
+                    models.FileField(
+                        help_text="Archivo PDF o DOCX original",
+                        upload_to="cvs/%Y/%m/%d/",
+                    ),
+                ),
+                (
+                    "parsed_text",
+                    models.TextField(blank=True, help_text="Texto extraído del CV"),
+                ),
+                (
+                    "skills",
+                    models.JSONField(
+                        default=dict,
+                        help_text="Datos de habilidades detectadas con confianza",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="cvs",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'CV de Usuario',
-                'verbose_name_plural': 'CVs de Usuario',
-                'ordering': ['-created_at'],
+                "verbose_name": "CV de Usuario",
+                "verbose_name_plural": "CVs de Usuario",
+                "ordering": ["-created_at"],
             },
         ),
         migrations.CreateModel(
-            name='MatchScore',
+            name="MatchScore",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('score', models.IntegerField(help_text='Score de coincidencia 0-100')),
-                ('details', models.JSONField(default=dict, help_text='Explicación detallada del score')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('job_posting', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='match_scores', to='matching.jobposting')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='match_scores', to=settings.AUTH_USER_MODEL)),
-                ('cv', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='match_scores', to='matching.usercv')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("score", models.IntegerField(help_text="Score de coincidencia 0-100")),
+                (
+                    "details",
+                    models.JSONField(
+                        default=dict, help_text="Explicación detallada del score"
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "job_posting",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="match_scores",
+                        to="matching.jobposting",
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="match_scores",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "cv",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="match_scores",
+                        to="matching.usercv",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Score de Coincidencia',
-                'verbose_name_plural': 'Scores de Coincidencia',
-                'ordering': ['-score', '-created_at'],
-                'indexes': [models.Index(fields=['user', 'score'], name='matching_ma_user_id_aed820_idx'), models.Index(fields=['score'], name='matching_ma_score_e00024_idx')],
-                'unique_together': {('user', 'cv', 'job_posting')},
+                "verbose_name": "Score de Coincidencia",
+                "verbose_name_plural": "Scores de Coincidencia",
+                "ordering": ["-score", "-created_at"],
+                "indexes": [
+                    models.Index(
+                        fields=["user", "score"], name="matching_ma_user_id_aed820_idx"
+                    ),
+                    models.Index(fields=["score"], name="matching_ma_score_e00024_idx"),
+                ],
+                "unique_together": {("user", "cv", "job_posting")},
             },
         ),
         migrations.CreateModel(
-            name='ApplicationAttempt',
+            name="ApplicationAttempt",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('email_subject', models.CharField(max_length=255)),
-                ('email_body', models.TextField()),
-                ('attachment_path', models.CharField(blank=True, help_text='Ruta al CV personalizado adjunto', max_length=500)),
-                ('smtp_from', models.EmailField(help_text='Email remitente usado', max_length=254)),
-                ('smtp_status', models.CharField(choices=[('QUEUED', 'En Cola'), ('SENT', 'Enviado'), ('FAILED', 'Fallido')], default='QUEUED', max_length=10)),
-                ('error_message', models.TextField(blank=True, help_text='Mensaje de error si falló')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('sent_at', models.DateTimeField(blank=True, null=True)),
-                ('retry_count', models.IntegerField(default=0)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='application_attempts', to=settings.AUTH_USER_MODEL)),
-                ('job_posting', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='application_attempts', to='matching.jobposting')),
-                ('cv', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='application_attempts', to='matching.usercv')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("email_subject", models.CharField(max_length=255)),
+                ("email_body", models.TextField()),
+                (
+                    "attachment_path",
+                    models.CharField(
+                        blank=True,
+                        help_text="Ruta al CV personalizado adjunto",
+                        max_length=500,
+                    ),
+                ),
+                (
+                    "smtp_from",
+                    models.EmailField(
+                        help_text="Email remitente usado", max_length=254
+                    ),
+                ),
+                (
+                    "smtp_status",
+                    models.CharField(
+                        choices=[
+                            ("QUEUED", "En Cola"),
+                            ("SENT", "Enviado"),
+                            ("FAILED", "Fallido"),
+                        ],
+                        default="QUEUED",
+                        max_length=10,
+                    ),
+                ),
+                (
+                    "error_message",
+                    models.TextField(blank=True, help_text="Mensaje de error si falló"),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("sent_at", models.DateTimeField(blank=True, null=True)),
+                ("retry_count", models.IntegerField(default=0)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="application_attempts",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "job_posting",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="application_attempts",
+                        to="matching.jobposting",
+                    ),
+                ),
+                (
+                    "cv",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="application_attempts",
+                        to="matching.usercv",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Intento de Postulación',
-                'verbose_name_plural': 'Intentos de Postulación',
-                'ordering': ['-created_at'],
-                'indexes': [models.Index(fields=['user', 'smtp_status'], name='matching_ap_user_id_07b955_idx'), models.Index(fields=['created_at'], name='matching_ap_created_ea4c9d_idx'), models.Index(fields=['smtp_status'], name='matching_ap_smtp_st_02c1b7_idx')],
+                "verbose_name": "Intento de Postulación",
+                "verbose_name_plural": "Intentos de Postulación",
+                "ordering": ["-created_at"],
+                "indexes": [
+                    models.Index(
+                        fields=["user", "smtp_status"],
+                        name="matching_ap_user_id_07b955_idx",
+                    ),
+                    models.Index(
+                        fields=["created_at"], name="matching_ap_created_ea4c9d_idx"
+                    ),
+                    models.Index(
+                        fields=["smtp_status"], name="matching_ap_smtp_st_02c1b7_idx"
+                    ),
+                ],
             },
         ),
     ]

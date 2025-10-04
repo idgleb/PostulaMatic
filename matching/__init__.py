@@ -1,2 +1,1 @@
-default_app_config = 'matching.apps.MatchingConfig'
-
+default_app_config = "matching.apps.MatchingConfig"

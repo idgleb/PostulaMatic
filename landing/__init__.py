@@ -1,5 +1,3 @@
 """
 Landing app package initializer.
 """
-
-

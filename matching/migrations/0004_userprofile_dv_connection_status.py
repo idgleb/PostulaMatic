@@ -6,13 +6,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('matching', '0003_encrypt_existing_credentials'),
+        ("matching", "0003_encrypt_existing_credentials"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='userprofile',
-            name='dv_connection_status',
-            field=models.CharField(choices=[('verified', 'Verificado'), ('not_verified', 'No Verificado')], default='not_verified', help_text='Estado de conexión a INTRANET DAVINCI', max_length=20),
+            model_name="userprofile",
+            name="dv_connection_status",
+            field=models.CharField(
+                choices=[("verified", "Verificado"), ("not_verified", "No Verificado")],
+                default="not_verified",
+                help_text="Estado de conexión a INTRANET DAVINCI",
+                max_length=20,
+            ),
         ),
     ]
