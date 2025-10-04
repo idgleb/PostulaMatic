@@ -63,17 +63,17 @@ jobs:
           # Update Nginx config from repository
           if [ -f "nginx/postulamatic.conf" ]; then
             cp nginx/postulamatic.conf conf.d/postulamatic.conf
-            echo "âœ… Nginx config updated"
+            echo "Nginx config updated"
           fi
           
           # Test Nginx config
           docker exec nginx-proxy nginx -t
           if [ $? -eq 0 ]; then
-            echo "âœ… Nginx config is valid"
+            echo "Nginx config is valid"
             docker exec nginx-proxy nginx -s reload
-            echo "âœ… Nginx reloaded"
+            echo "Nginx reloaded"
           else
-            echo "âŒ Nginx config is invalid, restoring backup"
+            echo "Nginx config is invalid, restoring backup"
             cp conf.d/postulamatic.conf.backup.$(date +%Y%m%d_%H%M%S) conf.d/postulamatic.conf
             exit 1
           fi
@@ -86,8 +86,8 @@ jobs:
           # Health check
           sleep 10
           if curl -f -s https://postulamatic.app > /dev/null; then
-            echo "âœ… Deployment successful"
+            echo "Deployment successful"
           else
-            echo "âŒ Deployment failed"
+            echo "Deployment failed"
             exit 1
           fi
