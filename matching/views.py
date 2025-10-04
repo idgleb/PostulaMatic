@@ -982,6 +982,17 @@ def test_smtp_email_view(request):
         return JsonResponse(
             {"success": False, "message": "Perfil de usuario no encontrado"}
         )
+    except Exception as e:
+        # Verificar si es un error de desencriptación
+        if "Error desencriptando" in str(e) or "decrypt" in str(e).lower():
+            return JsonResponse(
+                {
+                    "success": False,
+                    "message": "❌ Error: Contraseña SMTP corrupta. Por favor, re-ingresa tu contraseña SMTP.",
+                }
+            )
+        # Si no es error de desencriptación, re-lanzar para manejo normal
+        raise
     except smtplib.SMTPAuthenticationError:
         return JsonResponse(
             {

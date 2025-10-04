@@ -182,8 +182,20 @@ class SMTPConfigForm(forms.ModelForm):
             # Encriptar nueva contraseña
             instance.smtp_password = encrypt_credential(smtp_password)
         elif self.instance and self.instance.smtp_password:
-            # Mantener contraseña existente si no se proporciona una nueva
-            instance.smtp_password = self.instance.smtp_password
+            # Verificar si la contraseña existente está bien encriptada
+            try:
+                # Intentar desencriptar para verificar que está bien
+                test_decrypt = decrypt_credential(self.instance.smtp_password)
+                # Si funciona, mantener la contraseña existente
+                instance.smtp_password = self.instance.smtp_password
+            except Exception:
+                # Si falla la desencriptación, la contraseña está corrupta
+                # No mantener contraseña corrupta, dejarla vacía para forzar re-ingreso
+                instance.smtp_password = ""
+                # Log del problema para debugging
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Contraseña SMTP corrupta detectada para usuario {self.instance.user.username}")
 
         if commit:
             instance.save()
