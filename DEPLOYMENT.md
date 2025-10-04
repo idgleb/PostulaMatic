@@ -1,5 +1,30 @@
 # 🚀 Guía de Despliegue - PostulaMatic
 
+## ⚡ **Resumen Rápido - Estado Actual**
+
+### **✅ Deployment Automático FUNCIONANDO**
+- **Push a GitHub** → Deploy automático al servidor
+- **Workflow**: `.github/workflows/unified-ci-cd.yml`
+- **Tests automáticos** antes del deploy
+- **Health check** después del deploy
+
+### **🔧 Configuración Actual del Servidor**
+- **Ubicación**: `/home/deploy/apps/postulamatic`
+- **Repositorio**: Clonado desde GitHub
+- **Variables**: `.env` configurado
+- **Docker**: Compose funcionando
+- **Nginx**: Configuración versionada
+
+### **📋 Para hacer cambios:**
+```bash
+git add .
+git commit -m "Descripción del cambio"
+git push origin master
+# ¡Deploy automático!
+```
+
+---
+
 ## 📋 Resumen de Mejoras Implementadas
 
 Para evitar problemas como el error `502 Bad Gateway` que experimentamos, hemos implementado las siguientes mejoras:
@@ -25,17 +50,46 @@ Para evitar problemas como el error `502 Bad Gateway` que experimentamos, hemos 
 
 ## 🔄 **Proceso de Despliegue Mejorado**
 
-### **1. Despliegue Manual (Recomendado)**
+### **1. Despliegue Automático (ACTUAL - RECOMENDADO)**
 ```bash
-# Opción 1: Usar Makefile (más fácil)
+# El despliegue ahora es completamente automático via GitHub Actions
+git add .
+git commit -m "Descripción del cambio"
+git push origin master
+
+# GitHub Actions ejecutará automáticamente:
+# 1. Tests (Django, Black, isort, Ruff)
+# 2. Si tests pasan → Deploy automático al servidor
+# 3. Health check final
+```
+
+### **2. Configuración de Deployment Automático**
+El workflow está configurado en `.github/workflows/unified-ci-cd.yml` y requiere estos secrets en GitHub:
+
+**Secrets requeridos en GitHub Settings → Secrets and variables → Actions:**
+- `SSH_HOST`: `178.156.188.95`
+- `SSH_USER`: `deploy`
+- `SSH_KEY`: [Contenido de la clave privada SSH]
+- `APP_DIR`: `/home/deploy/apps/postulamatic`
+
+**Clave SSH privada para copiar:**
+```
+-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
+QyNTUxOQAAACCe1GwLOQkghkHaw+qmCtbBax3w/z3FWKHJHqZwm8Lm4AAAAJBU7HpBVOx6
+QQAAAAtzc2gtZWQyNTUxOQAAACCe1GwLOQkghkHaw+qmCtbBax3w/z3FWKHJHqZwm8Lm4A
+AAAECoQYVymPZiClbMbngZ7KHsNhRynFaz69B6r+BV5OCZnp7UbAs5CSCGQdrD6qYK1sFr
+HfD/PcVYockepnCbwubgAAAADWlkZ2xlQHdpbmRvd3M=
+-----END OPENSSH PRIVATE KEY-----
+```
+
+### **3. Despliegue Manual (Solo en emergencias)**
+```bash
+# Solo usar si GitHub Actions falla
 make deploy
 
-# Opción 2: Script directo
+# O script directo
 ./scripts/deploy.sh
-
-# Opción 3: Simulación primero (recomendado)
-make deploy-dry-run
-make deploy
 ```
 
 ### **2. Validaciones Automáticas**
@@ -60,6 +114,38 @@ make nginx-reload
 # Crear backup de configuración
 make nginx-backup
 ```
+
+---
+
+## 🚀 **Flujo de Deployment Automático Actual**
+
+### **Configuración del Servidor (Ya completada)**
+```bash
+# El servidor está configurado con:
+# - Repositorio git clonado en: /home/deploy/apps/postulamatic
+# - Archivo .env con variables de entorno
+# - Docker Compose configurado
+# - Nginx configurado
+```
+
+### **Flujo de Deployment**
+1. **Push a GitHub** → Trigger automático del workflow
+2. **Tests automáticos** → Django tests, Black, isort, Ruff
+3. **Si tests pasan** → SSH al servidor
+4. **Backup configuración** → Backup automático de Nginx
+5. **Git pull** → Actualizar código en servidor
+6. **Update Nginx** → Copiar configuración desde repo
+7. **Validate Nginx** → `nginx -t` para validar
+8. **Build Docker** → Reconstruir contenedores
+9. **Migrate DB** → Ejecutar migraciones
+10. **Start containers** → Levantar servicios
+11. **Reload Nginx** → Aplicar nueva configuración
+12. **Health check** → Verificar que el sitio responde
+
+### **Monitoreo del Deployment**
+- **GitHub Actions**: https://github.com/idgleb/PostulaMatic/actions
+- **Logs del servidor**: SSH al servidor y ver logs de Docker
+- **Health check**: https://postulamatic.app
 
 ---
 
@@ -98,6 +184,22 @@ postulamatic/
 
 ## 🚨 **Respuesta a Incidentes**
 
+### **Si GitHub Actions falla:**
+
+1. **Verificar secrets en GitHub:**
+   - Ir a: https://github.com/idgleb/PostulaMatic/settings/secrets/actions
+   - Verificar que todos los secrets estén configurados correctamente
+
+2. **Ver logs de GitHub Actions:**
+   - Ir a: https://github.com/idgleb/PostulaMatic/actions
+   - Click en el workflow fallido para ver logs detallados
+
+3. **Deployment manual de emergencia:**
+   ```bash
+   # Si GitHub Actions falla, hacer deployment manual
+   make deploy
+   ```
+
 ### **Si el sitio no responde después del despliegue:**
 
 1. **Verificar estado del sitio:**
@@ -119,6 +221,19 @@ postulamatic/
    ```bash
    ssh -i ~/.ssh/postulamatic_win_ed25519 deploy@178.156.188.95 "docker logs nginx-proxy --tail 50"
    ```
+
+### **Si el repositorio en el servidor se corrompe:**
+
+```bash
+# Reconectar el repositorio en el servidor
+ssh -i ~/.ssh/postulamatic_win_ed25519 deploy@178.156.188.95 "
+  cd /home/deploy/apps
+  rm -rf postulamatic
+  git clone https://github.com/idgleb/PostulaMatic.git postulamatic
+  cd postulamatic
+  cp ../postulamatic_backup_/.env .env
+"
+```
 
 ### **Rollback de emergencia:**
 ```bash
@@ -176,11 +291,13 @@ ssh -i ~/.ssh/postulamatic_win_ed25519 deploy@178.156.188.95 "echo 'SSH OK'"
 
 ## 🎯 **Próximos Pasos Recomendados**
 
-1. **Implementar GitHub Actions** para despliegue automático
+1. ✅ **GitHub Actions implementado** - Deployment automático funcionando
 2. **Configurar monitoreo 24/7** con alertas
 3. **Crear dashboard de métricas** del sitio
-4. **Implementar tests de integración** antes del despliegue
+4. **Implementar tests de integración** más completos
 5. **Configurar CDN** para mejorar performance
+6. **Backup automático de base de datos** en el workflow
+7. **Notificaciones por Slack/Email** cuando falla el deployment
 
 ---
 
