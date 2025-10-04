@@ -1,0 +1,93 @@
+﻿name: CI/CD and Deploy
+
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: Run tests
+      run: |
+        python manage.py test
+        python manage.py check
+        
+    - name: Lint code
+      run: |
+        pip install black ruff isort
+        black --check .
+        ruff check .
+        isort --check-only .
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Deploy to server
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_KEY }}
+        port: 22
+        script: |
+          cd ${{ secrets.APP_DIR }}
+          
+          # Backup current config
+          cp conf.d/postulamatic.conf conf.d/postulamatic.conf.backup.$(date +%Y%m%d_%H%M%S) || true
+          
+          # Pull latest changes
+          git pull origin master
+          
+          # Update Nginx config from repository
+          if [ -f "nginx/postulamatic.conf" ]; then
+            cp nginx/postulamatic.conf conf.d/postulamatic.conf
+            echo "âœ… Nginx config updated"
+          fi
+          
+          # Test Nginx config
+          docker exec nginx-proxy nginx -t
+          if [ $? -eq 0 ]; then
+            echo "âœ… Nginx config is valid"
+            docker exec nginx-proxy nginx -s reload
+            echo "âœ… Nginx reloaded"
+          else
+            echo "âŒ Nginx config is invalid, restoring backup"
+            cp conf.d/postulamatic.conf.backup.$(date +%Y%m%d_%H%M%S) conf.d/postulamatic.conf
+            exit 1
+          fi
+          
+          # Deploy Django app
+          docker compose build
+          docker compose run --rm postulamatic_web python manage.py migrate
+          docker compose up -d
+          
+          # Health check
+          sleep 10
+          if curl -f -s https://postulamatic.app > /dev/null; then
+            echo "âœ… Deployment successful"
+          else
+            echo "âŒ Deployment failed"
+            exit 1
+          fi
