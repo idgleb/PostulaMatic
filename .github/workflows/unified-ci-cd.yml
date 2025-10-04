@@ -70,28 +70,43 @@ jobs:
             echo "Nginx config updated"
           fi
           
-          # Test Nginx config
+          # Test Nginx config (but don't reload yet)
           docker exec nginx-proxy nginx -t
-          if [ $? -eq 0 ]; then
-            echo "Nginx config is valid"
-            docker exec nginx-proxy nginx -s reload
-            echo "Nginx reloaded"
-          else
+          if [ $? -ne 0 ]; then
             echo "Nginx config is invalid, restoring backup"
             cp conf.d/postulamatic.conf.backup.$(date +%Y%m%d_%H%M%S) conf.d/postulamatic.conf
             exit 1
           fi
+          echo "Nginx config is valid"
           
-          # Deploy Django app
+          # Deploy Django app FIRST
           docker compose build
           docker compose run --rm postulamatic_web python manage.py migrate
           docker compose up -d
           
-          # Health check
-          sleep 10
-          if curl -f -s https://postulamatic.app > /dev/null; then
-            echo "Deployment successful"
-          else
-            echo "Deployment failed"
-            exit 1
-          fi
+          # Wait for containers to be ready
+          echo "Waiting for containers to start..."
+          sleep 15
+          
+          # NOW reload Nginx to pick up new container IPs
+          docker exec nginx-proxy nginx -s reload
+          echo "Nginx reloaded after container restart"
+          
+          # Additional wait for Nginx to process new config
+          sleep 5
+          
+          # Health check with retry logic
+          echo "Performing health check..."
+          for i in {1..3}; do
+            if curl -f -s https://postulamatic.app > /dev/null; then
+              echo "Health check passed (attempt $i)"
+              echo "Deployment successful"
+              exit 0
+            else
+              echo "Health check failed (attempt $i), retrying..."
+              sleep 10
+            fi
+          done
+          
+          echo "Health check failed after 3 attempts"
+          exit 1
