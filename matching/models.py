@@ -1,8 +1,7 @@
-
 from django.contrib.auth.models import User
 from django.db import models
 
-from .utils.encryption import (decrypt_credential, encrypt_credential)
+from .utils.encryption import decrypt_credential, encrypt_credential
 
 
 class UserProfile(models.Model):

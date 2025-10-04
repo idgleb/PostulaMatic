@@ -7,7 +7,7 @@ import logging
 
 from celery import shared_task
 
-from .clients.dvcarreras_advanced import (DVCarrerasAdvancedClient)
+from .clients.dvcarreras_advanced import DVCarrerasAdvancedClient
 from .models import JobPosting, UserCV, UserProfile
 from .services.matching import matching_service
 

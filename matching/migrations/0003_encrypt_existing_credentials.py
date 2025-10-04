@@ -6,8 +6,10 @@ from django.db import migrations
 def encrypt_existing_credentials(apps, schema_editor):
     """Encripta las credenciales existentes en la base de datos."""
     try:
-        from matching.utils.encryption_temp import (encrypt_credential,
-                                                    is_credential_encrypted)
+        from matching.utils.encryption_temp import (
+            encrypt_credential,
+            is_credential_encrypted,
+        )
 
         UserProfile = apps.get_model("matching", "UserProfile")
 
@@ -50,8 +52,10 @@ def encrypt_existing_credentials(apps, schema_editor):
 def decrypt_existing_credentials(apps, schema_editor):
     """Desencripta las credenciales (para rollback)."""
     try:
-        from matching.utils.encryption_temp import (decrypt_credential,
-                                                    is_credential_encrypted)
+        from matching.utils.encryption_temp import (
+            decrypt_credential,
+            is_credential_encrypted,
+        )
 
         UserProfile = apps.get_model("matching", "UserProfile")
 

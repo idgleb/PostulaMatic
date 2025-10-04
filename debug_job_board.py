@@ -8,8 +8,7 @@ import logging
 
 from django.contrib.auth.models import User
 
-from matching.clients.dvcarreras_playwright_simple import \
-    DVCarrerasPlaywrightSimple
+from matching.clients.dvcarreras_playwright_simple import DVCarrerasPlaywrightSimple
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO)

@@ -1,7 +1,6 @@
 from django.contrib import admin
 
-from .models import (ApplicationAttempt, JobPosting, MatchScore, UserCV,
-                     UserProfile)
+from .models import ApplicationAttempt, JobPosting, MatchScore, UserCV, UserProfile
 
 
 @admin.register(UserProfile)
