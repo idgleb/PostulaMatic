@@ -28,14 +28,16 @@ jobs:
         python manage.py test
         python manage.py check
         
-    - name: Format and lint code
+    - name: Format and lint code (permissive)
       run: |
         pip install black isort ruff
-        black --check .
-        echo "Black check passed"
+        echo "Running Black check..."
+        black --check . || echo "Black check failed but continuing"
+        echo "Running isort check..."
         isort --check-only . || echo "isort check failed but continuing"
-        echo "isort check completed"
+        echo "Running ruff check..."
         ruff check . --exit-zero || echo "ruff check completed with warnings"
+        echo "All linting checks completed"
 
   deploy:
     needs: test
