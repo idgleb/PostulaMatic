@@ -9,7 +9,8 @@ django.setup()
 
 from django.contrib.auth.models import User
 
-from matching.clients.dvcarreras_playwright_simple import DVCarrerasPlaywrightSimple
+from matching.clients.dvcarreras_playwright_simple import \
+    DVCarrerasPlaywrightSimple
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

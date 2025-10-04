@@ -8,7 +8,8 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
-from .forms import CVUploadForm, DVCredentialsForm, MatchingConfigForm, SMTPConfigForm
+from .forms import (CVUploadForm, DVCredentialsForm, MatchingConfigForm,
+                    SMTPConfigForm)
 from .forms_email import EmailConfigForm
 from .models import JobPosting, MatchScore, ScrapingLog, UserCV, UserProfile
 from .services.cv_parser import cv_parser
@@ -1021,9 +1022,8 @@ def test_dv_login_view(request):
             )
 
         # Importar el cliente Playwright
-        from matching.clients.dvcarreras_playwright_simple import (
-            DVCarrerasPlaywrightSimple,
-        )
+        from matching.clients.dvcarreras_playwright_simple import \
+            DVCarrerasPlaywrightSimple
 
         # Crear instancia del cliente
         client = DVCarrerasPlaywrightSimple(

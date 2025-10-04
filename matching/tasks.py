@@ -9,7 +9,6 @@ from asgiref.sync import sync_to_async
 from celery import shared_task
 
 from .clients.dvcarreras import DVCarrerasClient
-
 # Importar tareas avanzadas
 from .clients.dvcarreras_advanced import DVCarrerasAdvancedClient
 from .models import JobPosting, MatchScore, ScrapingLog, UserCV, UserProfile
@@ -744,7 +743,8 @@ def scrape_dvcarreras_jobs_playwright(self, user_id: int):
         async def run_playwright_scraping():
             import asyncio
 
-            from .clients.dvcarreras_playwright_simple import DVCarrerasPlaywrightSimple
+            from .clients.dvcarreras_playwright_simple import \
+                DVCarrerasPlaywrightSimple
 
             # Actualizar estado: Iniciando navegador
             logger.info("Enviando actualización de estado: Iniciando navegador")
