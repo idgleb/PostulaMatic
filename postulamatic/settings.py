@@ -169,3 +169,9 @@ LOGOUT_REDIRECT_URL = "/"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# File upload settings for large CV files
+FILE_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024  # 50MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024  # 50MB
+FILE_UPLOAD_TIMEOUT = 300  # 5 minutes
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 1000
