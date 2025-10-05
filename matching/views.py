@@ -1248,7 +1248,8 @@ def cv_parsed_text_view(request, cv_id):
                 "success": True,
                 "parsed_text": cv.parsed_text,
                 "is_processed": cv.is_processed,
-                "skills_count": cv.skills_count
+                "skills_count": cv.skills_count,
+                "skills_list": cv.skills_list
             })
         else:
             return JsonResponse({
@@ -1256,6 +1257,7 @@ def cv_parsed_text_view(request, cv_id):
                 "parsed_text": None,
                 "is_processed": cv.is_processed,
                 "skills_count": cv.skills_count,
+                "skills_list": cv.skills_list,
                 "message": "No hay texto parseado disponible"
             })
             
