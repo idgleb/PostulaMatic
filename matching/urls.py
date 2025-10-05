@@ -9,6 +9,7 @@ urlpatterns = [
     path("upload-cv-ajax/", views.upload_cv_view, name="upload_cv"),
     path("mis-cvs/", views.cv_list_view, name="cv_list"),
     path("eliminar-cv/<int:cv_id>/", views.delete_cv_view, name="delete_cv"),
+    path("eliminar-todos-cvs/", views.delete_all_cvs_view, name="delete_all_cvs"),
     path("cv-parsed-text/<int:cv_id>/", views.cv_parsed_text_view, name="cv_parsed_text"),
     path("probar-scraper/", views.test_scraper_view, name="test_scraper"),
     path(

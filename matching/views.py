@@ -335,6 +335,37 @@ def delete_cv_view(request, cv_id):
 
 
 @login_required
+@require_http_methods(["DELETE"])
+def delete_all_cvs_view(request):
+    """Eliminar todos los CVs del usuario (AJAX)."""
+    try:
+        # Obtener todos los CVs del usuario
+        user_cvs = UserCV.objects.filter(user=request.user)
+        cv_count = user_cvs.count()
+        
+        if cv_count == 0:
+            return JsonResponse({
+                "success": False, 
+                "message": "No tienes CVs para eliminar"
+            })
+        
+        # Eliminar todos los CVs
+        user_cvs.delete()
+        
+        return JsonResponse({
+            "success": True, 
+            "message": f"Se eliminaron {cv_count} CV(s) correctamente."
+        })
+        
+    except Exception as e:
+        logger.error(f"Error eliminando todos los CVs del usuario {request.user.id}: {e}")
+        return JsonResponse({
+            "success": False, 
+            "message": "Error interno al eliminar los CVs"
+        }, status=500)
+
+
+@login_required
 def dashboard_view(request):
     """Dashboard principal con estadísticas."""
     # Estadísticas básicas

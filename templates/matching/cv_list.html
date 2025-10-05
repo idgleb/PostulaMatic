@@ -9,9 +9,14 @@
                 <i class="bi bi-file-earmark-text me-3"></i>Mis CVs
             </h1>
             <p class="lead text-muted">Gestiona tus CVs y visualiza las habilidades detectadas</p>
-            <button type="button" class="btn btn-primary btn-lg mt-3" onclick="triggerFileUpload()">
-                <i class="bi bi-plus-lg me-2"></i>Subir nuevo CV
-            </button>
+            <div class="d-flex gap-3 mt-3">
+                <button type="button" class="btn btn-primary btn-lg" onclick="triggerFileUpload()">
+                    <i class="bi bi-plus-lg me-2"></i>Subir nuevo CV
+                </button>
+                <button type="button" class="btn btn-danger btn-lg" onclick="deleteAllCVs()">
+                    <i class="bi bi-trash3 me-2"></i>Eliminar todos los CVs
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -1031,6 +1036,112 @@ function confirmDelete(cvId) {
     .catch(error => {
         console.error('Error:', error);
         showToast('Error al eliminar el CV', 'error');
+    });
+}
+
+function deleteAllCVs() {
+    // Crear modal de confirmación para eliminar todos los CVs
+    const modal = `
+        <div class="modal fade" id="deleteAllModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content matching-modal">
+                    <div class="modal-header modal-header-danger">
+                        <h5 class="modal-title">
+                            <i class="bi bi-exclamation-triangle me-2"></i>Confirmar eliminación masiva
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            <strong>¡PELIGRO!</strong> Esta acción eliminará TODOS tus CVs.
+                        </div>
+                        
+                        <p class="mb-3 text-muted">
+                            ¿Estás completamente seguro de que quieres eliminar <strong>TODOS</strong> los CVs?
+                        </p>
+                        
+                        <div class="bg-light p-3 rounded mb-3">
+                            <h6 class="mb-1 fw-bold text-danger">Eliminación masiva de CVs</h6>
+                            <p class="mb-0 text-muted small">Se eliminarán todos los archivos CV de tu cuenta</p>
+                        </div>
+                        
+                        <div class="text-muted small">
+                            <strong>Esta acción eliminará:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>Todos los archivos CV subidos</li>
+                                <li>Todas las habilidades detectadas</li>
+                                <li>Todos los datos de procesamiento</li>
+                                <li>El historial completo de CVs</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="alert alert-warning mt-3">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Importante:</strong> Esta acción no se puede deshacer.
+                        </div>
+                    </div>
+                    <div class="modal-footer modal-footer-danger">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle me-1"></i>Cancelar
+                        </button>
+                        <button type="button" class="btn btn-custom-danger" onclick="confirmDeleteAll()">
+                            <i class="bi bi-trash3 me-1"></i>Eliminar TODOS los CVs
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remover modal anterior si existe
+    const existingModal = document.getElementById('deleteAllModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Agregar nuevo modal al DOM
+    document.body.insertAdjacentHTML('beforeend', modal);
+    
+    // Mostrar modal
+    const deleteAllModal = new bootstrap.Modal(document.getElementById('deleteAllModal'));
+    deleteAllModal.show();
+    
+    // Limpiar modal cuando se cierre
+    document.getElementById('deleteAllModal').addEventListener('hidden.bs.modal', function() {
+        this.remove();
+    });
+}
+
+function confirmDeleteAll() {
+    fetch('{% url "delete_all_cvs" %}', {
+        method: 'DELETE',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Cerrar modal de confirmación
+            const deleteAllModal = bootstrap.Modal.getInstance(document.getElementById('deleteAllModal'));
+            deleteAllModal.hide();
+            
+            // Mostrar toast de éxito
+            showToast(data.message || 'Todos los CVs eliminados exitosamente', 'success');
+            
+            // Recargar página después de un breve delay
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        } else {
+            showToast('Error al eliminar los CVs: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Error al eliminar los CVs', 'error');
     });
 }
 
