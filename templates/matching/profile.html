@@ -553,8 +553,17 @@
         // SMTP Test Form
         const smtpTestForm = document.getElementById('smtp-test-form');
         if (smtpTestForm) {
+            let smtpTestInProgress = false; // Flag para prevenir múltiples envíos
+            
             smtpTestForm.addEventListener('submit', function(e) {
                 e.preventDefault();
+                
+                // Prevenir múltiples envíos
+                if (smtpTestInProgress) {
+                    return;
+                }
+                
+                smtpTestInProgress = true;
                 
                 // Desactivar botón y mostrar spinner
                 const btn = document.getElementById('btn-smtp-test');
@@ -585,6 +594,7 @@
                         showMessage('smtp-test-result', 'Error de conexión: ' + error.message, 'error');
                     })
                     .finally(() => {
+                        smtpTestInProgress = false; // Reset flag
                         if (btn) {
                             btn.disabled = false;
                             btn.innerHTML = originalText;

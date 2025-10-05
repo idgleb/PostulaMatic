@@ -7,7 +7,6 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
-from django.views.decorators.csrf import csrf_exempt
 
 from .forms import (CVUploadForm, DVCredentialsForm, MatchingConfigForm,
                     SMTPConfigForm)
@@ -897,7 +896,6 @@ def login_view(request):
 
 
 @login_required
-@csrf_exempt
 def test_smtp_email_view(request):
     """Vista para probar el envío de email SMTP."""
 
