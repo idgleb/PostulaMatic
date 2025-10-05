@@ -284,6 +284,171 @@ ssh -i ~/.ssh/postulamatic_win_ed25519 deploy@178.156.188.95 "echo 'SSH OK'"
 4. **El proceso incluye validaciones** en cada paso
 5. **Hay rollback automático** si algo falla
 
+## ⚠️ **CRÍTICO: Mantener Deployment Automático**
+
+### **🚨 NUNCA hacer estos cambios sin actualizar la documentación:**
+
+1. **Cambios en `.github/workflows/unified-ci-cd.yml`:**
+   - ✅ SIEMPRE probar localmente antes de push
+   - ✅ Verificar que los secrets estén configurados
+   - ✅ Validar sintaxis YAML antes de commit
+
+2. **Cambios en estructura del servidor:**
+   - ✅ SIEMPRE actualizar `APP_DIR` en secrets si cambia la ruta
+   - ✅ Verificar permisos SSH después de cambios
+   - ✅ Documentar cualquier cambio en variables de entorno
+
+3. **Cambios en Docker/Docker Compose:**
+   - ✅ SIEMPRE probar `docker compose up` localmente
+   - ✅ Verificar que todos los servicios se levanten correctamente
+   - ✅ Actualizar `docker-compose.yml` si se agregan servicios
+
+4. **Cambios en Nginx:**
+   - ✅ SIEMPRE validar con `nginx -t` antes de push
+   - ✅ Mantener `nginx/postulamatic.conf` actualizado
+   - ✅ Probar configuración en ambiente de desarrollo
+
+### **🔧 Checklist antes de cada push:**
+
+```bash
+# 1. Verificar que el código funciona localmente
+docker compose up
+# Probar funcionalidades principales
+
+# 2. Verificar sintaxis de archivos críticos
+nginx -t  # Si hay cambios en Nginx
+python manage.py check  # Django
+black --check .  # Formato
+isort --check-only .  # Imports
+
+# 3. Verificar que GitHub Actions tiene los secrets
+# Ir a: https://github.com/idgleb/PostulaMatic/settings/secrets/actions
+# Verificar: SSH_HOST, SSH_USER, SSH_KEY, APP_DIR
+
+# 4. Hacer commit y push
+git add .
+git commit -m "Descripción clara del cambio"
+git push origin master
+
+# 5. Monitorear GitHub Actions
+# Ir a: https://github.com/idgleb/PostulaMatic/actions
+# Esperar que pase todos los tests y deployment
+```
+
+### **🚫 Errores comunes que rompen el deployment:**
+
+1. **YAML mal formado** en workflows
+2. **Secrets faltantes** en GitHub Actions
+3. **Permisos SSH incorrectos**
+4. **Variables de entorno faltantes** en `.env`
+5. **Docker Compose mal configurado**
+6. **Nginx config inválida**
+
+### **🔍 Diagnóstico rápido si el deployment falla:**
+
+```bash
+# 1. Verificar que GitHub Actions se está ejecutando
+# Ir a: https://github.com/idgleb/PostulaMatic/actions
+# Si no hay workflows ejecutándose, el problema está en el trigger
+
+# 2. Verificar secrets de GitHub Actions
+# Ir a: https://github.com/idgleb/PostulaMatic/settings/secrets/actions
+# Verificar que existan: SSH_HOST, SSH_USER, SSH_KEY, APP_DIR
+
+# 3. Verificar conectividad SSH desde GitHub Actions
+# En los logs del workflow, buscar errores de conexión SSH
+
+# 4. Verificar que el servidor está accesible
+ssh -i ~/.ssh/postulamatic_win_ed25519 deploy@178.156.188.95 "echo 'Servidor accesible'"
+
+# 5. Verificar que el repositorio en el servidor está actualizado
+ssh -i ~/.ssh/postulamatic_win_ed25519 deploy@178.156.188.95 "
+  cd /home/deploy/apps/postulamatic
+  git status
+  git log --oneline -3
+"
+
+# 6. Verificar estado de Docker en el servidor
+ssh -i ~/.ssh/postulamatic_win_ed25519 deploy@178.156.188.95 "
+  cd /home/deploy/apps/postulamatic
+  docker compose ps
+"
+```
+
+### **🛠️ Soluciones comunes:**
+
+#### **Problema: "Workflow not triggered"**
+```bash
+# Verificar que el push fue a la rama master
+git branch  # Debe estar en master
+git push origin master  # Asegurar que es master
+```
+
+#### **Problema: "SSH connection failed"**
+```bash
+# Regenerar clave SSH si es necesario
+ssh-keygen -t ed25519 -f ~/.ssh/postulamatic_win_ed25519_new
+# Actualizar secret SSH_KEY en GitHub con la nueva clave
+# Agregar la nueva clave pública al servidor
+ssh-copy-id -i ~/.ssh/postulamatic_win_ed25519_new.pub deploy@178.156.188.95
+```
+
+#### **Problema: "Docker build failed"**
+```bash
+# Verificar que docker-compose.yml es válido
+docker compose config
+# Probar localmente
+docker compose up --build
+```
+
+#### **Problema: "Nginx config invalid"**
+```bash
+# Validar configuración Nginx
+nginx -t
+# Verificar sintaxis del archivo
+nginx/postulamatic.conf
+```
+
+### **📅 Mantenimiento Preventivo (Mensual):**
+
+```bash
+# 1. Verificar que todos los secrets siguen siendo válidos
+# Ir a: https://github.com/idgleb/PostulaMatic/settings/secrets/actions
+# Verificar que SSH_KEY sigue funcionando:
+ssh -i ~/.ssh/postulamatic_win_ed25519 deploy@178.156.188.95 "echo 'SSH OK'"
+
+# 2. Verificar que el servidor tiene espacio suficiente
+ssh -i ~/.ssh/postulamatic_win_ed25519 deploy@178.156.188.95 "df -h"
+
+# 3. Limpiar imágenes Docker viejas (opcional)
+ssh -i ~/.ssh/postulamatic_win_ed25519 deploy@178.156.188.95 "
+  cd /home/deploy/apps/postulamatic
+  docker system prune -f
+"
+
+# 4. Verificar logs de GitHub Actions para errores recurrentes
+# Ir a: https://github.com/idgleb/PostulaMatic/actions
+# Revisar workflows fallidos de los últimos 30 días
+
+# 5. Actualizar documentación si hay cambios en el proceso
+# Actualizar este archivo DEPLOYMENT.md si cambia algo
+```
+
+### **🔄 Proceso de actualización de secrets:**
+
+Si necesitas cambiar algún secret de GitHub Actions:
+
+1. **Ir a**: https://github.com/idgleb/PostulaMatic/settings/secrets/actions
+2. **Actualizar el secret** con el nuevo valor
+3. **Hacer un push de prueba** para verificar que funciona:
+   ```bash
+   echo "# Test secret update" >> README.md
+   git add README.md
+   git commit -m "Test: Verify secrets update"
+   git push origin master
+   ```
+4. **Monitorear GitHub Actions** para confirmar que funciona
+
 ---
 
 ## 🎯 **Próximos Pasos Recomendados**
@@ -298,4 +463,4 @@ ssh -i ~/.ssh/postulamatic_win_ed25519 deploy@178.156.188.95 "echo 'SSH OK'"
 
 ---
 
-*Última actualización: Octubre 2025*
+*Última actualización: Octubre 2025 - Documentación actualizada para prevenir fallos del deployment automático*
