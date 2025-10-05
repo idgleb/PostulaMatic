@@ -1,4 +1,4 @@
-﻿# Envars locales
+# Envars locales
 .env
 .env.*
 
@@ -20,7 +20,7 @@ media/
 
 # Static files (collected)
 staticfiles/
-static/
+# static/  # Comentado para permitir archivos CSS personalizados
 
 # Node modules
 node_modules/
