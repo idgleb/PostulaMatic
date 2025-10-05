@@ -1,4 +1,4 @@
-﻿name: CI/CD and Deploy
+name: CI/CD and Deploy
 
 on:
   push:
@@ -62,7 +62,7 @@ jobs:
           cp conf.d/postulamatic.conf conf.d/postulamatic.conf.backup.$(date +%Y%m%d_%H%M%S) || true
           
           # Pull latest changes
-          git pull origin master
+          echo "Current branch: $(git branch --show-current)"; git checkout master || git checkout -b master; git pull origin master; echo "Latest commit: $(git log --oneline -1)"; echo "Files updated: $(git status --porcelain)"
           
           # Update Nginx config from repository
           if [ -f "nginx/postulamatic.conf" ]; then
