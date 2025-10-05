@@ -8,6 +8,7 @@ urlpatterns = [
     path("perfil/", views.profile_view, name="profile"),
     path("upload-cv-ajax/", views.upload_cv_view, name="upload_cv"),
     path("mis-cvs/", views.cv_list_view, name="cv_list"),
+    path("cv-texto/<int:cv_id>/", views.get_cv_parsed_text_view, name="get_cv_parsed_text"),
     path("eliminar-cv/<int:cv_id>/", views.delete_cv_view, name="delete_cv"),
     path("probar-scraper/", views.test_scraper_view, name="test_scraper"),
     path(
