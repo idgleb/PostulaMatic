@@ -898,6 +898,10 @@ def login_view(request):
 @login_required
 def test_smtp_email_view(request):
     """Vista para probar el envío de email SMTP."""
+    
+    # Log del request para debugging
+    request_id = request.POST.get('request_id', 'no-id')
+    print(f"SMTP Test request received - ID: {request_id}, User: {request.user.username}")
 
     try:
         user_profile = UserProfile.objects.get(user=request.user)

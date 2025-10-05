@@ -550,13 +550,19 @@
             });
         }
 
-        // SMTP Test Form
+        // SMTP Test Form - Flag global para prevenir múltiples envíos
+        let smtpTestInProgress = false;
+        
         const smtpTestForm = document.getElementById('smtp-test-form');
         const smtpTestBtn = document.getElementById('btn-smtp-test');
         if (smtpTestForm && smtpTestBtn) {
-            let smtpTestInProgress = false; // Flag para prevenir múltiples envíos
             
-            smtpTestBtn.addEventListener('click', function(e) {
+            // Remover cualquier event listener existente clonando el botón
+            const clonedBtn = smtpTestBtn.cloneNode(true);
+            smtpTestBtn.replaceWith(clonedBtn);
+            
+            // Crear una función nombrada para poder removerla después
+            function handleSmtpTestClick(e) {
                 e.preventDefault();
                 
                 console.log('SMTP Test button clicked, inProgress:', smtpTestInProgress);
@@ -571,24 +577,45 @@
                 console.log('SMTP Test starting, setting inProgress to true');
                 
                 // Desactivar botón y mostrar spinner
-                const btn = smtpTestBtn;
+                const btn = clonedBtn;
                 if (btn) {
                     // Usar texto hardcodeado para evitar problemas con el estado previo del botón
                     const originalText = '<i class="bi bi-send-check me-2"></i>Enviar email de prueba';
                     btn.disabled = true;
                     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Enviando...';
                     
-                    const formData = new FormData(this);
+                    // Timeout de seguridad (30 segundos)
+                    const timeoutId = setTimeout(() => {
+                        console.log('SMTP Test timeout, resetting button');
+                        smtpTestInProgress = false;
+                        btn.disabled = false;
+                        btn.innerHTML = originalText;
+                        showMessage('smtp-test-result', 'Timeout: El test tardó demasiado tiempo', 'error');
+                    }, 30000);
                     
-                    fetch(this.action, {
+                    const formData = new FormData(smtpTestForm);
+                    
+                    // Agregar timestamp único para rastrear requests
+                    const requestId = Date.now();
+                    formData.append('request_id', requestId);
+                    console.log('SMTP Test sending request with ID:', requestId);
+                    
+                    fetch(smtpTestForm.action, {
                         method: 'POST',
                         body: formData,
                         headers: {
                             'X-Requested-With': 'XMLHttpRequest',
                         }
                     })
-                    .then(response => response.json())
+                    .then(response => {
+                        console.log('SMTP Test response received:', response.status);
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
                     .then(data => {
+                        console.log('SMTP Test data:', data);
                         if (data.success) {
                             showMessage('smtp-test-result', data.message, 'success');
                         } else {
@@ -596,18 +623,24 @@
                         }
                     })
                     .catch(error => {
+                        console.error('SMTP Test error:', error);
                         showMessage('smtp-test-result', 'Error de conexión: ' + error.message, 'error');
                     })
                     .finally(() => {
                         console.log('SMTP Test completed, resetting inProgress to false');
+                        clearTimeout(timeoutId); // Limpiar timeout
                         smtpTestInProgress = false; // Reset flag
+                        console.log('SMTP Test flag reset to false');
                         if (btn) {
                             btn.disabled = false;
                             btn.innerHTML = originalText;
                         }
                     });
                 }
-            });
+            }
+            
+            // Agregar el event listener al botón clonado
+            clonedBtn.addEventListener('click', handleSmtpTestClick);
         }
 
         // DV Form
