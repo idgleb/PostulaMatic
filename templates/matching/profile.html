@@ -122,7 +122,7 @@
                 <form method="post" action="{% url 'test_smtp_email' %}" class="mt-3" id="smtp-test-form">
                     {% csrf_token %}
                     <div class="d-flex justify-content-end">
-                        <button type="submit" class="btn btn-outline-secondary" id="btn-smtp-test">
+                        <button type="button" class="btn btn-outline-secondary" id="btn-smtp-test">
                             <i class="bi bi-send-check me-2"></i>Enviar email de prueba
                         </button>
                     </div>
@@ -552,21 +552,26 @@
 
         // SMTP Test Form
         const smtpTestForm = document.getElementById('smtp-test-form');
-        if (smtpTestForm) {
+        const smtpTestBtn = document.getElementById('btn-smtp-test');
+        if (smtpTestForm && smtpTestBtn) {
             let smtpTestInProgress = false; // Flag para prevenir múltiples envíos
             
-            smtpTestForm.addEventListener('submit', function(e) {
+            smtpTestBtn.addEventListener('click', function(e) {
                 e.preventDefault();
+                
+                console.log('SMTP Test button clicked, inProgress:', smtpTestInProgress);
                 
                 // Prevenir múltiples envíos
                 if (smtpTestInProgress) {
+                    console.log('SMTP Test already in progress, ignoring click');
                     return;
                 }
                 
                 smtpTestInProgress = true;
+                console.log('SMTP Test starting, setting inProgress to true');
                 
                 // Desactivar botón y mostrar spinner
-                const btn = document.getElementById('btn-smtp-test');
+                const btn = smtpTestBtn;
                 if (btn) {
                     // Usar texto hardcodeado para evitar problemas con el estado previo del botón
                     const originalText = '<i class="bi bi-send-check me-2"></i>Enviar email de prueba';
@@ -594,6 +599,7 @@
                         showMessage('smtp-test-result', 'Error de conexión: ' + error.message, 'error');
                     })
                     .finally(() => {
+                        console.log('SMTP Test completed, resetting inProgress to false');
                         smtpTestInProgress = false; // Reset flag
                         if (btn) {
                             btn.disabled = false;
