@@ -622,10 +622,25 @@
                             showMessage('smtp-test-result', data.message, 'error');
                         }
                     })
-                    .catch(error => {
-                        console.error('SMTP Test error:', error);
-                        showMessage('smtp-test-result', 'Error de conexión: ' + error.message, 'error');
-                    })
+                   .catch(error => {
+                       console.error('SMTP Test error:', error);
+                       let errorMessage = 'Error de conexión: ' + error.message;
+                       
+                       // Mejorar mensaje de error para usuarios no técnicos
+                       if (error.message.includes('500')) {
+                           errorMessage = '❌ Error del servidor. Verifica tu configuración SMTP (usuario, contraseña, servidor y puerto).';
+                       } else if (error.message.includes('400')) {
+                           errorMessage = '❌ Error en la solicitud. Verifica que todos los campos SMTP estén completos.';
+                       } else if (error.message.includes('403')) {
+                           errorMessage = '❌ Acceso denegado. Verifica tus credenciales SMTP.';
+                       } else if (error.message.includes('timeout')) {
+                           errorMessage = '❌ Tiempo de espera agotado. Verifica tu conexión a internet y la configuración del servidor SMTP.';
+                       } else if (error.message.includes('Network Error') || error.message.includes('fetch')) {
+                           errorMessage = '❌ Error de red. Verifica tu conexión a internet.';
+                       }
+                       
+                       showMessage('smtp-test-result', errorMessage, 'error');
+                   })
                     .finally(() => {
                         console.log('SMTP Test completed, resetting inProgress to false');
                         clearTimeout(timeoutId); // Limpiar timeout

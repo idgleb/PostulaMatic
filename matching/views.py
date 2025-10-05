@@ -1025,14 +1025,15 @@ def test_smtp_email_view(request):
             )
         # Si no es error de desencriptación, re-lanzar para manejo normal
         raise
-    except smtplib.SMTPAuthenticationError:
-        return JsonResponse(
-            {
-                "success": False,
-                "message": "❌ Error de autenticación SMTP. Verifica usuario y contraseña.",
-            }
-        )
-    except smtplib.SMTPConnectError:
+    except smtplib.SMTPAuthenticationError as e:
+        error_msg = str(e)
+        if "Username and Password not accepted" in error_msg or "535" in error_msg:
+            message = "❌ Credenciales SMTP incorrectas. Para Gmail, usa una contraseña de aplicación en lugar de tu contraseña normal."
+        else:
+            message = "❌ Error de autenticación SMTP. Verifica usuario y contraseña."
+        return JsonResponse({"success": False, "message": message})
+        
+    except smtplib.SMTPConnectError as e:
         return JsonResponse(
             {
                 "success": False,
@@ -1040,10 +1041,15 @@ def test_smtp_email_view(request):
             }
         )
     except smtplib.SMTPException as e:
-        return JsonResponse({"success": False, "message": f"❌ Error SMTP: {str(e)}"})
+        error_msg = str(e)
+        if "535" in error_msg:
+            return JsonResponse({"success": False, "message": "❌ Credenciales SMTP rechazadas. Para Gmail, asegúrate de usar una contraseña de aplicación."})
+        else:
+            return JsonResponse({"success": False, "message": f"❌ Error SMTP: {error_msg}"})
     except Exception as e:
+        logger.error(f"Error inesperado en test SMTP: {e}")
         return JsonResponse(
-            {"success": False, "message": f"❌ Error inesperado: {str(e)}"}
+            {"success": False, "message": "❌ Error inesperado del servidor. Intenta nuevamente."}
         )
 
 
