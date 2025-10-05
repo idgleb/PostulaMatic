@@ -929,7 +929,15 @@ def test_smtp_email_view(request):
         smtp_server = user_profile.smtp_host
         smtp_port = user_profile.smtp_port
         smtp_username = user_profile.smtp_username
-        smtp_password = user_profile.get_smtp_password()  # Usar método que desencripta
+        
+        # Obtener contraseña SMTP de forma segura
+        try:
+            smtp_password = user_profile.get_smtp_password()
+        except Exception as e:
+            # Si falla la desencriptación, puede ser texto plano
+            logger.warning(f"Error obteniendo contraseña SMTP para {request.user.username}: {e}")
+            # Intentar usar la contraseña tal como está (texto plano)
+            smtp_password = user_profile.smtp_password
 
         # Crear el mensaje de prueba
         msg = MIMEMultipart()
