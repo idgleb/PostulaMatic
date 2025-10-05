@@ -322,38 +322,6 @@ def cv_list_view(request):
 
 
 @login_required
-def get_cv_parsed_text_view(request, cv_id):
-    """Obtener texto parseado del CV (AJAX)."""
-    try:
-        cv = UserCV.objects.get(id=cv_id, user=request.user)
-        
-        if not cv.parsed_text:
-            return JsonResponse({
-                "success": False,
-                "message": "El CV no ha sido procesado aún"
-            })
-        
-        return JsonResponse({
-            "success": True,
-            "parsed_text": cv.parsed_text,
-            "word_count": len(cv.parsed_text.split()) if cv.parsed_text else 0,
-            "file_name": cv.original_file.name
-        })
-        
-    except UserCV.DoesNotExist:
-        return JsonResponse({
-            "success": False,
-            "message": "CV no encontrado"
-        })
-    except Exception as e:
-        logger.error(f"Error obteniendo texto parseado del CV {cv_id}: {e}")
-        return JsonResponse({
-            "success": False,
-            "message": "Error interno del servidor"
-        })
-
-
-@login_required
 @require_http_methods(["DELETE"])
 def delete_cv_view(request, cv_id):
     """Eliminar CV (AJAX)."""
@@ -1265,3 +1233,40 @@ def clear_user_scraping_logs_view(request):
     except Exception as e:
         logger.error(f"Error limpiando logs del usuario {request.user.id}: {e}")
         return JsonResponse({"success": False, "error": str(e)})
+
+
+@login_required
+def cv_parsed_text_view(request, cv_id):
+    """Vista AJAX para obtener el texto parseado de un CV."""
+    try:
+        # Obtener el CV del usuario autenticado
+        cv = get_object_or_404(UserCV, id=cv_id, user=request.user)
+        
+        # Verificar si tiene texto parseado
+        if cv.parsed_text:
+            return JsonResponse({
+                "success": True,
+                "parsed_text": cv.parsed_text,
+                "is_processed": cv.is_processed,
+                "skills_count": cv.skills_count
+            })
+        else:
+            return JsonResponse({
+                "success": False,
+                "parsed_text": None,
+                "is_processed": cv.is_processed,
+                "skills_count": cv.skills_count,
+                "message": "No hay texto parseado disponible"
+            })
+            
+    except UserCV.DoesNotExist:
+        return JsonResponse({
+            "success": False,
+            "error": "CV no encontrado"
+        })
+    except Exception as e:
+        logger.error(f"Error obteniendo texto parseado del CV {cv_id}: {e}")
+        return JsonResponse({
+            "success": False,
+            "error": "Error interno del servidor"
+        })

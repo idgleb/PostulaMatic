@@ -721,102 +721,106 @@ function showCVDetails(cvId, fileName, createdDate, skillsCount, isProcessed) {
                             <i class="bi bi-file-earmark-text me-2"></i>${fileName}
                         </h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <!-- Información básica del CV -->
-                        <div class="row mb-4">
-                            <div class="col-12">
-                                <div class="card border-0 bg-light">
-                                    <div class="card-body">
-                                        <div class="row">
-                                            <div class="col-md-3">
-                                                <strong><i class="bi bi-calendar3 me-1"></i>Fecha:</strong><br>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <!-- Left Column - Info -->
+                        <div class="col-lg-4">
+                            <div class="card border-0 bg-light h-100 shadow-sm">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <i class="bi bi-info-circle me-2"></i>Información del CV
+                                    </h6>
+                                    <ul class="list-unstyled">
+                                        <li class="mb-2">
+                                            <strong><i class="bi bi-calendar3 me-1"></i>Fecha:</strong><br>
                                                 <small class="text-muted">${createdDate}</small>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <strong><i class="bi bi-tags me-1"></i>Skills:</strong><br>
+                                        </li>
+                                        <li class="mb-2">
+                                            <strong><i class="bi bi-file-earmark me-1"></i>Archivo:</strong><br>
+                                                <small class="text-muted">${fileName}</small>
+                                        </li>
+                                        <li class="mb-2">
+                                            <strong><i class="bi bi-tags me-1"></i>Skills detectadas:</strong><br>
                                                 <span class="badge bg-success fs-6">${skillsCount}</span>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <strong><i class="bi bi-check-circle me-1"></i>Estado:</strong><br>
+                                        </li>
+                                        <li class="mb-2">
+                                            <strong><i class="bi bi-check-circle me-1"></i>Estado:</strong><br>
                                                 ${isProcessed === 'True' ? 
                                                     '<span class="badge bg-success">Procesado</span>' : 
                                                     '<span class="badge bg-warning">Pendiente</span>'
                                                 }
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Right Column - Skills -->
+                        <div class="col-lg-8">
+                            <div class="card border-0 h-100 shadow-sm">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <i class="bi bi-tags me-2"></i>Habilidades detectadas
+                                    </h6>
+                                    
+                                        ${skillsCount > 0 ? 
+                                            `<div class="text-center py-4">
+                                                <div class="alert alert-success">
+                                                    <i class="bi bi-check-circle me-2"></i>
+                                                    <strong>CV procesado correctamente</strong><br>
+                                                    Se detectaron ${skillsCount} habilidades en este CV.
                                             </div>
-                                            <div class="col-md-3">
-                                                <strong><i class="bi bi-file-earmark me-1"></i>Archivo:</strong><br>
-                                                <small class="text-muted">${fileName}</small>
-                                            </div>
+                                                <p class="text-muted">Las habilidades se utilizan para encontrar coincidencias con ofertas de trabajo.</p>
+                                            </div>` :
+                                            `<div class="text-center py-4">
+                                                ${isProcessed === 'True' ?
+                                                    `<div class="alert alert-warning">
+                                                        <i class="bi bi-exclamation-triangle me-2"></i>
+                                                        <strong>CV procesado sin habilidades</strong><br>
+                                                        No se detectaron habilidades en este CV.
                                         </div>
+                                                    <small class="text-muted">Verifica que sea un CV profesional con información sobre experiencia y habilidades.</small>` :
+                                                    `<div class="alert alert-info">
+                                                        <i class="bi bi-hourglass-split me-2"></i>
+                                                        <strong>Pendiente de procesar</strong><br>
+                                                        Este CV aún no ha sido procesado.
+                                                            </div>
+                                                    <small class="text-muted">El procesamiento se realiza automáticamente o puedes hacerlo manualmente.</small>`
+                                                }
+                                            </div>`
+                                        }
                                     </div>
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Pestañas -->
-                        <ul class="nav nav-tabs" id="cvDetailsTabs" role="tablist">
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link active" id="skills-tab" data-bs-toggle="tab" data-bs-target="#skills-content" type="button" role="tab">
-                                    <i class="bi bi-tags me-1"></i>Habilidades detectadas
-                                </button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="text-tab" data-bs-toggle="tab" data-bs-target="#text-content" type="button" role="tab">
-                                    <i class="bi bi-file-text me-1"></i>Contenido parseado
-                                </button>
-                            </li>
-                        </ul>
-
-                        <!-- Contenido de las pestañas -->
-                        <div class="tab-content mt-3" id="cvDetailsTabContent">
-                            <!-- Pestaña de Habilidades -->
-                            <div class="tab-pane fade show active" id="skills-content" role="tabpanel">
-                                ${skillsCount > 0 ? 
-                                    `<div class="text-center py-4">
-                                        <div class="alert alert-success">
-                                            <i class="bi bi-check-circle me-2"></i>
-                                            <strong>CV procesado correctamente</strong><br>
-                                            Se detectaron ${skillsCount} habilidades en este CV.
-                                        </div>
-                                        <p class="text-muted">Las habilidades se utilizan para encontrar coincidencias con ofertas de trabajo.</p>
-                                    </div>` :
-                                    `<div class="text-center py-4">
-                                        ${isProcessed === 'True' ?
-                                            `<div class="alert alert-warning">
-                                                <i class="bi bi-exclamation-triangle me-2"></i>
-                                                <strong>CV procesado sin habilidades</strong><br>
-                                                No se detectaron habilidades en este CV.
-                                            </div>
-                                            <small class="text-muted">Verifica que sea un CV profesional con información sobre experiencia y habilidades.</small>` :
-                                            `<div class="alert alert-info">
-                                                <i class="bi bi-hourglass-split me-2"></i>
-                                                <strong>Pendiente de procesar</strong><br>
-                                                Este CV aún no ha sido procesado.
-                                            </div>
-                                            <small class="text-muted">El procesamiento se realiza automáticamente o puedes hacerlo manualmente.</small>`
-                                        }
-                                    </div>`
-                                }
-                            </div>
-
-                            <!-- Pestaña de Contenido Parseado -->
-                            <div class="tab-pane fade" id="text-content" role="tabpanel">
-                                <div class="text-center py-4">
-                                    <div class="spinner-border text-primary" role="status">
-                                        <span class="visually-hidden">Cargando contenido...</span>
-                                    </div>
-                                    <p class="mt-2 text-muted">Cargando contenido parseado del CV...</p>
-                                </div>
+                </div>
+                
+                <!-- Nueva sección para mostrar el texto parseado del CV -->
+                <div class="modal-body border-top">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-light">
+                            <h6 class="card-title mb-0">
+                                <i class="bi bi-file-text me-2"></i>Texto extraído del CV
+                            </h6>
+                        </div>
+                        <div class="card-body p-0">
+                            <div id="parsedTextContent" class="p-3" style="max-height: 300px; overflow-y: auto; background-color: #f8f9fa;">
+                                <small class="text-muted">
+                                    <i class="bi bi-hourglass-split me-1"></i>
+                                    Cargando texto del CV...
+                                </small>
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer">
+                </div>
+                
+                <div class="modal-footer">
                         <button type="button" class="btn btn-custom-modal" data-bs-dismiss="modal">
-                            <i class="bi bi-x-lg me-1"></i>Cerrar
-                        </button>
+                        <i class="bi bi-x-lg me-1"></i>Cerrar
+                    </button>
                         <button type="button" class="btn btn-custom-modal" onclick="triggerFileUpload()" data-bs-dismiss="modal">
-                            <i class="bi bi-plus-lg me-1"></i>Subir otro CV
+                        <i class="bi bi-plus-lg me-1"></i>Subir otro CV
                         </button>
                     </div>
                 </div>
@@ -837,14 +841,64 @@ function showCVDetails(cvId, fileName, createdDate, skillsCount, isProcessed) {
     const cvDetailsModal = new bootstrap.Modal(document.getElementById('cvDetailsModal'));
     cvDetailsModal.show();
     
-    // Agregar event listener para cargar contenido parseado cuando se hace clic en la pestaña
-    document.getElementById('text-tab').addEventListener('click', function() {
-        loadParsedText(cvId);
-    });
+    // Cargar texto parseado del CV
+    loadCVParsedText(cvId);
     
     // Limpiar modal cuando se cierre
     document.getElementById('cvDetailsModal').addEventListener('hidden.bs.modal', function() {
         this.remove();
+    });
+}
+
+function loadCVParsedText(cvId) {
+    // Función para cargar el texto parseado del CV via AJAX
+    fetch(`/matching/cv-parsed-text/${cvId}/`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        const parsedTextContent = document.getElementById('parsedTextContent');
+        if (parsedTextContent) {
+            if (data.success && data.parsed_text) {
+                // Mostrar el texto parseado
+                parsedTextContent.innerHTML = `
+                    <div class="text-start">
+                        <pre class="mb-0 text-dark" style="white-space: pre-wrap; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 0.9rem; line-height: 1.4;">${data.parsed_text}</pre>
+                    </div>
+                `;
+            } else {
+                // Mostrar mensaje si no hay texto parseado
+                parsedTextContent.innerHTML = `
+                    <div class="text-center py-3">
+                        <i class="bi bi-exclamation-circle text-muted fs-4"></i>
+                        <p class="text-muted mb-0 mt-2">No hay texto parseado disponible para este CV</p>
+                        <small class="text-muted">El CV puede no haber sido procesado aún o no se pudo extraer texto.</small>
+                    </div>
+                `;
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error cargando texto parseado:', error);
+        const parsedTextContent = document.getElementById('parsedTextContent');
+        if (parsedTextContent) {
+            parsedTextContent.innerHTML = `
+                <div class="text-center py-3">
+                    <i class="bi bi-exclamation-triangle text-warning fs-4"></i>
+                    <p class="text-warning mb-0 mt-2">Error al cargar el texto del CV</p>
+                    <small class="text-muted">No se pudo obtener el texto parseado. Intenta nuevamente.</small>
+                </div>
+            `;
+        }
     });
 }
 
@@ -944,82 +998,6 @@ function confirmDelete(cvId) {
     .catch(error => {
         console.error('Error:', error);
         showToast('Error al eliminar el CV', 'error');
-    });
-}
-
-function loadParsedText(cvId) {
-    const textContent = document.getElementById('text-content');
-    
-    // Mostrar spinner mientras carga
-    textContent.innerHTML = `
-        <div class="text-center py-4">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Cargando contenido...</span>
-            </div>
-            <p class="mt-2 text-muted">Cargando contenido parseado del CV...</p>
-        </div>
-    `;
-    
-    // Hacer request AJAX para obtener el texto parseado
-    fetch(`/matching/cv-texto/${cvId}/`, {
-        method: 'GET',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Mostrar el contenido parseado
-            textContent.innerHTML = `
-                <div class="card border-0">
-                    <div class="card-header bg-light">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h6 class="mb-0">
-                                <i class="bi bi-file-text me-2"></i>Contenido extraído del CV
-                            </h6>
-                            <small class="text-muted">
-                                <i class="bi bi-file-earmark-text me-1"></i>${data.word_count} palabras
-                            </small>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="bg-light p-3 rounded mb-3" style="max-height: 400px; overflow-y: auto;">
-                            <pre class="mb-0 text-dark" style="white-space: pre-wrap; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 0.9rem; line-height: 1.4;">${data.parsed_text}</pre>
-                        </div>
-                        <div class="alert alert-info">
-                            <i class="bi bi-info-circle me-2"></i>
-                            <strong>Información:</strong> Este es el texto extraído del archivo original. 
-                            El sistema utiliza este contenido para detectar habilidades y hacer matching con ofertas de trabajo.
-                        </div>
-                    </div>
-                </div>
-            `;
-        } else {
-            // Mostrar error
-            textContent.innerHTML = `
-                <div class="text-center py-4">
-                    <div class="alert alert-warning">
-                        <i class="bi bi-exclamation-triangle me-2"></i>
-                        <strong>No se pudo cargar el contenido</strong><br>
-                        ${data.message}
-                    </div>
-                </div>
-            `;
-        }
-    })
-    .catch(error => {
-        console.error('Error cargando texto parseado:', error);
-        textContent.innerHTML = `
-            <div class="text-center py-4">
-                <div class="alert alert-danger">
-                    <i class="bi bi-exclamation-triangle me-2"></i>
-                    <strong>Error de conexión</strong><br>
-                    No se pudo cargar el contenido parseado del CV.
-                </div>
-            </div>
-        `;
     });
 }
 
