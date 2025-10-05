@@ -74,13 +74,10 @@ El workflow está configurado en `.github/workflows/unified-ci-cd.yml` y requier
 
 **Clave SSH privada para copiar:**
 ```
------BEGIN OPENSSH PRIVATE KEY-----
-b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
-QyNTUxOQAAACCe1GwLOQkghkHaw+qmCtbBax3w/z3FWKHJHqZwm8Lm4AAAAJBU7HpBVOx6
-QQAAAAtzc2gtZWQyNTUxOQAAACCe1GwLOQkghkHaw+qmCtbBax3w/z3FWKHJHqZwm8Lm4A
-AAAECoQYVymPZiClbMbngZ7KHsNhRynFaz69B6r+BV5OCZnp7UbAs5CSCGQdrD6qYK1sFr
-HfD/PcVYockepnCbwubgAAAADWlkZ2xlQHdpbmRvd3M=
------END OPENSSH PRIVATE KEY-----
+⚠️ IMPORTANTE: La clave SSH privada debe obtenerse del archivo local:
+~/.ssh/postulamatic_win_ed25519
+
+NUNCA incluir claves privadas en documentación pública.
 ```
 
 ### **3. Despliegue Manual (Solo en emergencias)**
