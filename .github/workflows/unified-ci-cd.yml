@@ -62,7 +62,7 @@ jobs:
           cp conf.d/postulamatic.conf conf.d/postulamatic.conf.backup.$(date +%Y%m%d_%H%M%S) || true
           
           # Pull latest changes
-          echo "Current branch: $(git branch --show-current)"; git checkout master || git checkout -b master; git pull origin master; echo "Latest commit: $(git log --oneline -1)"; echo "Files updated: $(git status --porcelain)"
+          echo "Current branch: $(git branch --show-current)"; git checkout master || git checkout -b master; git fetch origin; git reset --hard origin/master; echo "Force updated to latest commit"; echo "Latest commit: $(git log --oneline -1)"; echo "Files updated: $(git status --porcelain)"
           
           # Update Nginx config from repository
           if [ -f "nginx/postulamatic.conf" ]; then
