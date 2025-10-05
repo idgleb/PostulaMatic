@@ -933,11 +933,15 @@ def test_smtp_email_view(request):
         # Obtener contraseña SMTP de forma segura
         try:
             smtp_password = user_profile.get_smtp_password()
+            logger.info(f"Contraseña SMTP obtenida exitosamente para {request.user.username}")
         except Exception as e:
             # Si falla la desencriptación, puede ser texto plano
             logger.warning(f"Error obteniendo contraseña SMTP para {request.user.username}: {e}")
             # Intentar usar la contraseña tal como está (texto plano)
             smtp_password = user_profile.smtp_password
+            logger.info(f"Usando contraseña SMTP como texto plano para {request.user.username}")
+        
+        logger.info(f"Iniciando conexión SMTP: {smtp_server}:{smtp_port}, usuario: {smtp_username}")
 
         # Crear el mensaje de prueba
         msg = MIMEMultipart()
@@ -970,17 +974,34 @@ def test_smtp_email_view(request):
         msg.attach(MIMEText(body, "html"))
 
         # Configurar conexión SMTP
-        if user_profile.smtp_use_ssl:
-            server = smtplib.SMTP_SSL(smtp_server, smtp_port)
-        else:
-            server = smtplib.SMTP(smtp_server, smtp_port)
-            if user_profile.smtp_use_tls:
-                server.starttls()
+        logger.info(f"Configurando conexión SMTP: SSL={user_profile.smtp_use_ssl}, TLS={user_profile.smtp_use_tls}")
+        
+        try:
+            if user_profile.smtp_use_ssl:
+                server = smtplib.SMTP_SSL(smtp_server, smtp_port)
+                logger.info("Conexión SSL establecida")
+            else:
+                server = smtplib.SMTP(smtp_server, smtp_port)
+                logger.info("Conexión SMTP establecida")
+                if user_profile.smtp_use_tls:
+                    server.starttls()
+                    logger.info("TLS iniciado")
 
-        # Autenticarse y enviar
-        server.login(smtp_username, smtp_password)
-        server.send_message(msg)
-        server.quit()
+            # Autenticarse y enviar
+            logger.info("Intentando autenticación SMTP...")
+            server.login(smtp_username, smtp_password)
+            logger.info("Autenticación SMTP exitosa")
+            
+            logger.info("Enviando mensaje...")
+            server.send_message(msg)
+            logger.info("Mensaje enviado exitosamente")
+            
+            server.quit()
+            logger.info("Conexión SMTP cerrada")
+            
+        except Exception as smtp_error:
+            logger.error(f"Error en conexión SMTP: {smtp_error}")
+            raise
 
         return JsonResponse(
             {
