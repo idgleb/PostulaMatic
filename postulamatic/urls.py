@@ -40,15 +40,8 @@ urlpatterns = [
     ),
 ]
 
-# Servir archivos estáticos y media en desarrollo
+# Servir archivos media en desarrollo
 if settings.DEBUG:
-    from django.contrib.staticfiles.views import serve
-    from django.urls import re_path
-    
-    # Servir archivos estáticos desde STATICFILES_DIRS en desarrollo
-    urlpatterns += [
-        re_path(r'^static/(?P<path>.*)$', serve),
-    ]
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 # Manejo de errores personalizados
