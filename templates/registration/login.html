@@ -44,36 +44,16 @@
 
                         <form method="post">
                             {% csrf_token %}
-                            <div class="mb-3">
-                                <label for="{{ form.username.id_for_label }}" class="form-label">
-                                    <i class="bi bi-person me-1"></i>Usuario
-                                </label>
-                                {{ form.username }}
-                                {% if form.username.errors %}
-                                    <div class="text-danger small mt-1">
-                                        {% for error in form.username.errors %}
-                                            {{ error }}
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
+                            <div class="form-group">
+                                <input type="text" name="username" placeholder="Usuario" class="form-control" autofocus autocapitalize="none" autocomplete="username" maxlength="150" required id="id_username">
                             </div>
 
-                            <div class="mb-4">
-                                <label for="{{ form.password.id_for_label }}" class="form-label">
-                                    <i class="bi bi-lock me-1"></i>Contraseña
-                                </label>
-                                {{ form.password }}
-                                {% if form.password.errors %}
-                                    <div class="text-danger small mt-1">
-                                        {% for error in form.password.errors %}
-                                            {{ error }}
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
+                            <div class="form-group">
+                                <input type="password" name="password" placeholder="Contraseña" class="form-control" autocomplete="current-password" required id="id_password">
                             </div>
 
                             <div class="d-grid">
-                                <button type="submit" class="btn btn-primary btn-lg">
+                                <button type="submit" class="btn-custom">
                                     <i class="bi bi-box-arrow-in-right me-2"></i>Iniciar Sesión
                                 </button>
                             </div>
@@ -118,7 +98,11 @@
             background: rgba(255, 255, 255, 1);
         }
         
-        .btn-primary {
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .btn-custom {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border: none;
             border-radius: 50px;
@@ -129,12 +113,13 @@
             letter-spacing: 1px;
             transition: all 0.3s ease;
             color: white;
+            width: 100%;
         }
         
-        .btn-primary:hover {
+        .btn-custom:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
-            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+            color: white;
         }
         
         .card {
