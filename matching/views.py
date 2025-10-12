@@ -365,32 +365,6 @@ def delete_all_cvs_view(request):
         }, status=500)
 
 
-@login_required
-def dashboard_view(request):
-    """Dashboard principal con estadísticas."""
-    # Estadísticas básicas
-    user_cvs = UserCV.objects.filter(user=request.user).count()
-    profile, created = UserProfile.objects.get_or_create(user=request.user)
-
-    # TODO: En pasos posteriores agregar:
-    # - Total de matches
-    # - Emails enviados hoy
-    # - Emails enviados totales
-    # - Emails fallidos
-
-    context = {
-        "title": "Dashboard",
-        "user_cvs": user_cvs,
-        "profile": profile,
-        "stats": {
-            "total_cvs": user_cvs,
-            "total_matches": 0,  # TODO: implementar
-            "emails_sent_today": 0,  # TODO: implementar
-            "emails_sent_total": 0,  # TODO: implementar
-            "emails_failed": 0,  # TODO: implementar
-        },
-    }
-    return render(request, "matching/dashboard.html", context)
 
 
 @login_required
