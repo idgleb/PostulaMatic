@@ -497,6 +497,119 @@
         }
     }
 
+    // Mostrar progreso de recálculo de matches
+    function showRecalculationProgress(taskId) {
+        console.log('Iniciando seguimiento de recálculo para task:', taskId);
+        
+        // Crear modal de progreso
+        const progressModal = document.createElement('div');
+        progressModal.className = 'modal fade';
+        progressModal.id = 'recalculationProgressModal';
+        progressModal.innerHTML = `
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="bi bi-arrow-clockwise me-2"></i>Recalculando Matches
+                        </h5>
+                    </div>
+                    <div class="modal-body">
+                        <div class="text-center">
+                            <div class="spinner-border text-primary mb-3" role="status">
+                                <span class="visually-hidden">Cargando...</span>
+                            </div>
+                            <h6 id="recalculation-status">Iniciando recálculo...</h6>
+                            <p id="recalculation-info" class="text-muted">Preparando datos...</p>
+                            <div class="progress mb-3">
+                                <div id="recalculation-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                                     role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <small class="text-muted">
+                                Esto puede tomar unos minutos dependiendo del número de ofertas...
+                            </small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle me-1"></i>Cerrar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(progressModal);
+        const modal = new bootstrap.Modal(progressModal);
+        modal.show();
+        
+        // Función para actualizar progreso
+        function updateProgress() {
+            fetch(`/matching/matching-recalculation-status/${taskId}/`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const statusEl = document.getElementById('recalculation-status');
+                const infoEl = document.getElementById('recalculation-info');
+                const progressBar = document.getElementById('recalculation-progress-bar');
+                
+                if (data.success) {
+                    statusEl.textContent = data.status || 'Procesando...';
+                    infoEl.textContent = data.progress_info || '';
+                    progressBar.style.width = `${data.progress || 0}%`;
+                    progressBar.setAttribute('aria-valuenow', data.progress || 0);
+                    
+                    if (data.state === 'SUCCESS') {
+                        statusEl.innerHTML = '<i class="bi bi-check-circle text-success me-2"></i>Recálculo completado';
+                        infoEl.innerHTML = `<strong>Matches recalculados:</strong> ${data.result.new_matches_count || 0}`;
+                        progressBar.classList.remove('progress-bar-striped', 'progress-bar-animated');
+                        progressBar.classList.add('bg-success');
+                        
+                        // Cerrar modal después de 3 segundos
+                        setTimeout(() => {
+                            modal.hide();
+                            document.body.removeChild(progressModal);
+                            
+                            // Restaurar botón
+                            const btn = document.getElementById('btn-matching');
+                            if (btn) {
+                                btn.innerHTML = '<i class="bi bi-gear me-2"></i>Guardar Configuración de Matching';
+                                btn.disabled = true;
+                            }
+                        }, 3000);
+                    } else if (data.state === 'FAILURE') {
+                        statusEl.innerHTML = '<i class="bi bi-exclamation-triangle text-danger me-2"></i>Error en recálculo';
+                        infoEl.textContent = data.error || 'Error desconocido';
+                        progressBar.classList.remove('progress-bar-striped', 'progress-bar-animated');
+                        progressBar.classList.add('bg-danger');
+                        
+                        // Cerrar modal después de 5 segundos
+                        setTimeout(() => {
+                            modal.hide();
+                            document.body.removeChild(progressModal);
+                        }, 5000);
+                    } else {
+                        // Continuar verificando
+                        setTimeout(updateProgress, 2000);
+                    }
+                } else {
+                    statusEl.innerHTML = '<i class="bi bi-exclamation-triangle text-warning me-2"></i>Error verificando progreso';
+                    infoEl.textContent = data.error || 'Error desconocido';
+                }
+            })
+            .catch(error => {
+                console.error('Error verificando progreso de recálculo:', error);
+                statusEl.innerHTML = '<i class="bi bi-exclamation-triangle text-warning me-2"></i>Error de conexión';
+                infoEl.textContent = 'No se pudo verificar el progreso';
+            });
+        }
+        
+        // Iniciar verificación de progreso
+        setTimeout(updateProgress, 1000);
+    }
+
     // Manejar envío de formularios con AJAX
     function setupFormHandlers() {
         // SMTP Form
@@ -771,11 +884,18 @@
                     })
                     .then(response => response.json())
                     .then(data => {
-                        btn.innerHTML = originalText;
                         if (data.success) {
-                            btn.disabled = true; // Desactivar después de guardado exitoso
                             showMessage('matching-result', data.message, 'success');
+                            
+                            // Si se inició recálculo, mostrar progreso
+                            if (data.recalculation_started && data.task_id) {
+                                showRecalculationProgress(data.task_id);
+                            } else {
+                                btn.innerHTML = originalText;
+                                btn.disabled = true; // Desactivar después de guardado exitoso
+                            }
                         } else {
+                            btn.innerHTML = originalText;
                             btn.disabled = false; // Reactivar si hay error
                             showMessage('matching-result', data.message, 'error');
                         }

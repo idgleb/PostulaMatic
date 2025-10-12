@@ -135,18 +135,65 @@ def profile_view(request):
         elif section == "matching":
             matching_form = MatchingConfigForm(request.POST, instance=profile)
             if matching_form.is_valid():
+                # Guardar configuración
+                old_threshold = profile.match_threshold
                 matching_form.save()
-                if is_ajax:
-                    return JsonResponse(
-                        {
-                            "success": True,
-                            "message": "Configuración de matching guardada correctamente.",
-                        }
-                    )
+                
+                # Recalcular matches si cambió el umbral
+                new_threshold = matching_form.instance.match_threshold
+                if old_threshold != new_threshold:
+                    try:
+                        # Importar tarea de recálculo
+                        from .tasks import recalculate_matches_for_user
+                        
+                        # Ejecutar recálculo en background
+                        task = recalculate_matches_for_user.delay(request.user.id)
+                        
+                        logger.info(f"Recálculo de matches iniciado para usuario {request.user.id} (task: {task.id})")
+                        
+                        if is_ajax:
+                            return JsonResponse(
+                                {
+                                    "success": True,
+                                    "message": f"✅ Configuración guardada y recálculo iniciado. Umbral cambiado de {old_threshold}% a {new_threshold}%.",
+                                    "recalculation_started": True,
+                                    "task_id": task.id,
+                                }
+                            )
+                        else:
+                            messages.success(
+                                request, 
+                                f"✅ Configuración guardada y recálculo iniciado. Umbral cambiado de {old_threshold}% a {new_threshold}%."
+                            )
+                    except Exception as e:
+                        logger.error(f"Error iniciando recálculo para usuario {request.user.id}: {e}")
+                        if is_ajax:
+                            return JsonResponse(
+                                {
+                                    "success": True,
+                                    "message": "✅ Configuración guardada. ⚠️ Error al iniciar recálculo automático.",
+                                    "recalculation_started": False,
+                                }
+                            )
+                        else:
+                            messages.warning(
+                                request, 
+                                "✅ Configuración guardada. ⚠️ Error al iniciar recálculo automático."
+                            )
                 else:
-                    messages.success(
-                        request, "Configuración de matching guardada correctamente."
-                    )
+                    # Umbral no cambió
+                    if is_ajax:
+                        return JsonResponse(
+                            {
+                                "success": True,
+                                "message": "✅ Configuración de matching guardada correctamente.",
+                                "recalculation_started": False,
+                            }
+                        )
+                    else:
+                        messages.success(
+                            request, "✅ Configuración de matching guardada correctamente."
+                        )
             else:
                 if is_ajax:
                     # Obtener errores específicos del formulario
@@ -365,6 +412,63 @@ def delete_all_cvs_view(request):
         }, status=500)
 
 
+
+
+@login_required
+def matching_recalculation_status_view(request, task_id):
+    """Vista AJAX para verificar el estado del recálculo de matches."""
+    try:
+        from celery.result import AsyncResult
+        
+        # Obtener resultado de la tarea
+        task_result = AsyncResult(task_id)
+        
+        if task_result.state == 'PENDING':
+            response = {
+                'success': True,
+                'state': task_result.state,
+                'status': 'Esperando...',
+                'progress': 0
+            }
+        elif task_result.state == 'PROGRESS':
+            response = {
+                'success': True,
+                'state': task_result.state,
+                'status': task_result.info.get('current_step', 'Procesando...'),
+                'progress_info': task_result.info.get('progress_info', ''),
+                'progress': task_result.info.get('progress_percentage', 0)
+            }
+        elif task_result.state == 'SUCCESS':
+            result = task_result.result
+            response = {
+                'success': True,
+                'state': task_result.state,
+                'status': 'Recálculo completado',
+                'progress': 100,
+                'result': result
+            }
+        elif task_result.state == 'FAILURE':
+            response = {
+                'success': False,
+                'state': task_result.state,
+                'status': 'Error en recálculo',
+                'error': str(task_result.info)
+            }
+        else:
+            response = {
+                'success': False,
+                'state': task_result.state,
+                'status': f'Estado desconocido: {task_result.state}'
+            }
+            
+        return JsonResponse(response)
+        
+    except Exception as e:
+        logger.error(f"Error verificando estado de recálculo {task_id}: {e}")
+        return JsonResponse({
+            'success': False,
+            'error': f'Error verificando estado: {str(e)}'
+        })
 
 
 @login_required
