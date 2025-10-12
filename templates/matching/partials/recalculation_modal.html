@@ -1,0 +1,175 @@
+<!-- Modal de recálculo de matches - Reutilizable -->
+<div class="modal fade" id="recalculationProgressModal" tabindex="-1" aria-labelledby="recalculationProgressModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="recalculationProgressModalLabel">
+                    <i class="bi bi-arrow-clockwise me-2"></i>Recalculando Matches
+                </h5>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <div class="spinner-border text-primary mb-3" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <h6 id="recalculation-status">Iniciando recálculo...</h6>
+                    <p id="recalculation-info" class="text-muted">Preparando datos...</p>
+                    <div class="progress mb-3">
+                        <div id="recalculation-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                             role="progressbar" style="width: 0%"></div>
+                    </div>
+                    <small class="text-muted">
+                        Esto puede tomar unos minutos dependiendo del número de ofertas...
+                    </small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript para manejar el modal de recálculo -->
+<script>
+// Función global para mostrar progreso de recálculo de matches
+function showRecalculationProgress(taskId, onComplete = null) {
+    console.log('Iniciando seguimiento de recálculo para task:', taskId);
+    
+    // Crear modal si no existe
+    let progressModal = document.getElementById('recalculationProgressModal');
+    if (!progressModal) {
+        // Cargar modal desde partial
+        fetch('/matching/partials/recalculation-modal/')
+            .then(response => response.text())
+            .then(html => {
+                document.body.insertAdjacentHTML('beforeend', html);
+                progressModal = document.getElementById('recalculationProgressModal');
+                initializeRecalculationModal(taskId, onComplete);
+            })
+            .catch(error => {
+                console.error('Error cargando modal de recálculo:', error);
+            });
+    } else {
+        initializeRecalculationModal(taskId, onComplete);
+    }
+}
+
+function initializeRecalculationModal(taskId, onComplete) {
+    const progressModal = document.getElementById('recalculationProgressModal');
+    const modal = new bootstrap.Modal(progressModal);
+    modal.show();
+    
+    // Función para actualizar progreso
+    function updateProgress() {
+        fetch(`/matching/matching-recalculation-status/${taskId}/`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Recalculation status response:', data);
+            const statusEl = document.getElementById('recalculation-status');
+            const infoEl = document.getElementById('recalculation-info');
+            const progressBar = document.getElementById('recalculation-progress-bar');
+            
+            if (data.success) {
+                statusEl.textContent = data.status || 'Procesando...';
+                infoEl.textContent = data.progress_info || '';
+                progressBar.style.width = `${data.progress || 0}%`;
+                progressBar.setAttribute('aria-valuenow', data.progress || 0);
+                
+                if (data.state === 'SUCCESS') {
+                    statusEl.innerHTML = '<i class="bi bi-check-circle text-success me-2"></i>Recálculo completado';
+                    const matchesCount = data.result && data.result.new_matches_count ? data.result.new_matches_count : 0;
+                    infoEl.innerHTML = `<strong>Matches recalculados:</strong> ${matchesCount}`;
+                    progressBar.classList.remove('progress-bar-striped', 'progress-bar-animated');
+                    progressBar.classList.add('bg-success');
+                    
+                    // Cerrar modal después de 3 segundos
+                    setTimeout(() => {
+                        modal.hide();
+                        progressModal.remove();
+                        
+                        // Ejecutar callback si existe
+                        if (onComplete && typeof onComplete === 'function') {
+                            onComplete(data.result);
+                        }
+                    }, 3000);
+                    
+                    // Detener polling
+                    clearInterval(progressInterval);
+                } else if (data.state === 'FAILURE') {
+                    statusEl.innerHTML = '<i class="bi bi-x-circle text-danger me-2"></i>Error en recálculo';
+                    infoEl.innerHTML = `<strong>Error:</strong> ${data.error || 'Error desconocido'}`;
+                    progressBar.classList.remove('progress-bar-striped', 'progress-bar-animated');
+                    progressBar.classList.add('bg-danger');
+                    
+                    // Detener polling
+                    clearInterval(progressInterval);
+                }
+            } else {
+                console.error('Error en respuesta de recálculo:', data);
+                statusEl.innerHTML = '<i class="bi bi-x-circle text-danger me-2"></i>Error';
+                infoEl.innerHTML = 'Error de conexión';
+                progressBar.classList.remove('progress-bar-striped', 'progress-bar-animated');
+                progressBar.classList.add('bg-danger');
+                
+                // Detener polling
+                clearInterval(progressInterval);
+            }
+        })
+        .catch(error => {
+            console.error('Error en fetch de recálculo:', error);
+            const statusEl = document.getElementById('recalculation-status');
+            const infoEl = document.getElementById('recalculation-info');
+            const progressBar = document.getElementById('recalculation-progress-bar');
+            
+            statusEl.innerHTML = '<i class="bi bi-x-circle text-danger me-2"></i>Error';
+            infoEl.innerHTML = 'Error de conexión';
+            progressBar.classList.remove('progress-bar-striped', 'progress-bar-animated');
+            progressBar.classList.add('bg-danger');
+            
+            // Detener polling
+            clearInterval(progressInterval);
+        });
+    }
+    
+    // Iniciar polling cada 2 segundos
+    const progressInterval = setInterval(updateProgress, 2000);
+    
+    // Actualización inicial
+    updateProgress();
+}
+
+// Función global para iniciar recálculo (para usar desde otras páginas)
+function startRecalculation(reason = 'manual') {
+    fetch('/matching/start-recalculation/', {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        },
+        body: new URLSearchParams({
+            'reason': reason
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.task_id) {
+            showRecalculationProgress(data.task_id, function(result) {
+                console.log('Recálculo completado:', result);
+                // Aquí se puede agregar lógica adicional después del recálculo
+            });
+        } else {
+            console.error('Error iniciando recálculo:', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error en recálculo:', error);
+    });
+}
+</script>

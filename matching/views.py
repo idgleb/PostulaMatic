@@ -302,13 +302,31 @@ def upload_cv_view(request):
 
                 logger.info(f"CV procesado: {cv.skills_count} skills detectadas")
 
-                return JsonResponse(
-                    {
-                        "success": True,
-                        "message": f'CV "{cv.original_file.name}" subido y procesado exitosamente.',
-                        "skills_count": cv.skills_count,
-                    }
-                )
+                # Iniciar recálculo automático después de subir CV
+                try:
+                    from .tasks import recalculate_matches_for_user
+                    task = recalculate_matches_for_user.delay(request.user.id)
+                    logger.info(f"Recálculo automático iniciado después de subir CV para usuario {request.user.id} (task: {task.id})")
+                    
+                    return JsonResponse(
+                        {
+                            "success": True,
+                            "message": f'CV "{cv.original_file.name}" subido y procesado exitosamente.',
+                            "skills_count": cv.skills_count,
+                            "recalculation_started": True,
+                            "task_id": task.id,
+                        }
+                    )
+                except Exception as e:
+                    logger.error(f"Error iniciando recálculo automático después de subir CV: {e}")
+                    return JsonResponse(
+                        {
+                            "success": True,
+                            "message": f'CV "{cv.original_file.name}" subido y procesado exitosamente.',
+                            "skills_count": cv.skills_count,
+                            "recalculation_started": False,
+                        }
+                    )
             else:
                 logger.warning(f"Formato no soportado: {cv.original_file.name}")
                 return JsonResponse(
@@ -386,9 +404,29 @@ def delete_cv_view(request, cv_id):
     cv_name = cv.original_file.name
     cv.delete()
 
-    return JsonResponse(
-        {"success": True, "message": f'CV "{cv_name}" eliminado correctamente.'}
-    )
+    # Iniciar recálculo automático después de eliminar CV
+    try:
+        from .tasks import recalculate_matches_for_user
+        task = recalculate_matches_for_user.delay(request.user.id)
+        logger.info(f"Recálculo automático iniciado después de eliminar CV para usuario {request.user.id} (task: {task.id})")
+        
+        return JsonResponse(
+            {
+                "success": True, 
+                "message": f'CV "{cv_name}" eliminado correctamente.',
+                "recalculation_started": True,
+                "task_id": task.id,
+            }
+        )
+    except Exception as e:
+        logger.error(f"Error iniciando recálculo automático después de eliminar CV: {e}")
+        return JsonResponse(
+            {
+                "success": True, 
+                "message": f'CV "{cv_name}" eliminado correctamente.',
+                "recalculation_started": False,
+            }
+        )
 
 
 @login_required
@@ -409,10 +447,25 @@ def delete_all_cvs_view(request):
         # Eliminar todos los CVs
         user_cvs.delete()
         
-        return JsonResponse({
-            "success": True, 
-            "message": f"Se eliminaron {cv_count} CV(s) correctamente."
-        })
+        # Iniciar recálculo automático después de eliminar todos los CVs
+        try:
+            from .tasks import recalculate_matches_for_user
+            task = recalculate_matches_for_user.delay(request.user.id)
+            logger.info(f"Recálculo automático iniciado después de eliminar todos los CVs para usuario {request.user.id} (task: {task.id})")
+            
+            return JsonResponse({
+                "success": True,
+                "message": f"Todos los CVs eliminados correctamente ({cv_count} archivos).",
+                "recalculation_started": True,
+                "task_id": task.id,
+            })
+        except Exception as e:
+            logger.error(f"Error iniciando recálculo automático después de eliminar todos los CVs: {e}")
+            return JsonResponse({
+                "success": True,
+                "message": f"Todos los CVs eliminados correctamente ({cv_count} archivos).",
+                "recalculation_started": False,
+            })
         
     except Exception as e:
         logger.error(f"Error eliminando todos los CVs del usuario {request.user.id}: {e}")
@@ -422,6 +475,42 @@ def delete_all_cvs_view(request):
         }, status=500)
 
 
+
+
+@login_required
+def recalculation_modal_partial_view(request):
+    """Vista para servir el modal de recálculo como partial."""
+    return render(request, "matching/partials/recalculation_modal.html")
+
+
+@login_required
+def start_recalculation_view(request):
+    """Vista AJAX para iniciar recálculo manual de matches."""
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "Método no permitido"}, status=405)
+    
+    try:
+        from .tasks import recalculate_matches_for_user
+        
+        # Obtener razón del recálculo
+        reason = request.POST.get('reason', 'manual')
+        
+        # Ejecutar recálculo en background
+        task = recalculate_matches_for_user.delay(request.user.id)
+        
+        logger.info(f"Recálculo manual iniciado para usuario {request.user.id} (task: {task.id}, reason: {reason})")
+        
+        return JsonResponse({
+            "success": True,
+            "message": f"Recálculo iniciado ({reason})",
+            "task_id": task.id,
+        })
+    except Exception as e:
+        logger.error(f"Error iniciando recálculo manual para usuario {request.user.id}: {e}")
+        return JsonResponse({
+            "success": False,
+            "message": f"Error iniciando recálculo: {str(e)}"
+        }, status=500)
 
 
 @login_required
@@ -450,6 +539,7 @@ def matching_recalculation_status_view(request, task_id):
             }
         elif task_result.state == 'SUCCESS':
             result = task_result.result
+            logger.info(f"Matching recalculation status - task_id: {task_id}, result: {result}")
             response = {
                 'success': True,
                 'state': task_result.state,

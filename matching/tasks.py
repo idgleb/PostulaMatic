@@ -143,15 +143,9 @@ def recalculate_matches_for_user(self, user_id: int):
         result = _recalculate_matches_for_user_core(user_id)
         
         if result.get("success"):
-            # Actualizar progreso final
-            self.update_state(
-                state="SUCCESS",
-                meta={
-                    "current_step": "Recálculo completado",
-                    "progress_info": f"Recálculo exitoso: {result['new_matches_count']} matches",
-                    "progress_percentage": 100,
-                },
-            )
+            # No actualizar el estado final - dejar que Celery use el resultado real
+            # El resultado ya contiene toda la información necesaria
+            pass
         else:
             # Error
             self.update_state(

@@ -551,6 +551,7 @@
             })
             .then(response => response.json())
             .then(data => {
+                console.log('Recalculation status response:', data);
                 const statusEl = document.getElementById('recalculation-status');
                 const infoEl = document.getElementById('recalculation-info');
                 const progressBar = document.getElementById('recalculation-progress-bar');

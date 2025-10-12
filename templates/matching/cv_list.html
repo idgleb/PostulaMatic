@@ -621,12 +621,26 @@ function startUpload() {
                         document.getElementById('cancelBtn').classList.add('d-none');
                         document.getElementById('closeBtn').classList.remove('d-none');
                         
-                        // Auto-close and reload after 2 seconds
-                        setTimeout(() => {
-                            const modal = bootstrap.Modal.getInstance(document.getElementById('uploadProgressModal'));
-                            modal.hide();
-                            location.reload();
-                        }, 2000);
+                        // Si se inició recálculo, mostrar modal después de cerrar este
+                        if (data.recalculation_started && data.task_id) {
+                            console.log('Recálculo iniciado después de subir CV, mostrando modal para task:', data.task_id);
+                            // Cerrar modal de upload después de 2 segundos y mostrar modal de recálculo
+                            setTimeout(() => {
+                                document.getElementById('uploadProgressModal').remove();
+                                showRecalculationProgress(data.task_id, function(result) {
+                                    console.log('Recálculo completado después de subir CV:', result);
+                                    // Actualizar la lista de CVs después del recálculo
+                                    location.reload();
+                                });
+                            }, 2000);
+                        } else {
+                            // Auto-close and reload after 2 seconds
+                            setTimeout(() => {
+                                const modal = bootstrap.Modal.getInstance(document.getElementById('uploadProgressModal'));
+                                modal.hide();
+                                location.reload();
+                            }, 2000);
+                        }
                     } else {
                         throw new Error(data.message || 'Error al procesar el archivo');
                     }

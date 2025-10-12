@@ -47,4 +47,6 @@ urlpatterns = [
     path("delete-job/<int:job_id>/", views.delete_job_view, name="delete_job"),
     path("logout/", views.logout_view, name="logout"),
     path("matching-recalculation-status/<str:task_id>/", views.matching_recalculation_status_view, name="matching_recalculation_status"),
+    path("recalculation-modal-partial/", views.recalculation_modal_partial_view, name="recalculation_modal_partial"),
+    path("start-recalculation/", views.start_recalculation_view, name="start_recalculation"),
 ]
