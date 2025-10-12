@@ -1103,8 +1103,20 @@
         }
     }
 
+    // Variable para evitar múltiples inicializaciones
+    let profileInitialized = false;
+
     // Inicializar cuando el DOM esté listo
     document.addEventListener('DOMContentLoaded', function() {
+        // Evitar múltiples inicializaciones
+        if (profileInitialized) {
+            console.log('Profile ya inicializado, saltando...');
+            return;
+        }
+        profileInitialized = true;
+        
+        console.log('Inicializando profile por primera vez...');
+        
         // Inicializar formularios
         smtpForm = document.getElementById('smtp-form');
         dvForm = document.getElementById('dv-form');
@@ -1163,8 +1175,8 @@
             });
         }
         
-        // Actualizar estado cada 2 segundos (DESHABILITADO TEMPORALMENTE)
-        // setInterval(updateDVConnectionStatusFromServer, 2000);
+        // Actualizar estado cada 2 segundos
+        setInterval(updateDVConnectionStatusFromServer, 2000);
     });
 })();
 </script>
