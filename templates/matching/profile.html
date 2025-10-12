@@ -563,7 +563,8 @@
                     
                     if (data.state === 'SUCCESS') {
                         statusEl.innerHTML = '<i class="bi bi-check-circle text-success me-2"></i>Recálculo completado';
-                        infoEl.innerHTML = `<strong>Matches recalculados:</strong> ${data.result.new_matches_count || 0}`;
+                        const matchesCount = data.result && data.result.new_matches_count ? data.result.new_matches_count : 0;
+                        infoEl.innerHTML = `<strong>Matches recalculados:</strong> ${matchesCount}`;
                         progressBar.classList.remove('progress-bar-striped', 'progress-bar-animated');
                         progressBar.classList.add('bg-success');
                         
