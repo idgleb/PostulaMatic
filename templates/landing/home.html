@@ -193,20 +193,48 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding: 20px;
-        text-align: center;
-    }
-    
-    .hero-content {
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        border-radius: 20px;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
         padding: 3rem;
         text-align: center;
         max-width: 1200px;
         width: 100%;
-        border: 1px solid rgba(102, 126, 234, 0.2);
+        margin: 0 auto;
+        gap: 3rem;
+    }
+    
+    /* Hero Header Section */
+    .hero-header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    /* Features Section */
+    .features-section {
+        width: 100%;
+        margin: 2rem 0;
+    }
+    
+    .section-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+    
+    /* CTA Section */
+    .cta-section {
+        width: 100%;
+        max-width: 600px;
+        margin: 2rem 0;
+    }
+    
+    /* Social Section */
+    .social-section {
+        width: 100%;
+        margin-top: 2rem;
     }
     
     .hero-logo {
@@ -353,8 +381,24 @@
             grid-template-columns: 1fr;
         }
         
-        .hero-content {
+        .hero-container {
             padding: 2rem;
+            gap: 2rem;
+        }
+        
+        .section-title {
+            font-size: 1.5rem;
+        }
+        
+        .hero-header {
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .features-section,
+        .cta-section,
+        .social-section {
+            margin: 1rem 0;
         }
         
         .floating-element {
@@ -414,25 +458,27 @@
 
     <div class="main-content">
         <div class="hero-container">
-            <div class="hero-content">
+            <!-- Header Section -->
+            <div class="hero-header">
                 <div class="hero-icon">
                     <i class="bi bi-robot"></i>
                 </div>
-                
                 <div class="hero-logo">PostulaMatic</div>
-                
                 <h1 class="hero-title">Postula Automáticamente con IA</h1>
-                
                 <p class="hero-subtitle">
                     Sube tu CV, detectamos tus habilidades y te ayudamos a enviar aplicaciones automáticamente a empleos que coincidan con tu perfil.
                 </p>
-                
+            </div>
+
+            <!-- Features Section -->
+            <div class="features-section">
+                <h2 class="section-title">¿Cómo funciona?</h2>
                 <div class="features-grid">
                     <div class="feature-card">
                         <div class="feature-icon">
                             <i class="bi bi-file-earmark-text"></i>
                         </div>
-                        <div class="feature-title">Análisis de CV</div>
+                        <div class="feature-title">1. Análisis de CV</div>
                         <div class="feature-text">Extraemos y analizamos tus habilidades usando inteligencia artificial</div>
                     </div>
                     
@@ -440,7 +486,7 @@
                         <div class="feature-icon">
                             <i class="bi bi-search"></i>
                         </div>
-                        <div class="feature-title">Búsqueda Inteligente</div>
+                        <div class="feature-title">2. Búsqueda Inteligente</div>
                         <div class="feature-text">Encontramos empleos que coinciden perfectamente con tu perfil</div>
                     </div>
                     
@@ -448,11 +494,14 @@
                         <div class="feature-icon">
                             <i class="bi bi-send"></i>
                         </div>
-                        <div class="feature-title">Envío Automático</div>
+                        <div class="feature-title">3. Envío Automático</div>
                         <div class="feature-text">Enviamos tu CV personalizado automáticamente a las empresas</div>
                     </div>
                 </div>
-                
+            </div>
+            
+            <!-- CTA Section -->
+            <div class="cta-section">
                 <div class="lead-form">
                     <h3 class="cta-title">
                         <i class="bi bi-envelope me-2"></i>
@@ -472,8 +521,18 @@
                             Quiero Acceso Anticipado
                         </button>
                     </form>
+                    
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            <i class="bi bi-shield-check me-1"></i>
+                            Tu email está seguro con nosotros. Sin spam, solo actualizaciones importantes.
+                        </small>
+                    </div>
                 </div>
-                
+            </div>
+            
+            <!-- Social Links -->
+            <div class="social-section">
                 <div class="social-links">
                     <a href="#" class="social-link" title="Twitter">
                         <i class="bi bi-twitter"></i>
@@ -484,13 +543,6 @@
                     <a href="#" class="social-link" title="GitHub">
                         <i class="bi bi-github"></i>
                     </a>
-                </div>
-                
-                <div class="mt-4">
-                    <small class="text-muted">
-                        <i class="bi bi-shield-check me-1"></i>
-                        Tu email está seguro con nosotros. Sin spam, solo actualizaciones importantes.
-                    </small>
                 </div>
             </div>
         </div>
