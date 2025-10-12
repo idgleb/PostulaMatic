@@ -137,10 +137,15 @@ def profile_view(request):
             if matching_form.is_valid():
                 # Guardar configuración
                 old_threshold = profile.match_threshold
+                logger.info(f"Matching form - old_threshold: {old_threshold}")
+                
                 matching_form.save()
                 
                 # Recalcular matches si cambió el umbral
                 new_threshold = matching_form.instance.match_threshold
+                logger.info(f"Matching form - new_threshold: {new_threshold}")
+                logger.info(f"Matching form - ¿Cambió umbral?: {old_threshold != new_threshold}")
+                
                 if old_threshold != new_threshold:
                     try:
                         # Importar tarea de recálculo
