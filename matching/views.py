@@ -133,18 +133,23 @@ def profile_view(request):
                         }
                     )
         elif section == "matching":
+            # Leer el valor ANTES de crear el formulario para evitar que Django lo modifique
+            old_threshold = profile.match_threshold
+            logger.info(f"Matching form - old_threshold (ANTES de crear formulario): {old_threshold}")
+            
             matching_form = MatchingConfigForm(request.POST, instance=profile)
+            logger.info(f"Matching form - POST data: {request.POST}")
+            logger.info(f"Matching form - Form is_valid: {matching_form.is_valid()}")
+            if matching_form.errors:
+                logger.info(f"Matching form - Form errors: {matching_form.errors}")
+            
             if matching_form.is_valid():
-                # Guardar configuración
-                old_threshold = profile.match_threshold
-                logger.info(f"Matching form - old_threshold: {old_threshold}")
-                
-                matching_form.save()
-                
-                # Recalcular matches si cambió el umbral
-                new_threshold = matching_form.instance.match_threshold
+                # Leer el nuevo valor ANTES de guardar
+                new_threshold = matching_form.cleaned_data['match_threshold']
                 logger.info(f"Matching form - new_threshold: {new_threshold}")
                 logger.info(f"Matching form - ¿Cambió umbral?: {old_threshold != new_threshold}")
+                
+                matching_form.save()
                 
                 if old_threshold != new_threshold:
                     try:
