@@ -26,6 +26,7 @@ from matching.views import custom_404_view, custom_500_view
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounts/", include("django.contrib.auth.urls")),
+    path("accounts/", include("allauth.urls")),  # django-allauth URLs
     path("", include("landing.urls")),
     path("matching/", include("matching.urls")),
     path(
