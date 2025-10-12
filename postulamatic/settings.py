@@ -38,7 +38,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-*km#mune!j!-fua678rs@3)ds@97&w-y0ukri%m*q=s7+(qik3"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-# DEBUG = True  # Comentado para habilitar páginas de error personalizadas
+DEBUG = True  # Habilitado para desarrollo local
 
 ALLOWED_HOSTS = ["127.0.0.1", "localhost", "postulamatic.app", "www.postulamatic.app"]
 
@@ -239,6 +239,7 @@ LOGIN_REDIRECT_URL = '/matching/'
 ACCOUNT_LOGOUT_REDIRECT_URL = '/'
 SOCIALACCOUNT_LOGIN_ON_GET = True
 
-# Forzar HTTPS en producción
-SECURE_SSL_REDIRECT = True
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+# Forzar HTTPS solo en producción
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
