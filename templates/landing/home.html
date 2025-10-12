@@ -122,8 +122,18 @@
     
     /* Contenido principal */
     .main-content {
-        padding: 2rem;
+        padding: 3rem;
         background: transparent;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: calc(100vh - 200px);
+        text-align: center;
+        max-width: 1200px;
+        width: 100%;
+        margin: 0 auto;
+        gap: 3rem;
     }
     
     /* Cards modernas */
@@ -187,19 +197,6 @@
     }
     
     /* Hero section específica para landing */
-    .hero-container {
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 3rem;
-        text-align: center;
-        max-width: 1200px;
-        width: 100%;
-        margin: 0 auto;
-        gap: 3rem;
-    }
     
     /* Hero Header Section */
     .hero-header {
@@ -381,7 +378,7 @@
             grid-template-columns: 1fr;
         }
         
-        .hero-container {
+        .main-content {
             padding: 2rem;
             gap: 2rem;
         }
@@ -457,93 +454,91 @@
     </nav>
 
     <div class="main-content">
-        <div class="hero-container">
-            <!-- Header Section -->
-            <div class="hero-header">
-                <div class="hero-icon">
-                    <i class="bi bi-robot"></i>
-                </div>
-                <div class="hero-logo">PostulaMatic</div>
-                <h1 class="hero-title">Postula Automáticamente con IA</h1>
-                <p class="hero-subtitle">
-                    Sube tu CV, detectamos tus habilidades y te ayudamos a enviar aplicaciones automáticamente a empleos que coincidan con tu perfil.
-                </p>
+        <!-- Header Section -->
+        <div class="hero-header">
+            <div class="hero-icon">
+                <i class="bi bi-robot"></i>
             </div>
+            <div class="hero-logo">PostulaMatic</div>
+            <h1 class="hero-title">Postula Automáticamente con IA</h1>
+            <p class="hero-subtitle">
+                Sube tu CV, detectamos tus habilidades y te ayudamos a enviar aplicaciones automáticamente a empleos que coincidan con tu perfil.
+            </p>
+        </div>
 
-            <!-- Features Section -->
-            <div class="features-section">
-                <h2 class="section-title">¿Cómo funciona?</h2>
-                <div class="features-grid">
-                    <div class="feature-card">
-                        <div class="feature-icon">
-                            <i class="bi bi-file-earmark-text"></i>
-                        </div>
-                        <div class="feature-title">1. Análisis de CV</div>
-                        <div class="feature-text">Extraemos y analizamos tus habilidades usando inteligencia artificial</div>
+        <!-- Features Section -->
+        <div class="features-section">
+            <h2 class="section-title">¿Cómo funciona?</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="bi bi-file-earmark-text"></i>
                     </div>
-                    
-                    <div class="feature-card">
-                        <div class="feature-icon">
-                            <i class="bi bi-search"></i>
-                        </div>
-                        <div class="feature-title">2. Búsqueda Inteligente</div>
-                        <div class="feature-text">Encontramos empleos que coinciden perfectamente con tu perfil</div>
+                    <div class="feature-title">1. Análisis de CV</div>
+                    <div class="feature-text">Extraemos y analizamos tus habilidades usando inteligencia artificial</div>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="bi bi-search"></i>
                     </div>
-                    
-                    <div class="feature-card">
-                        <div class="feature-icon">
-                            <i class="bi bi-send"></i>
-                        </div>
-                        <div class="feature-title">3. Envío Automático</div>
-                        <div class="feature-text">Enviamos tu CV personalizado automáticamente a las empresas</div>
+                    <div class="feature-title">2. Búsqueda Inteligente</div>
+                    <div class="feature-text">Encontramos empleos que coinciden perfectamente con tu perfil</div>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="bi bi-send"></i>
                     </div>
+                    <div class="feature-title">3. Envío Automático</div>
+                    <div class="feature-text">Enviamos tu CV personalizado automáticamente a las empresas</div>
                 </div>
             </div>
-            
-            <!-- CTA Section -->
-            <div class="cta-section">
-                <div class="lead-form">
-                    <h3 class="cta-title">
-                        <i class="bi bi-envelope me-2"></i>
-                        ¡Sé el primero en probarlo!
-                    </h3>
-                    <p class="cta-text">
-                        Únete a la lista de espera y te notificaremos cuando esté disponible.
-                    </p>
-                    
-                    <form method="post">
-                        {% csrf_token %}
-                        <div class="form-group">
-                            {{ form.email }}
-                        </div>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-rocket-takeoff me-2"></i>
-                            Quiero Acceso Anticipado
-                        </button>
-                    </form>
-                    
-                    <div class="mt-3">
-                        <small class="text-muted">
-                            <i class="bi bi-shield-check me-1"></i>
-                            Tu email está seguro con nosotros. Sin spam, solo actualizaciones importantes.
-                        </small>
+        </div>
+        
+        <!-- CTA Section -->
+        <div class="cta-section">
+            <div class="lead-form">
+                <h3 class="cta-title">
+                    <i class="bi bi-envelope me-2"></i>
+                    ¡Sé el primero en probarlo!
+                </h3>
+                <p class="cta-text">
+                    Únete a la lista de espera y te notificaremos cuando esté disponible.
+                </p>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        {{ form.email }}
                     </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-rocket-takeoff me-2"></i>
+                        Quiero Acceso Anticipado
+                    </button>
+                </form>
+                
+                <div class="mt-3">
+                    <small class="text-muted">
+                        <i class="bi bi-shield-check me-1"></i>
+                        Tu email está seguro con nosotros. Sin spam, solo actualizaciones importantes.
+                    </small>
                 </div>
             </div>
-            
-            <!-- Social Links -->
-            <div class="social-section">
-                <div class="social-links">
-                    <a href="#" class="social-link" title="Twitter">
-                        <i class="bi bi-twitter"></i>
-                    </a>
-                    <a href="#" class="social-link" title="LinkedIn">
-                        <i class="bi bi-linkedin"></i>
-                    </a>
-                    <a href="#" class="social-link" title="GitHub">
-                        <i class="bi bi-github"></i>
-                    </a>
-                </div>
+        </div>
+        
+        <!-- Social Links -->
+        <div class="social-section">
+            <div class="social-links">
+                <a href="#" class="social-link" title="Twitter">
+                    <i class="bi bi-twitter"></i>
+                </a>
+                <a href="#" class="social-link" title="LinkedIn">
+                    <i class="bi bi-linkedin"></i>
+                </a>
+                <a href="#" class="social-link" title="GitHub">
+                    <i class="bi bi-github"></i>
+                </a>
             </div>
         </div>
     </div>
