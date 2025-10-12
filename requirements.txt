@@ -15,4 +15,5 @@ django-celery-results
 django-celery-beat
 playwright
 django-allauth
+PyJWT
 
