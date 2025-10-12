@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
@@ -392,6 +393,19 @@ def delete_cv_view(request, cv_id):
     """Eliminar CV (AJAX)."""
     cv = get_object_or_404(UserCV, id=cv_id, user=request.user)
     cv_name = cv.original_file.name
+    
+    # Eliminar archivo físico antes de eliminar el registro
+    try:
+        if cv.original_file and cv.original_file.path:
+            if os.path.exists(cv.original_file.path):
+                os.remove(cv.original_file.path)
+                logger.info(f"Archivo físico eliminado: {cv.original_file.path}")
+            else:
+                logger.warning(f"Archivo físico no encontrado: {cv.original_file.path}")
+    except Exception as e:
+        logger.error(f"Error eliminando archivo físico {cv.original_file.path}: {e}")
+    
+    # Eliminar registro de la base de datos
     cv.delete()
 
     # Iniciar recálculo automático en background (sin modal)
@@ -425,7 +439,21 @@ def delete_all_cvs_view(request):
                 "message": "No tienes CVs para eliminar"
             })
         
-        # Eliminar todos los CVs
+        # Eliminar archivos físicos antes de eliminar registros
+        files_deleted = 0
+        for cv in user_cvs:
+            try:
+                if cv.original_file and cv.original_file.path:
+                    if os.path.exists(cv.original_file.path):
+                        os.remove(cv.original_file.path)
+                        files_deleted += 1
+                        logger.info(f"Archivo físico eliminado: {cv.original_file.path}")
+                    else:
+                        logger.warning(f"Archivo físico no encontrado: {cv.original_file.path}")
+            except Exception as e:
+                logger.error(f"Error eliminando archivo físico {cv.original_file.path}: {e}")
+        
+        # Eliminar todos los CVs de la base de datos
         user_cvs.delete()
         
         # Iniciar recálculo automático en background (sin modal)
@@ -438,7 +466,7 @@ def delete_all_cvs_view(request):
         
         return JsonResponse({
             "success": True,
-            "message": f"Todos los CVs eliminados correctamente ({cv_count} archivos).",
+            "message": f"Todos los CVs eliminados correctamente ({cv_count} registros, {files_deleted} archivos).",
         })
         
     except Exception as e:
