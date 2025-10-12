@@ -302,31 +302,21 @@ def upload_cv_view(request):
 
                 logger.info(f"CV procesado: {cv.skills_count} skills detectadas")
 
-                # Iniciar recálculo automático después de subir CV
+                # Iniciar recálculo automático en background (sin modal)
                 try:
                     from .tasks import recalculate_matches_for_user
                     task = recalculate_matches_for_user.delay(request.user.id)
-                    logger.info(f"Recálculo automático iniciado después de subir CV para usuario {request.user.id} (task: {task.id})")
-                    
-                    return JsonResponse(
-                        {
-                            "success": True,
-                            "message": f'CV "{cv.original_file.name}" subido y procesado exitosamente.',
-                            "skills_count": cv.skills_count,
-                            "recalculation_started": True,
-                            "task_id": task.id,
-                        }
-                    )
+                    logger.info(f"Recálculo automático iniciado en background después de subir CV para usuario {request.user.id} (task: {task.id})")
                 except Exception as e:
                     logger.error(f"Error iniciando recálculo automático después de subir CV: {e}")
-                    return JsonResponse(
-                        {
-                            "success": True,
-                            "message": f'CV "{cv.original_file.name}" subido y procesado exitosamente.',
-                            "skills_count": cv.skills_count,
-                            "recalculation_started": False,
-                        }
-                    )
+                
+                return JsonResponse(
+                    {
+                        "success": True,
+                        "message": f'CV "{cv.original_file.name}" subido y procesado exitosamente.',
+                        "skills_count": cv.skills_count,
+                    }
+                )
             else:
                 logger.warning(f"Formato no soportado: {cv.original_file.name}")
                 return JsonResponse(
@@ -404,29 +394,20 @@ def delete_cv_view(request, cv_id):
     cv_name = cv.original_file.name
     cv.delete()
 
-    # Iniciar recálculo automático después de eliminar CV
+    # Iniciar recálculo automático en background (sin modal)
     try:
         from .tasks import recalculate_matches_for_user
         task = recalculate_matches_for_user.delay(request.user.id)
-        logger.info(f"Recálculo automático iniciado después de eliminar CV para usuario {request.user.id} (task: {task.id})")
-        
-        return JsonResponse(
-            {
-                "success": True, 
-                "message": f'CV "{cv_name}" eliminado correctamente.',
-                "recalculation_started": True,
-                "task_id": task.id,
-            }
-        )
+        logger.info(f"Recálculo automático iniciado en background después de eliminar CV para usuario {request.user.id} (task: {task.id})")
     except Exception as e:
         logger.error(f"Error iniciando recálculo automático después de eliminar CV: {e}")
-        return JsonResponse(
-            {
-                "success": True, 
-                "message": f'CV "{cv_name}" eliminado correctamente.',
-                "recalculation_started": False,
-            }
-        )
+
+    return JsonResponse(
+        {
+            "success": True, 
+            "message": f'CV "{cv_name}" eliminado correctamente.',
+        }
+    )
 
 
 @login_required
@@ -447,25 +428,18 @@ def delete_all_cvs_view(request):
         # Eliminar todos los CVs
         user_cvs.delete()
         
-        # Iniciar recálculo automático después de eliminar todos los CVs
+        # Iniciar recálculo automático en background (sin modal)
         try:
             from .tasks import recalculate_matches_for_user
             task = recalculate_matches_for_user.delay(request.user.id)
-            logger.info(f"Recálculo automático iniciado después de eliminar todos los CVs para usuario {request.user.id} (task: {task.id})")
-            
-            return JsonResponse({
-                "success": True,
-                "message": f"Todos los CVs eliminados correctamente ({cv_count} archivos).",
-                "recalculation_started": True,
-                "task_id": task.id,
-            })
+            logger.info(f"Recálculo automático iniciado en background después de eliminar todos los CVs para usuario {request.user.id} (task: {task.id})")
         except Exception as e:
             logger.error(f"Error iniciando recálculo automático después de eliminar todos los CVs: {e}")
-            return JsonResponse({
-                "success": True,
-                "message": f"Todos los CVs eliminados correctamente ({cv_count} archivos).",
-                "recalculation_started": False,
-            })
+        
+        return JsonResponse({
+            "success": True,
+            "message": f"Todos los CVs eliminados correctamente ({cv_count} archivos).",
+        })
         
     except Exception as e:
         logger.error(f"Error eliminando todos los CVs del usuario {request.user.id}: {e}")
