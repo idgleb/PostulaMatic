@@ -915,7 +915,7 @@ def delete_all_jobs_view(request):
 def login_view(request):
     """Vista para iniciar sesión."""
     if request.user.is_authenticated:
-        return redirect("http://localhost:8000/matching/")
+        return redirect("dashboard")
 
     if request.method == "POST":
         username = request.POST.get("username")
@@ -925,7 +925,7 @@ def login_view(request):
         if user is not None:
             login(request, user)
             messages.success(request, f"¡Bienvenido, {user.username}!")
-            return redirect("http://localhost:8000/matching/")
+            return redirect("dashboard")
         else:
             messages.error(request, "Usuario o contraseña incorrectos.")
 
