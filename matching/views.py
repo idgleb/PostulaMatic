@@ -1098,16 +1098,23 @@ def login_view(request):
         return redirect("dashboard")
 
     if request.method == "POST":
-        username = request.POST.get("username")
+        email = request.POST.get("email")
         password = request.POST.get("password")
 
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
-            login(request, user)
-            messages.success(request, f"¡Bienvenido, {user.username}!")
-            return redirect("dashboard")
-        else:
-            messages.error(request, "Usuario o contraseña incorrectos.")
+        # Buscar usuario por email (ya que usamos email como username)
+        from django.contrib.auth.models import User
+        try:
+            user = User.objects.get(email=email)
+            # Autenticar usando el username (que es el email)
+            user = authenticate(request, username=user.username, password=password)
+            if user is not None:
+                login(request, user)
+                messages.success(request, f"¡Bienvenido, {user.email}!")
+                return redirect("dashboard")
+            else:
+                messages.error(request, "Email o contraseña incorrectos.")
+        except User.DoesNotExist:
+            messages.error(request, "Email o contraseña incorrectos.")
 
     return render(request, "registration/login.html")
 
@@ -1118,13 +1125,12 @@ def register_view(request):
         return redirect("dashboard")
 
     if request.method == "POST":
-        username = request.POST.get("username")
         email = request.POST.get("email")
         password1 = request.POST.get("password1")
         password2 = request.POST.get("password2")
 
         # Validaciones básicas
-        if not username or not email or not password1 or not password2:
+        if not email or not password1 or not password2:
             messages.error(request, "Todos los campos son obligatorios.")
             return render(request, "registration/register.html")
 
@@ -1136,18 +1142,15 @@ def register_view(request):
             messages.error(request, "La contraseña debe tener al menos 8 caracteres.")
             return render(request, "registration/register.html")
 
-        # Verificar si el usuario ya existe
+        # Verificar si el email ya está registrado
         from django.contrib.auth.models import User
-        if User.objects.filter(username=username).exists():
-            messages.error(request, "El nombre de usuario ya está en uso.")
-            return render(request, "registration/register.html")
-
         if User.objects.filter(email=email).exists():
             messages.error(request, "El email ya está registrado.")
             return render(request, "registration/register.html")
 
         try:
-            # Crear el usuario
+            # Usar email como username (Django requiere username único)
+            username = email  # Usar email como username
             user = User.objects.create_user(
                 username=username,
                 email=email,
