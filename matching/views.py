@@ -929,7 +929,7 @@ def login_view(request):
         else:
             messages.error(request, "Usuario o contraseña incorrectos.")
 
-    return render(request, "matching/login.html")
+    return render(request, "registration/login.html")
 
 
 @login_required
