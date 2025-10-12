@@ -862,18 +862,22 @@
 
         // Matching Form
         if (matchingForm) {
+            console.log('Configurando event listener para matching form...');
             matchingForm.addEventListener('submit', function(e) {
+                console.log('Matching form submit event triggered!');
                 e.preventDefault();
                 
                 // Desactivar botón y mostrar spinner
                 const btn = document.getElementById('btn-matching');
                 if (btn) {
+                    console.log('Botón matching encontrado, enviando formulario...');
                     // Usar texto hardcodeado para evitar problemas con el estado previo del botón
                     const originalText = '<i class="bi bi-gear me-2"></i>Guardar Configuración de Matching';
                     btn.disabled = true;
                     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" style="color: white !important; border-color: white !important; border-top-color: transparent !important; opacity: 1 !important;" role="status" aria-hidden="true"></span>Conectando...';
                     
                     const formData = new FormData(this);
+                    console.log('FormData creado:', Object.fromEntries(formData.entries()));
                     
                     fetch(this.action, {
                         method: 'POST',
@@ -882,31 +886,43 @@
                             'X-Requested-With': 'XMLHttpRequest',
                         }
                     })
-                    .then(response => response.json())
+                    .then(response => {
+                        console.log('Respuesta recibida:', response.status);
+                        return response.json();
+                    })
                     .then(data => {
+                        console.log('Datos recibidos:', data);
                         if (data.success) {
                             showMessage('matching-result', data.message, 'success');
                             
                             // Si se inició recálculo, mostrar progreso
                             if (data.recalculation_started && data.task_id) {
+                                console.log('Recálculo iniciado, mostrando modal para task:', data.task_id);
                                 showRecalculationProgress(data.task_id);
                             } else {
+                                console.log('No se inició recálculo, restaurando botón');
                                 btn.innerHTML = originalText;
                                 btn.disabled = true; // Desactivar después de guardado exitoso
                             }
                         } else {
+                            console.log('Error en respuesta:', data.message);
                             btn.innerHTML = originalText;
                             btn.disabled = false; // Reactivar si hay error
                             showMessage('matching-result', data.message, 'error');
                         }
                     })
                     .catch(error => {
+                        console.error('Error en fetch:', error);
                         btn.innerHTML = originalText;
                         btn.disabled = false; // Reactivar si hay error de conexión
                         showMessage('matching-result', 'Error de conexión: ' + error.message, 'error');
                     });
+                } else {
+                    console.error('Botón matching no encontrado!');
                 }
             });
+        } else {
+            console.error('Matching form no encontrado!');
         }
 
         // Email Form
