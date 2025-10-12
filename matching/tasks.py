@@ -45,36 +45,18 @@ def save_scraping_log(user_id, task_id, message, log_type="info"):
 async_save_scraping_log = sync_to_async(save_scraping_log)
 
 
-@shared_task(bind=True)
-def recalculate_matches_for_user(self, user_id: int):
+def _recalculate_matches_for_user_core(user_id: int):
     """
-    Recalcula todos los matches para un usuario cuando cambia el umbral.
-    Maneja cancelaciones y actualiza progreso.
-
+    Función core para recalcular matches (sin dependencias de Celery).
+    
     Args:
         user_id: ID del usuario
-
+        
     Returns:
         Dict con estadísticas del recálculo
     """
     try:
         logger.info(f"Iniciando recálculo de matches para usuario {user_id}")
-
-        # Actualizar progreso inicial
-        self.update_state(
-            state="PROGRESS",
-            meta={
-                "current_step": "Iniciando recálculo",
-                "progress_info": "Obteniendo perfil del usuario",
-                "progress_percentage": 10,
-            },
-        )
-
-        # Verificar si la tarea fue cancelada
-        # Nota: Celery no tiene is_aborted(), verificamos el estado de la tarea
-        if self.request.called_directly:
-            # Si se llama directamente, no hay cancelación
-            pass
 
         # Obtener perfil del usuario
         user_profile = UserProfile.objects.get(user_id=user_id)
@@ -82,16 +64,6 @@ def recalculate_matches_for_user(self, user_id: int):
         # Obtener todas las ofertas de trabajo
         all_jobs = JobPosting.objects.all()
         total_jobs = all_jobs.count()
-
-        # Actualizar progreso
-        self.update_state(
-            state="PROGRESS",
-            meta={
-                "current_step": "Preparando recálculo",
-                "progress_info": f"Encontradas {total_jobs} ofertas para procesar",
-                "progress_percentage": 20,
-            },
-        )
 
         # Eliminar matches existentes del usuario
         old_matches_count = MatchScore.objects.filter(user_id=user_id).count()
@@ -101,25 +73,11 @@ def recalculate_matches_for_user(self, user_id: int):
             f"Eliminados {old_matches_count} matches antiguos para usuario {user_id}"
         )
 
-        # Actualizar progreso
-        self.update_state(
-            state="PROGRESS",
-            meta={
-                "current_step": "Recalculando matches",
-                "progress_info": f"Eliminados {old_matches_count} matches antiguos",
-                "progress_percentage": 30,
-            },
-        )
-
         # Recalcular matches para todas las ofertas
         new_matches_count = 0
         processed_jobs = 0
 
         for job in all_jobs:
-            # Verificar si la tarea fue cancelada
-            # Nota: Simplificamos la verificación de cancelación
-            pass
-
             try:
                 # Calcular matches con el nuevo umbral
                 matches = matching_service.calculate_user_job_matches(user_profile, job)
@@ -134,31 +92,9 @@ def recalculate_matches_for_user(self, user_id: int):
 
                 processed_jobs += 1
 
-                # Actualizar progreso cada 5 ofertas procesadas
-                if processed_jobs % 5 == 0:
-                    progress = 30 + (processed_jobs / total_jobs) * 60
-                    self.update_state(
-                        state="PROGRESS",
-                        meta={
-                            "current_step": "Recalculando matches",
-                            "progress_info": f"Procesadas {processed_jobs}/{total_jobs} ofertas",
-                            "progress_percentage": int(progress),
-                        },
-                    )
-
             except Exception as e:
                 logger.error(f"Error recalculando matches para job {job.id}: {e}")
                 continue
-
-        # Actualizar progreso final
-        self.update_state(
-            state="PROGRESS",
-            meta={
-                "current_step": "Finalizando recálculo",
-                "progress_info": f"Creados {new_matches_count} nuevos matches",
-                "progress_percentage": 95,
-            },
-        )
 
         result = {
             "success": True,
@@ -171,17 +107,6 @@ def recalculate_matches_for_user(self, user_id: int):
         }
 
         logger.info(f"Recálculo completado para usuario {user_id}: {result}")
-
-        # Estado final
-        self.update_state(
-            state="SUCCESS",
-            meta={
-                "current_step": "Recálculo completado",
-                "progress_info": f"Recálculo exitoso: {new_matches_count} matches",
-                "progress_percentage": 100,
-            },
-        )
-
         return result
 
     except UserProfile.DoesNotExist:
@@ -189,6 +114,67 @@ def recalculate_matches_for_user(self, user_id: int):
         return {"error": "Usuario sin perfil"}
     except Exception as e:
         logger.error(f"Error en recálculo para usuario {user_id}: {e}")
+        return {"error": str(e)}
+
+
+@shared_task(bind=True)
+def recalculate_matches_for_user(self, user_id: int):
+    """
+    Tarea Celery para recalcular matches con progreso.
+    
+    Args:
+        user_id: ID del usuario
+        
+    Returns:
+        Dict con estadísticas del recálculo
+    """
+    try:
+        # Actualizar progreso inicial
+        self.update_state(
+            state="PROGRESS",
+            meta={
+                "current_step": "Iniciando recálculo",
+                "progress_info": "Obteniendo perfil del usuario",
+                "progress_percentage": 10,
+            },
+        )
+
+        # Llamar función core
+        result = _recalculate_matches_for_user_core(user_id)
+        
+        if result.get("success"):
+            # Actualizar progreso final
+            self.update_state(
+                state="SUCCESS",
+                meta={
+                    "current_step": "Recálculo completado",
+                    "progress_info": f"Recálculo exitoso: {result['new_matches_count']} matches",
+                    "progress_percentage": 100,
+                },
+            )
+        else:
+            # Error
+            self.update_state(
+                state="FAILURE",
+                meta={
+                    "current_step": "Error en recálculo",
+                    "progress_info": result.get("error", "Error desconocido"),
+                    "progress_percentage": 0,
+                },
+            )
+        
+        return result
+
+    except Exception as e:
+        logger.error(f"Error en tarea de recálculo para usuario {user_id}: {e}")
+        self.update_state(
+            state="FAILURE",
+            meta={
+                "current_step": "Error en recálculo",
+                "progress_info": str(e),
+                "progress_percentage": 0,
+            },
+        )
         return {"error": str(e)}
 
 
