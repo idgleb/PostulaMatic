@@ -1,378 +1,502 @@
+{% extends 'base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ seo.title }}</title>
-    <!-- TEST: CSS inline aplicado correctamente -->
-    <meta name="description" content="{{ seo.description }}">
-    <link rel="canonical" href="{{ seo.canonical }}">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
-    <!-- CSS inline para animaciones flotantes -->
-    <style>
-    /* Fondo oscuro con gradiente */
-    .floating-background {
-        background: linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #2c3e50 100%) !important;
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+<!-- CSS inline para animaciones flotantes -->
+<style>
+/* Fondo oscuro con gradiente */
+.floating-background {
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #2c3e50 100%) !important;
+    min-height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Elementos flotantes */
+.floating-elements {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: -1;
+    pointer-events: none;
+}
+
+.floating-element {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    animation: floatBackground 8s ease-in-out infinite;
+    box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1);
+}
+
+.floating-element:nth-child(1) { width: 80px; height: 80px; top: 20%; left: 10%; animation-delay: 0s; }
+.floating-element:nth-child(2) { width: 120px; height: 120px; top: 60%; right: 10%; animation-delay: 2s; }
+.floating-element:nth-child(3) { width: 60px; height: 60px; bottom: 20%; left: 20%; animation-delay: 4s; }
+.floating-element:nth-child(4) { width: 100px; height: 100px; top: 30%; right: 30%; animation-delay: 1s; }
+.floating-element:nth-child(5) { width: 70px; height: 70px; bottom: 40%; right: 20%; animation-delay: 3s; }
+.floating-element:nth-child(6) { width: 90px; height: 90px; top: 40%; left: 5%; animation-delay: 5s; }
+.floating-element:nth-child(7) { width: 50px; height: 50px; top: 30%; right: 40%; animation-delay: 1.5s; background: rgba(102, 126, 234, 0.3); }
+.floating-element:nth-child(8) { width: 70px; height: 70px; bottom: 10%; right: 50%; animation-delay: 3.5s; background: rgba(118, 75, 162, 0.3); }
+.floating-element:nth-child(9) { width: 40px; height: 40px; top: 70%; left: 40%; animation-delay: 4.5s; background: rgba(255, 255, 255, 0.4); }
+
+@keyframes floatBackground {
+    0%, 100% { transform: translateY(0px) rotate(0deg) scale(1); opacity: 0.3; }
+    25% { transform: translateY(-15px) rotate(90deg) scale(1.1); opacity: 0.5; }
+    50% { transform: translateY(-25px) rotate(180deg) scale(0.9); opacity: 0.4; }
+    75% { transform: translateY(-10px) rotate(270deg) scale(1.05); opacity: 0.5; }
+}
+</style>
+<style>
+    /* Estilo global moderno */
+    body {
+        /* Fondo unificado - usar clase floating-background */
+    }
+    
+    .main-container {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        margin: 2rem auto;
+        min-height: calc(100vh - 4rem);
+        overflow: visible;
+        position: relative;
+        z-index: 1;
+    }
+    
+    /* Navegación moderna */
+    .navbar {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        border-radius: 20px 20px 0 0 !important;
+        margin: 0 !important;
+        padding: 1rem 2rem !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    .navbar-brand { 
+        font-weight: 900 !important; 
+        font-size: 1.8rem !important;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+        color: white !important;
+        letter-spacing: 1px;
+        transition: all 0.3s ease;
+    }
+    
+    .navbar-brand:hover {
+        color: #ffd700 !important;
+        text-shadow: 0 2px 8px rgba(255, 215, 0, 0.5) !important;
+        transform: scale(1.05);
+    }
+    
+    .navbar-nav .nav-link {
+        font-weight: 600 !important;
+        font-size: 1rem !important;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+        color: rgba(255, 255, 255, 0.95) !important;
+        transition: all 0.3s ease;
+        padding: 0.75rem 1.5rem !important;
+        border-radius: 50px;
+        margin: 0 0.25rem;
+    }
+    
+    .navbar-nav .nav-link:hover {
+        background-color: rgba(255, 255, 255, 0.2) !important;
+        border-radius: 50px;
+        transform: translateY(-2px);
+        color: white !important;
+        text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4) !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    .navbar-nav .nav-link.active {
+        background-color: rgba(255, 255, 255, 0.25) !important;
+        border-radius: 50px;
+        font-weight: 700 !important;
+        color: white !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    /* Contenido principal */
+    .main-content {
+        padding: 2rem;
+        background: transparent;
+    }
+    
+    /* Cards modernas */
+    .card {
+        border: none !important;
+        border-radius: 20px !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1) !important;
+        background: rgba(255, 255, 255, 0.9) !important;
+        backdrop-filter: blur(10px);
+        margin-bottom: 2rem;
+    }
+    
+    .card-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: white !important;
+        border-radius: 20px 20px 0 0 !important;
+        padding: 1.5rem !important;
+        border: none !important;
+    }
+    
+    .card-body {
+        padding: 2rem !important;
+    }
+    
+    /* Botones modernos */
+    .btn {
+        border-radius: 50px !important;
+        font-weight: 600 !important;
+        padding: 0.75rem 2rem !important;
+        transition: all 0.3s ease !important;
+        text-transform: uppercase !important;
+        letter-spacing: 1px !important;
+        border: none !important;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: white !important;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3) !important;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4) !important;
+        background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%) !important;
+    }
+    
+    /* Formularios modernos */
+    .form-control {
+        border-radius: 50px !important;
+        border: 2px solid rgba(102, 126, 234, 0.2) !important;
+        padding: 0.75rem 1.5rem !important;
+        transition: all 0.3s ease !important;
+        background: rgba(255, 255, 255, 0.9) !important;
+    }
+    
+    .form-control:focus {
+        border-color: #667eea !important;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25) !important;
+        background: white !important;
+    }
+    
+    /* Hero section específica para landing */
+    .hero-container {
         min-height: 100vh;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
     }
-
-    /* Elementos flotantes */
-    .floating-elements {
-        position: fixed;
-        top: 0;
-        left: 0;
+    
+    .hero-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        padding: 3rem;
+        text-align: center;
+        max-width: 1200px;
         width: 100%;
-        height: 100%;
-        overflow: hidden;
-        z-index: -1;
-        pointer-events: none;
+        border: 1px solid rgba(102, 126, 234, 0.2);
     }
-
-    .floating-element {
-        position: absolute;
-        background: rgba(255, 255, 255, 0.2);
+    
+    .hero-logo {
+        font-size: 4rem;
+        font-weight: 900;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 1rem;
+        line-height: 1;
+    }
+    
+    .hero-title {
+        font-size: 3rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 1rem;
+        line-height: 1.2;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .hero-subtitle {
+        font-size: 1.3rem;
+        color: #6c757d;
+        margin-bottom: 2rem;
+        line-height: 1.6;
+    }
+    
+    .hero-icon {
+        font-size: 5rem;
+        color: #667eea;
+        margin-bottom: 2rem;
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.05);
+        }
+    }
+    
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin: 2rem 0;
+    }
+    
+    .feature-card {
+        background: rgba(102, 126, 234, 0.05);
+        border-radius: 15px;
+        padding: 1.5rem;
+        text-align: center;
+        transition: transform 0.3s ease;
+        border: 1px solid rgba(102, 126, 234, 0.1);
+    }
+    
+    .feature-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.1);
+    }
+    
+    .feature-icon {
+        font-size: 2.5rem;
+        color: #667eea;
+        margin-bottom: 1rem;
+    }
+    
+    .feature-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 0.5rem;
+    }
+    
+    .feature-text {
+        color: #6c757d;
+        font-size: 0.95rem;
+    }
+    
+    .lead-form {
+        background: rgba(102, 126, 234, 0.05);
+        border-radius: 15px;
+        padding: 2rem;
+        margin: 2rem 0;
+        border: 1px solid rgba(102, 126, 234, 0.1);
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .cta-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 1rem;
+    }
+    
+    .cta-text {
+        color: #6c757d;
+        margin-bottom: 1.5rem;
+    }
+    
+    .social-links {
+        margin-top: 2rem;
+    }
+    
+    .social-link {
+        display: inline-block;
+        width: 50px;
+        height: 50px;
+        background: rgba(102, 126, 234, 0.1);
         border-radius: 50%;
-        animation: floatBackground 8s ease-in-out infinite;
-        box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1);
+        line-height: 50px;
+        text-align: center;
+        margin: 0 0.5rem;
+        transition: all 0.3s ease;
+        color: #667eea;
+        text-decoration: none;
     }
-
-    .floating-element:nth-child(1) { width: 80px; height: 80px; top: 20%; left: 10%; animation-delay: 0s; }
-    .floating-element:nth-child(2) { width: 120px; height: 120px; top: 60%; right: 10%; animation-delay: 2s; }
-    .floating-element:nth-child(3) { width: 60px; height: 60px; bottom: 20%; left: 20%; animation-delay: 4s; }
-    .floating-element:nth-child(4) { width: 100px; height: 100px; top: 30%; right: 30%; animation-delay: 1s; }
-    .floating-element:nth-child(5) { width: 70px; height: 70px; bottom: 40%; right: 20%; animation-delay: 3s; }
-    .floating-element:nth-child(6) { width: 90px; height: 90px; top: 40%; left: 5%; animation-delay: 5s; }
-    .floating-element:nth-child(7) { width: 50px; height: 50px; top: 30%; right: 40%; animation-delay: 1.5s; background: rgba(102, 126, 234, 0.3); }
-    .floating-element:nth-child(8) { width: 70px; height: 70px; bottom: 10%; right: 50%; animation-delay: 3.5s; background: rgba(118, 75, 162, 0.3); }
-    .floating-element:nth-child(9) { width: 40px; height: 40px; top: 70%; left: 40%; animation-delay: 4.5s; background: rgba(255, 255, 255, 0.4); }
-
-    @keyframes floatBackground {
-        0%, 100% { transform: translateY(0px) rotate(0deg) scale(1); opacity: 0.3; }
-        25% { transform: translateY(-15px) rotate(90deg) scale(1.1); opacity: 0.5; }
-        50% { transform: translateY(-25px) rotate(180deg) scale(0.9); opacity: 0.4; }
-        75% { transform: translateY(-10px) rotate(270deg) scale(1.05); opacity: 0.5; }
+    
+    .social-link:hover {
+        background: #667eea;
+        color: white;
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
     }
-    </style>
-    <style>
-        body {
-            /* Fondo unificado - usar clase floating-background */
-        }
-        
-        .hero-container {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        
-        .hero-card {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-            padding: 3rem;
-            text-align: center;
-            max-width: 1200px;
-            width: 100%;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        .hero-logo {
-            font-size: 4rem;
-            font-weight: 900;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 1rem;
-            line-height: 1;
-        }
-        
+    
+    @media (max-width: 768px) {
         .hero-title {
-            font-size: 3rem;
-            font-weight: 700;
-            color: #ffffff;
-            margin-bottom: 1rem;
-            line-height: 1.2;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            font-size: 2rem;
         }
         
         .hero-subtitle {
-            font-size: 1.3rem;
-            color: rgba(255, 255, 255, 0.9);
-            margin-bottom: 2rem;
-            line-height: 1.6;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-        }
-        
-        .hero-icon {
-            font-size: 5rem;
-            color: #667eea;
-            margin-bottom: 2rem;
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% {
-                transform: scale(1);
-            }
-            50% {
-                transform: scale(1.05);
-            }
+            font-size: 1.1rem;
         }
         
         .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin: 2rem 0;
+            grid-template-columns: 1fr;
         }
         
-        .feature-card {
-            background: rgba(102, 126, 234, 0.1);
-            border-radius: 15px;
-            padding: 1.5rem;
-            text-align: center;
-            transition: transform 0.3s ease;
-        }
-        
-        .feature-card:hover {
-            transform: translateY(-5px);
-        }
-        
-        .feature-icon {
-            font-size: 2.5rem;
-            color: #667eea;
-            margin-bottom: 1rem;
-        }
-        
-        .feature-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 0.5rem;
-        }
-        
-        .feature-text {
-            color: #6c757d;
-            font-size: 0.95rem;
-        }
-        
-        .lead-form {
-            background: rgba(102, 126, 234, 0.1);
-            border-radius: 15px;
+        .hero-card {
             padding: 2rem;
-            margin: 2rem 0;
         }
         
-        .form-group {
-            margin-bottom: 1.5rem;
+        .floating-element {
+            opacity: 0.05;
         }
         
-        .form-control {
-            border: 2px solid #e9ecef;
-            border-radius: 50px;
-            padding: 15px 25px;
-            font-size: 1.1rem;
-            transition: all 0.3s ease;
+        .floating-element:nth-child(1),
+        .floating-element:nth-child(4),
+        .floating-element:nth-child(6) {
+            display: none;
         }
-        
-        .form-control:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-        }
-        
-        .btn-custom {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            border-radius: 50px;
-            padding: 15px 40px;
-            font-weight: 600;
-            font-size: 1.1rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.3s ease;
-            color: white;
-            width: 100%;
-        }
-        
-        .btn-custom:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
-            color: white;
-        }
-        
-        /* Elementos flotantes ahora están en floating-animations.css */
-        
-        .cta-section {
-            background: rgba(102, 126, 234, 0.1);
-            border-radius: 15px;
-            padding: 2rem;
-            margin-top: 2rem;
-        }
-        
-        .cta-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 1rem;
-        }
-        
-        .cta-text {
-            color: #6c757d;
-            margin-bottom: 1.5rem;
-        }
-        
-        .social-links {
-            margin-top: 2rem;
-        }
-        
-        .social-link {
-            display: inline-block;
-            width: 50px;
-            height: 50px;
-            background: rgba(102, 126, 234, 0.2);
-            border-radius: 50%;
-            line-height: 50px;
-            text-align: center;
-            margin: 0 0.5rem;
-            transition: all 0.3s ease;
-            color: #667eea;
-            text-decoration: none;
-        }
-        
-        .social-link:hover {
-            background: #667eea;
-            color: white;
-            transform: translateY(-3px);
-        }
-        
-        @media (max-width: 768px) {
-            .hero-title {
-                font-size: 2rem;
-            }
-            
-            .hero-subtitle {
-                font-size: 1.1rem;
-            }
-            
-            .features-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .hero-card {
-                padding: 2rem;
-            }
-            
-            .floating-element {
-                opacity: 0.05;
-            }
-            
-            .floating-element:nth-child(1),
-            .floating-element:nth-child(4),
-            .floating-element:nth-child(6) {
-                display: none;
-            }
-        }
-        
-        @media (max-width: 550px) {
-            .hero-logo {
-                font-size: 2.5rem;
-            }
-        }
-    </style>
-</head>
-<body class="floating-background">
-    {% include 'partials/floating_elements.html' %}
+    }
     
-    <div class="hero-container">
-        <div class="hero-card">
-            <div class="hero-icon">
-                <i class="bi bi-robot"></i>
+    @media (max-width: 550px) {
+        .hero-logo {
+            font-size: 2.5rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<body class="floating-background">
+<!-- Elementos flotantes animados -->
+{% include 'partials/floating_elements.html' %}
+
+<div class="main-container">
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{% url 'home' %}">
+                <i class="bi bi-robot me-2"></i>PostulaMatic
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'home' %}">
+                            <i class="bi bi-house me-1"></i>Inicio
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'dashboard' %}">
+                            <i class="bi bi-speedometer2 me-1"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'login' %}">
+                            <i class="bi bi-box-arrow-in-right me-1"></i>Iniciar Sesión
+                        </a>
+                    </li>
+                </ul>
             </div>
-            
-            <div class="hero-logo">PostulaMatic</div>
-            
-            <h1 class="hero-title">Postula Automáticamente con IA, Bro</h1>
-            
-            <p class="hero-subtitle">
-                Sube tu CV, detectamos tus habilidades y te ayudamos a enviar aplicaciones automáticamente a empleos que coincidan con tu perfil.
-            </p>
-            
-            <div class="features-grid">
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="bi bi-file-earmark-text"></i>
-                    </div>
-                    <div class="feature-title">Análisis de CV</div>
-                    <div class="feature-text">Extraemos y analizamos tus habilidades usando inteligencia artificial</div>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <div class="hero-container">
+            <div class="hero-card">
+                <div class="hero-icon">
+                    <i class="bi bi-robot"></i>
                 </div>
                 
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="bi bi-search"></i>
-                    </div>
-                    <div class="feature-title">Búsqueda Inteligente</div>
-                    <div class="feature-text">Encontramos empleos que coinciden perfectamente con tu perfil</div>
-                </div>
+                <div class="hero-logo">PostulaMatic</div>
                 
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="bi bi-send"></i>
-                    </div>
-                    <div class="feature-title">Envío Automático</div>
-                    <div class="feature-text">Enviamos tu CV personalizado automáticamente a las empresas</div>
-                </div>
-            </div>
-            
-            <div class="lead-form">
-                <h3 class="cta-title">
-                    <i class="bi bi-envelope me-2"></i>
-                    ¡Sé el primero en probarlo!
-                </h3>
-                <p class="cta-text">
-                    Únete a la lista de espera y te notificaremos cuando esté disponible.
+                <h1 class="hero-title">Postula Automáticamente con IA</h1>
+                
+                <p class="hero-subtitle">
+                    Sube tu CV, detectamos tus habilidades y te ayudamos a enviar aplicaciones automáticamente a empleos que coincidan con tu perfil.
                 </p>
                 
-                <form method="post">
-                    {% csrf_token %}
-                    <div class="form-group">
-                        {{ form.email }}
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="bi bi-file-earmark-text"></i>
+                        </div>
+                        <div class="feature-title">Análisis de CV</div>
+                        <div class="feature-text">Extraemos y analizamos tus habilidades usando inteligencia artificial</div>
                     </div>
-                    <button type="submit" class="btn-custom">
-                        <i class="bi bi-rocket-takeoff me-2"></i>
-                        Quiero Acceso Anticipado
-                    </button>
-                </form>
-            </div>
-            
-            <div class="social-links">
-                <a href="#" class="social-link" title="Twitter">
-                    <i class="bi bi-twitter"></i>
-                </a>
-                <a href="#" class="social-link" title="LinkedIn">
-                    <i class="bi bi-linkedin"></i>
-                </a>
-                <a href="#" class="social-link" title="GitHub">
-                    <i class="bi bi-github"></i>
-                </a>
-            </div>
-            
-            <div class="mt-4">
-                <small class="text-muted">
-                    <i class="bi bi-shield-check me-1"></i>
-                    Tu email está seguro con nosotros. Sin spam, solo actualizaciones importantes.
-                </small>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="bi bi-search"></i>
+                        </div>
+                        <div class="feature-title">Búsqueda Inteligente</div>
+                        <div class="feature-text">Encontramos empleos que coinciden perfectamente con tu perfil</div>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="bi bi-send"></i>
+                        </div>
+                        <div class="feature-title">Envío Automático</div>
+                        <div class="feature-text">Enviamos tu CV personalizado automáticamente a las empresas</div>
+                    </div>
+                </div>
+                
+                <div class="lead-form">
+                    <h3 class="cta-title">
+                        <i class="bi bi-envelope me-2"></i>
+                        ¡Sé el primero en probarlo!
+                    </h3>
+                    <p class="cta-text">
+                        Únete a la lista de espera y te notificaremos cuando esté disponible.
+                    </p>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            {{ form.email }}
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-rocket-takeoff me-2"></i>
+                            Quiero Acceso Anticipado
+                        </button>
+                    </form>
+                </div>
+                
+                <div class="social-links">
+                    <a href="#" class="social-link" title="Twitter">
+                        <i class="bi bi-twitter"></i>
+                    </a>
+                    <a href="#" class="social-link" title="LinkedIn">
+                        <i class="bi bi-linkedin"></i>
+                    </a>
+                    <a href="#" class="social-link" title="GitHub">
+                        <i class="bi bi-github"></i>
+                    </a>
+                </div>
+                
+                <div class="mt-4">
+                    <small class="text-muted">
+                        <i class="bi bi-shield-check me-1"></i>
+                        Tu email está seguro con nosotros. Sin spam, solo actualizaciones importantes.
+                    </small>
+                </div>
             </div>
         </div>
     </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</div>
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+{% endblock %}
 </body>
-</html>
-
-
+{% endblock %}
