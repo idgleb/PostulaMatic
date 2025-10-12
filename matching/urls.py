@@ -5,6 +5,7 @@ from . import views
 urlpatterns = [
     path("", views.dashboard_view, name="dashboard"),
     path("login/", views.login_view, name="login"),
+    path("registro/", views.register_view, name="register"),
     path("perfil/", views.profile_view, name="profile"),
     path("upload-cv-ajax/", views.upload_cv_view, name="upload_cv"),
     path("mis-cvs/", views.cv_list_view, name="cv_list"),

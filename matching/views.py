@@ -1112,6 +1112,61 @@ def login_view(request):
     return render(request, "registration/login.html")
 
 
+def register_view(request):
+    """Vista para registrar nuevos usuarios."""
+    if request.user.is_authenticated:
+        return redirect("dashboard")
+
+    if request.method == "POST":
+        username = request.POST.get("username")
+        email = request.POST.get("email")
+        password1 = request.POST.get("password1")
+        password2 = request.POST.get("password2")
+
+        # Validaciones básicas
+        if not username or not email or not password1 or not password2:
+            messages.error(request, "Todos los campos son obligatorios.")
+            return render(request, "registration/register.html")
+
+        if password1 != password2:
+            messages.error(request, "Las contraseñas no coinciden.")
+            return render(request, "registration/register.html")
+
+        if len(password1) < 8:
+            messages.error(request, "La contraseña debe tener al menos 8 caracteres.")
+            return render(request, "registration/register.html")
+
+        # Verificar si el usuario ya existe
+        from django.contrib.auth.models import User
+        if User.objects.filter(username=username).exists():
+            messages.error(request, "El nombre de usuario ya está en uso.")
+            return render(request, "registration/register.html")
+
+        if User.objects.filter(email=email).exists():
+            messages.error(request, "El email ya está registrado.")
+            return render(request, "registration/register.html")
+
+        try:
+            # Crear el usuario
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                password=password1
+            )
+            
+            # Crear perfil de usuario
+            UserProfile.objects.create(user=user)
+            
+            messages.success(request, "¡Cuenta creada exitosamente! Ahora puedes iniciar sesión.")
+            return redirect("login")
+            
+        except Exception as e:
+            messages.error(request, f"Error al crear la cuenta: {str(e)}")
+            return render(request, "registration/register.html")
+
+    return render(request, "registration/register.html")
+
+
 @login_required
 def test_smtp_email_view(request):
     """Vista para probar el envío de email SMTP."""
