@@ -1103,17 +1103,17 @@
         }
     }
 
-    // Variable para evitar múltiples inicializaciones
-    let profileInitialized = false;
+    // Variable global para evitar múltiples inicializaciones
+    window.profileInitialized = window.profileInitialized || false;
 
     // Inicializar cuando el DOM esté listo
     document.addEventListener('DOMContentLoaded', function() {
         // Evitar múltiples inicializaciones
-        if (profileInitialized) {
+        if (window.profileInitialized) {
             console.log('Profile ya inicializado, saltando...');
             return;
         }
-        profileInitialized = true;
+        window.profileInitialized = true;
         
         console.log('Inicializando profile por primera vez...');
         
