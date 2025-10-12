@@ -831,7 +831,13 @@ def paginated_jobs_view(request):
 
 def logout_view(request):
     """Vista para cerrar sesión."""
+    from django.contrib.auth import logout
+    from django.shortcuts import redirect
+    from django.contrib import messages
+    
     logout(request)
+    messages.success(request, "Has cerrado sesión correctamente.")
+    return redirect('login')
 
 
 def custom_404_view(request, exception):
