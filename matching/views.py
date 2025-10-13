@@ -5,7 +5,7 @@ import os
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
@@ -1547,3 +1547,45 @@ def cv_parsed_text_view(request, cv_id):
             "success": False,
             "error": "Error interno del servidor"
         })
+
+
+@login_required
+def download_cv_view(request, cv_id):
+    """Vista para descargar un CV específico del usuario."""
+    try:
+        # Obtener el CV del usuario actual
+        cv = get_object_or_404(UserCV, id=cv_id, user=request.user)
+        
+        # Verificar que el archivo existe
+        if not cv.file:
+            raise Http404("Archivo no encontrado")
+        
+        # Obtener la ruta del archivo
+        file_path = cv.file.path
+        
+        # Verificar que el archivo existe físicamente
+        if not os.path.exists(file_path):
+            raise Http404("Archivo no encontrado en el servidor")
+        
+        # Leer el archivo
+        with open(file_path, 'rb') as file:
+            file_content = file.read()
+        
+        # Crear respuesta HTTP con el archivo
+        response = HttpResponse(file_content, content_type='application/octet-stream')
+        
+        # Configurar headers para descarga
+        filename = os.path.basename(file_path)
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        response['Content-Length'] = len(file_content)
+        
+        logger.info(f"CV descargado: {filename} por usuario {request.user.email}")
+        
+        return response
+        
+    except UserCV.DoesNotExist:
+        logger.warning(f"Usuario {request.user.email} intentó descargar CV inexistente: {cv_id}")
+        raise Http404("CV no encontrado o no tienes permisos para acceder a él")
+    except Exception as e:
+        logger.error(f"Error descargando CV {cv_id} para usuario {request.user.email}: {e}")
+        raise Http404("Error al descargar el archivo")

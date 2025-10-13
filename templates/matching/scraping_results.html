@@ -538,8 +538,8 @@ function renderMatches(matches) {
                         </span>
                         <br>
                         <small class="text-muted">
-                            <a href="{% url 'cv_list' %}" class="text-decoration-none" title="Ver CV usado para este match: ${match.cv_filename}">
-                                <i class="bi bi-file-earmark-text me-1"></i>${match.cv_filename}
+                            <a href="/matching/descargar-cv/${match.cv_id}/" class="text-decoration-none" title="Descargar CV usado para este match: ${match.cv_filename}" download>
+                                <i class="bi bi-download me-1"></i>${match.cv_filename}
                             </a>
                         </small>
                         <br>
