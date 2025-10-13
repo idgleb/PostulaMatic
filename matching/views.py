@@ -1557,11 +1557,11 @@ def download_cv_view(request, cv_id):
         cv = get_object_or_404(UserCV, id=cv_id, user=request.user)
         
         # Verificar que el archivo existe
-        if not cv.file:
+        if not cv.original_file:
             raise Http404("Archivo no encontrado")
         
         # Obtener la ruta del archivo
-        file_path = cv.file.path
+        file_path = cv.original_file.path
         
         # Verificar que el archivo existe físicamente
         if not os.path.exists(file_path):
