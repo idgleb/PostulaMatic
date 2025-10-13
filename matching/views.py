@@ -1571,13 +1571,39 @@ def download_cv_view(request, cv_id):
         with open(file_path, 'rb') as file:
             file_content = file.read()
         
+        # Determinar el content-type basado en la extensión del archivo
+        if file_path.lower().endswith('.pdf'):
+            content_type = 'application/pdf'
+        elif file_path.lower().endswith('.docx'):
+            content_type = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        elif file_path.lower().endswith('.doc'):
+            content_type = 'application/msword'
+        else:
+            content_type = 'application/octet-stream'
+        
         # Crear respuesta HTTP con el archivo
-        response = HttpResponse(file_content, content_type='application/octet-stream')
+        response = HttpResponse(file_content, content_type=content_type)
         
         # Configurar headers para descarga
-        # Usar el nombre original del archivo en lugar del basename
-        original_filename = cv.original_file.name.split('/')[-1]  # Obtener solo el nombre del archivo
-        response['Content-Disposition'] = f'attachment; filename="{original_filename}"'
+        # Obtener el nombre original del archivo de manera más robusta
+        original_filename = os.path.basename(cv.original_file.name)
+        
+        # Si no tiene extensión, intentar detectarla del content-type
+        if not original_filename or '.' not in original_filename:
+            # Crear un nombre por defecto con extensión basada en el archivo
+            if file_path.lower().endswith('.pdf'):
+                original_filename = f"cv_{cv_id}.pdf"
+            elif file_path.lower().endswith('.docx'):
+                original_filename = f"cv_{cv_id}.docx"
+            elif file_path.lower().endswith('.doc'):
+                original_filename = f"cv_{cv_id}.doc"
+            else:
+                original_filename = f"cv_{cv_id}.pdf"  # Por defecto PDF
+        
+        # Usar quote para manejar caracteres especiales en el nombre
+        from urllib.parse import quote
+        safe_filename = quote(original_filename)
+        response['Content-Disposition'] = f'attachment; filename="{safe_filename}"; filename*=UTF-8\'\'{safe_filename}'
         response['Content-Length'] = len(file_content)
         
         logger.info(f"CV descargado: {original_filename} por usuario {request.user.email}")
