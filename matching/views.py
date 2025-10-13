@@ -1575,11 +1575,12 @@ def download_cv_view(request, cv_id):
         response = HttpResponse(file_content, content_type='application/octet-stream')
         
         # Configurar headers para descarga
-        filename = os.path.basename(file_path)
-        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        # Usar el nombre original del archivo en lugar del basename
+        original_filename = cv.original_file.name.split('/')[-1]  # Obtener solo el nombre del archivo
+        response['Content-Disposition'] = f'attachment; filename="{original_filename}"'
         response['Content-Length'] = len(file_content)
         
-        logger.info(f"CV descargado: {filename} por usuario {request.user.email}")
+        logger.info(f"CV descargado: {original_filename} por usuario {request.user.email}")
         
         return response
         
