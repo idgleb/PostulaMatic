@@ -548,8 +548,8 @@ class AIConfiguration(models.Model):
             
             encryption_key = os.getenv('ENCRYPTION_KEY')
             if not encryption_key:
-                logger.error("No se encontró clave de encriptación")
-                return None
+                logger.warning("No se encontró clave de encriptación. Usando clave sin encriptar.")
+                return encrypted_key
             
             f = Fernet(encryption_key.encode())
             return f.decrypt(encrypted_key.encode()).decode()
@@ -558,7 +558,7 @@ class AIConfiguration(models.Model):
             logger.warning("No se pudo importar el módulo de encriptación. Usando clave sin encriptar.")
             return encrypted_key
         except Exception as e:
-            logger.error(f"Error desencriptando clave: {e}")
+            logger.warning(f"Error desencriptando clave: {e}. Usando clave sin encriptar.")
             return encrypted_key
     
     def get_available_providers(self):
