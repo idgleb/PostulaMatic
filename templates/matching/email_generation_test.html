@@ -1,0 +1,296 @@
+{% extends 'matching/base.html' %}
+
+{% block matching_content %}
+<!-- Header Section -->
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="text-center">
+            <h1 class="display-4 fw-bold mb-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                <i class="bi bi-envelope-plus me-3"></i>Generación de Emails con IA
+            </h1>
+            <p class="lead text-muted">Prueba la generación de emails personalizados basados en tu CV y puestos de trabajo</p>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-12">
+        
+        <!-- Formulario de Configuración -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-gear me-2"></i>Configuración de Generación
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="email-generation-form">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="cv-select" class="form-label">Seleccionar CV</label>
+                                <select class="form-select" id="cv-select" name="cv_id" required>
+                                    <option value="">-- Seleccionar CV --</option>
+                                    {% for cv in user_cvs %}
+                                    <option value="{{ cv.id }}">
+                                        {{ cv.original_file.name|default:"CV" }} ({{ cv.skills_count }} habilidades)
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="job-select" class="form-label">Seleccionar Puesto</label>
+                                <select class="form-select" id="job-select" name="job_id" required>
+                                    <option value="">-- Seleccionar Puesto --</option>
+                                    {% for job in recent_jobs %}
+                                    <option value="{{ job.id }}">
+                                        {{ job.title }} - {{ job.email }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="template-select" class="form-label">Template</label>
+                                <select class="form-select" id="template-select" name="template_type">
+                                    {% for template in available_templates %}
+                                    <option value="{{ template }}" {% if template == 'base' %}selected{% endif %}>
+                                        {{ template|title }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="provider-select" class="form-label">Proveedor de IA</label>
+                                <select class="form-select" id="provider-select" name="ai_provider">
+                                    {% for provider in available_providers %}
+                                    <option value="{{ provider }}" {% if provider == 'openai' %}selected{% endif %}>
+                                        {{ provider|title }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="custom-instructions" class="form-label">Instrucciones Personalizadas</label>
+                                <input type="text" class="form-control" id="custom-instructions" name="custom_instructions" 
+                                       placeholder="Ej: Sé muy formal y técnico">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary" id="generate-btn">
+                            <i class="bi bi-magic me-2"></i>Generar Email Personalizado
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Resultado de Generación -->
+        <div class="card mb-4" id="result-card" style="display: none;">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-envelope-check me-2"></i>Email Generado
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="email-result"></div>
+            </div>
+        </div>
+        
+        <!-- Matches Recientes -->
+        {% if user_matches %}
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-graph-up me-2"></i>Matches Recientes para Generar Emails
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for match in user_matches %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h6 class="card-title">{{ match.job_posting.title }}</h6>
+                                <p class="card-text small text-muted">{{ match.job_posting.email }}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="badge bg-success">Match: {{ match.score }}%</span>
+                                    <button class="btn btn-sm btn-outline-primary" 
+                                            onclick="quickGenerate({{ match.user_cv.id }}, {{ match.job_posting.id }})">
+                                        <i class="bi bi-lightning"></i> Generar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Generando...</span>
+                </div>
+                <p>Generando email personalizado...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('email-generation-form');
+    const generateBtn = document.getElementById('generate-btn');
+    const resultCard = document.getElementById('result-card');
+    const emailResult = document.getElementById('email-result');
+    const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(form);
+        
+        // Validar que se seleccionaron CV y puesto
+        if (!formData.get('cv_id') || !formData.get('job_id')) {
+            showAlert('Por favor selecciona un CV y un puesto de trabajo', 'warning');
+            return;
+        }
+        
+        // Mostrar loading
+        loadingModal.show();
+        generateBtn.disabled = true;
+        
+        fetch('{% url "generate_test_email" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            loadingModal.hide();
+            generateBtn.disabled = false;
+            
+            if (data.success) {
+                displayEmailResult(data.email_data);
+                showAlert('Email generado exitosamente', 'success');
+            } else {
+                showAlert(data.message, 'danger');
+            }
+        })
+        .catch(error => {
+            loadingModal.hide();
+            generateBtn.disabled = false;
+            showAlert('Error de conexión: ' + error.message, 'danger');
+        });
+    });
+    
+    function displayEmailResult(emailData) {
+        const resultHtml = `
+            <div class="row">
+                <div class="col-12">
+                    <div class="alert alert-info">
+                        <strong>Información de Generación:</strong><br>
+                        <small>
+                            Proveedor: ${emailData.provider} | 
+                            Template: ${emailData.template_used} | 
+                            Tokens: ${emailData.tokens_used || 'N/A'} | 
+                            Match Score: ${emailData.match_score}%
+                        </small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-12">
+                    <h6><i class="bi bi-envelope me-2"></i>Asunto:</h6>
+                    <div class="alert alert-light border">
+                        <strong>${emailData.subject}</strong>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-12">
+                    <h6><i class="bi bi-file-text me-2"></i>Cuerpo del Email:</h6>
+                    <div class="alert alert-light border" style="white-space: pre-line;">
+                        ${emailData.body}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-12">
+                    <h6><i class="bi bi-info-circle me-2"></i>Detalles:</h6>
+                    <ul class="list-unstyled">
+                        <li><strong>CV usado:</strong> ${emailData.cv_filename}</li>
+                        <li><strong>Puesto:</strong> ${emailData.job_title}</li>
+                        <li><strong>Modelo IA:</strong> ${emailData.model}</li>
+                    </ul>
+                </div>
+            </div>
+        `;
+        
+        emailResult.innerHTML = resultHtml;
+        resultCard.style.display = 'block';
+        resultCard.scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    function showAlert(message, type) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        const container = document.querySelector('.row.justify-content-center .col-12');
+        container.insertBefore(alertDiv, container.firstChild);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    }
+    
+    // Función para generación rápida desde matches
+    window.quickGenerate = function(cvId, jobId) {
+        document.getElementById('cv-select').value = cvId;
+        document.getElementById('job-select').value = jobId;
+        form.dispatchEvent(new Event('submit'));
+    };
+});
+</script>
+{% endblock %}

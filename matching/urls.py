@@ -1,6 +1,7 @@
 from django.urls import path
 
 from . import views
+from . import views_email_generation
 
 urlpatterns = [
     path("", views.dashboard_view, name="dashboard"),
@@ -51,4 +52,11 @@ urlpatterns = [
     path("matching-recalculation-status/<str:task_id>/", views.matching_recalculation_status_view, name="matching_recalculation_status"),
     path("recalculation-modal-partial/", views.recalculation_modal_partial_view, name="recalculation_modal_partial"),
     path("start-recalculation/", views.start_recalculation_view, name="start_recalculation"),
+    
+    # URLs para generación de emails
+    path("email-generation-test/", views_email_generation.email_generation_test_view, name="email_generation_test"),
+    path("generate-test-email/", views_email_generation.generate_test_email_view, name="generate_test_email"),
+    path("email-template-preview/", views_email_generation.email_template_preview_view, name="email_template_preview"),
+    path("save-email-template/", views_email_generation.save_email_template_view, name="save_email_template"),
+    path("email-analytics/", views_email_generation.email_analytics_view, name="email_analytics"),
 ]
