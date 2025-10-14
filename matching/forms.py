@@ -288,7 +288,10 @@ class AIConfigurationForm(forms.ModelForm):
     openai_model = forms.ChoiceField(
         choices=[],  # Se llena en __init__
         required=False,
-        widget=forms.Select(attrs={'class': 'form-control'}),
+        widget=forms.Select(attrs={
+            'class': 'modern-select',
+            'data-placeholder': 'Selecciona un modelo de OpenAI...'
+        }),
         label='Modelo de OpenAI',
         help_text="Selecciona el modelo de OpenAI a utilizar"
     )
@@ -296,7 +299,10 @@ class AIConfigurationForm(forms.ModelForm):
     anthropic_model = forms.ChoiceField(
         choices=[],  # Se llena en __init__
         required=False,
-        widget=forms.Select(attrs={'class': 'form-control'}),
+        widget=forms.Select(attrs={
+            'class': 'modern-select',
+            'data-placeholder': 'Selecciona un modelo de Anthropic...'
+        }),
         label='Modelo de Anthropic',
         help_text="Selecciona el modelo de Anthropic a utilizar"
     )
@@ -304,7 +310,10 @@ class AIConfigurationForm(forms.ModelForm):
     default_provider = forms.ChoiceField(
         choices=[],  # Se llena en __init__
         required=True,
-        widget=forms.Select(attrs={'class': 'form-control'}),
+        widget=forms.Select(attrs={
+            'class': 'modern-select',
+            'data-placeholder': 'Selecciona el proveedor por defecto...'
+        }),
         label='Proveedor por Defecto',
         help_text="Proveedor de IA que se usará por defecto"
     )

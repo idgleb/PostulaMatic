@@ -40,6 +40,160 @@
         transform: translateY(0);
     }
 }
+
+/* ===== ESTILOS MODERNOS PARA DROPDOWNS ===== */
+
+/* Contenedor del dropdown moderno */
+.modern-select-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+}
+
+/* Select personalizado */
+.modern-select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    padding: 12px 45px 12px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #495057;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    width: 100%;
+    outline: none;
+}
+
+.modern-select:hover {
+    border-color: #667eea;
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.15);
+    transform: translateY(-1px);
+}
+
+.modern-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    background: linear-gradient(135deg, #ffffff 0%, #f0f4ff 100%);
+}
+
+.modern-select:disabled {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-color: #dee2e6;
+    color: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Flecha personalizada */
+.modern-select-wrapper::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 16px;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 8px solid #667eea;
+    pointer-events: none;
+    transition: transform 0.3s ease;
+}
+
+.modern-select:focus + .modern-select-wrapper::after,
+.modern-select-wrapper:hover::after {
+    transform: translateY(-50%) rotate(180deg);
+}
+
+/* Opciones del select con mejor estilo */
+.modern-select option {
+    padding: 12px 16px;
+    font-weight: 500;
+    background-color: #ffffff;
+    color: #495057;
+    border: none;
+}
+
+.modern-select option:hover {
+    background-color: #f8f9fa;
+}
+
+.modern-select option:checked {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #ffffff;
+    font-weight: 600;
+}
+
+/* Labels modernos */
+.modern-label {
+    display: flex;
+    align-items: center;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.modern-label i {
+    margin-right: 8px;
+    color: #667eea;
+    font-size: 16px;
+}
+
+/* Help text moderno */
+.modern-help-text {
+    font-size: 12px;
+    color: #6c757d;
+    margin-top: 6px;
+    font-style: italic;
+    padding-left: 24px;
+}
+
+/* Animaciones suaves */
+.modern-select-wrapper {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Efectos de hover para el contenedor */
+.form-group:hover .modern-select {
+    border-color: #667eea;
+}
+
+.form-group:hover .modern-label {
+    color: #667eea;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .modern-select {
+        padding: 10px 40px 10px 14px;
+        font-size: 13px;
+    }
+    
+    .modern-select-wrapper::after {
+        right: 14px;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        border-top: 6px solid #667eea;
+    }
+}
 </style>
 <!-- Header Section -->
 <div class="row mb-5">
@@ -234,13 +388,15 @@
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="{{ form.openai_model.id_for_label }}" class="form-label">
-                                            <i class="bi bi-cpu me-1"></i>Modelo
+                                    <div class="mb-3 form-group">
+                                        <label for="{{ form.openai_model.id_for_label }}" class="modern-label">
+                                            <i class="bi bi-cpu"></i>Modelo
                                         </label>
-                                        {{ form.openai_model }}
+                                        <div class="modern-select-wrapper">
+                                            {{ form.openai_model }}
+                                        </div>
                                         {% if form.openai_model.help_text %}
-                                            <div class="form-text">{{ form.openai_model.help_text }}</div>
+                                            <div class="modern-help-text">{{ form.openai_model.help_text }}</div>
                                         {% endif %}
                                         {% if form.openai_model.errors %}
                                             <div class="text-danger small mt-1">
@@ -289,13 +445,15 @@
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="{{ form.anthropic_model.id_for_label }}" class="form-label">
-                                            <i class="bi bi-cpu me-1"></i>Modelo
+                                    <div class="mb-3 form-group">
+                                        <label for="{{ form.anthropic_model.id_for_label }}" class="modern-label">
+                                            <i class="bi bi-cpu"></i>Modelo
                                         </label>
-                                        {{ form.anthropic_model }}
+                                        <div class="modern-select-wrapper">
+                                            {{ form.anthropic_model }}
+                                        </div>
                                         {% if form.anthropic_model.help_text %}
-                                            <div class="form-text">{{ form.anthropic_model.help_text }}</div>
+                                            <div class="modern-help-text">{{ form.anthropic_model.help_text }}</div>
                                         {% endif %}
                                         {% if form.anthropic_model.errors %}
                                             <div class="text-danger small mt-1">
@@ -336,13 +494,15 @@
                             </h6>
                         </div>
                         <div class="card-body">
-                            <div class="mb-3">
-                                <label for="{{ form.default_provider.id_for_label }}" class="form-label">
-                                    <i class="bi bi-star me-1"></i>Proveedor por Defecto
+                            <div class="mb-3 form-group">
+                                <label for="{{ form.default_provider.id_for_label }}" class="modern-label">
+                                    <i class="bi bi-star"></i>Proveedor por Defecto
                                 </label>
-                                {{ form.default_provider }}
+                                <div class="modern-select-wrapper">
+                                    {{ form.default_provider }}
+                                </div>
                                 {% if form.default_provider.help_text %}
-                                    <div class="form-text">{{ form.default_provider.help_text }}</div>
+                                    <div class="modern-help-text">{{ form.default_provider.help_text }}</div>
                                 {% endif %}
                                 <div class="form-text">
                                     Proveedor que se usará cuando no se especifique uno
@@ -457,21 +617,61 @@ document.addEventListener('DOMContentLoaded', function() {
         if (modelField) {
             modelField.disabled = !enabled;
             modelField.required = enabled;
-            // Agregar clase visual para campos deshabilitados
+            
+            // Efectos visuales modernos
             if (enabled) {
                 modelField.classList.remove('bg-light');
+                modelField.style.transform = 'scale(1)';
+                modelField.style.opacity = '1';
             } else {
                 modelField.classList.add('bg-light');
+                modelField.style.transform = 'scale(0.98)';
+                modelField.style.opacity = '0.6';
             }
         }
+        
         if (keyField) {
             keyField.disabled = !enabled;
             if (enabled) {
                 keyField.classList.remove('bg-light');
+                keyField.style.transform = 'scale(1)';
+                keyField.style.opacity = '1';
             } else {
                 keyField.classList.add('bg-light');
+                keyField.style.transform = 'scale(0.98)';
+                keyField.style.opacity = '0.6';
             }
         }
+    }
+    
+    // Función para agregar efectos modernos a los dropdowns
+    function addModernEffects() {
+        const modernSelects = document.querySelectorAll('.modern-select');
+        
+        modernSelects.forEach(select => {
+            // Efecto de focus
+            select.addEventListener('focus', function() {
+                this.parentElement.style.transform = 'translateY(-2px)';
+                this.parentElement.style.boxShadow = '0 8px 25px rgba(102, 126, 234, 0.15)';
+            });
+            
+            // Efecto de blur
+            select.addEventListener('blur', function() {
+                this.parentElement.style.transform = 'translateY(0)';
+                this.parentElement.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.08)';
+            });
+            
+            // Efecto de cambio de valor
+            select.addEventListener('change', function() {
+                if (this.value) {
+                    this.style.color = '#495057';
+                    this.style.fontWeight = '600';
+                } else {
+                    this.style.color = '#6c757d';
+                    this.style.fontWeight = '500';
+                }
+            });
+        });
     }
     
     // Función para validar formulario en tiempo real
@@ -517,6 +717,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Validación inicial
     validateForm();
+    
+    // Agregar efectos modernos a los dropdowns
+    addModernEffects();
     
     // Función para mostrar resultados
     window.showTestResult = function(html) {
