@@ -150,6 +150,7 @@ class JobRequirementsAnalyzer:
         
         # Tecnologías específicas
         technologies = [
+            'python', 'javascript', 'java', 'c#', 'php', 'ruby', 'go', 'rust',
             'react', 'angular', 'vue', 'svelte', 'next.js', 'nuxt.js',
             'django', 'flask', 'fastapi', 'spring', 'laravel', 'rails',
             'postgresql', 'mysql', 'mongodb', 'redis', 'elasticsearch',
@@ -216,9 +217,37 @@ class JobRequirementsAnalyzer:
             'equipo joven', 'young team', 'startup', 'crecimiento', 'growth'
         ]
         
+        # Mapeo de beneficios para capitalización correcta
+        benefit_mapping = {
+            'remoto': 'Remoto',
+            'remote': 'Remoto',
+            'vacaciones': 'Vacaciones',
+            'vacation': 'Vacaciones',
+            'seguro médico': 'Seguro Médico',
+            'health insurance': 'Seguro Médico',
+            'bonus': 'Bonus',
+            'bono': 'Bonus',
+            'comisiones': 'Comisiones',
+            'comissions': 'Comisiones',
+            'stock options': 'Stock Options',
+            'capacitación': 'Capacitación',
+            'training': 'Capacitación',
+            'desarrollo': 'Desarrollo',
+            'development': 'Desarrollo',
+            'equipo joven': 'Equipo Joven',
+            'young team': 'Equipo Joven',
+            'startup': 'Startup',
+            'crecimiento': 'Crecimiento',
+            'growth': 'Crecimiento',
+            'flexibilidad': 'Flexibilidad',
+            'flexible': 'Flexibilidad'
+        }
+        
         for benefit in benefit_keywords:
             if benefit in description_lower:
-                benefits.append(benefit.title())
+                mapped_benefit = benefit_mapping.get(benefit, benefit.title())
+                if mapped_benefit not in benefits:  # Evitar duplicados
+                    benefits.append(mapped_benefit)
         
         return benefits[:5]  # Máximo 5 beneficios
     
