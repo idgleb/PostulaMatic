@@ -529,9 +529,20 @@ class EmailPersonalizationService:
         
         # Si es puesto técnico específico, usar template technical (prioridad alta)
         # Solo para títulos muy específicos (no genéricos como "Desarrollador")
-        specific_technical_keywords = ['desarrollador python', 'desarrollador java', 'desarrollador javascript', 
-                                      'developer python', 'developer java', 'programador python', 'ingeniero de software']
-        if any(keyword in job_data['title'].lower() for keyword in specific_technical_keywords):
+        title_lower = job_data['title'].lower()
+        specific_technical_patterns = [
+            'desarrollador python', 'desarrollador java', 'desarrollador javascript', 
+            'developer python', 'developer java', 'programador python', 'ingeniero de software',
+            'python developer', 'java developer', 'javascript developer'
+        ]
+        
+        # Verificar patrones específicos
+        if any(pattern in title_lower for pattern in specific_technical_patterns):
+            return 'technical'
+        
+        # Verificar si el título contiene tecnologías específicas
+        tech_keywords = ['python', 'java', 'javascript', 'react', 'angular', 'vue', 'node', 'django', 'flask']
+        if any(tech in title_lower for tech in tech_keywords):
             return 'technical'
         
         # Si es startup (empresa pequeña), usar template startup
