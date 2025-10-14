@@ -527,15 +527,16 @@ class EmailPersonalizationService:
         
         # Lógica para seleccionar template óptimo
         
-        # Si es startup (empresa pequeña), usar template startup (prioridad alta)
+        # Si es puesto técnico específico, usar template technical (prioridad alta)
+        # Solo para títulos muy específicos (no genéricos como "Desarrollador")
+        specific_technical_keywords = ['desarrollador python', 'desarrollador java', 'desarrollador javascript', 
+                                      'developer python', 'developer java', 'programador python', 'ingeniero de software']
+        if any(keyword in job_data['title'].lower() for keyword in specific_technical_keywords):
+            return 'technical'
+        
+        # Si es startup (empresa pequeña), usar template startup
         if len(job_data['description']) < 500:  # Descripciones cortas suelen ser startups
             return 'startup'
-        
-        # Si es puesto técnico específico con descripción detallada, usar template technical
-        technical_keywords = ['desarrollador', 'developer', 'programador', 'ingeniero']
-        if (any(keyword in job_data['title'].lower() for keyword in technical_keywords) and 
-            len(job_data['description']) >= 500):  # Solo si la descripción es detallada
-            return 'technical'
         
         # Si es empresa grande (descripción muy larga), usar corporate
         if len(job_data['description']) > 2000:
