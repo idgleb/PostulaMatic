@@ -1,7 +1,10 @@
+import logging
 from django.contrib.auth.models import User
 from django.db import models
 
 from .utils.encryption import decrypt_credential, encrypt_credential
+
+logger = logging.getLogger(__name__)
 
 
 class UserProfile(models.Model):
