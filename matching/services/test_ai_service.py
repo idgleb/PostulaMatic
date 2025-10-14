@@ -45,19 +45,42 @@ class TestAIEmailService(TestCase):
         self.assertIsInstance(providers, list)
         self.assertGreater(len(providers), 0)
     
-    @patch.dict(os.environ, {'OPENAI_API_KEY': 'test-key'})
     def test_openai_provider_configured(self):
-        """Test que OpenAI está configurado cuando hay API key."""
+        """Test que OpenAI está configurado cuando hay API key en la base de datos."""
+        from matching.models import AIConfiguration
+        config = AIConfiguration.get_config()
+        config.openai_enabled = True
+        config.set_openai_key('test-key')
+        config.save()
+        
+        # Limpiar cache del servicio
+        self.service._config = None
+        
         self.assertTrue(self.service.is_provider_configured('openai'))
     
-    @patch.dict(os.environ, {'OPENAI_API_KEY': ''})
     def test_openai_provider_not_configured(self):
         """Test que OpenAI no está configurado sin API key."""
+        from matching.models import AIConfiguration
+        config = AIConfiguration.get_config()
+        config.openai_enabled = False
+        config.save()
+        
+        # Limpiar cache del servicio
+        self.service._config = None
+        
         self.assertFalse(self.service.is_provider_configured('openai'))
     
-    @patch.dict(os.environ, {'ANTHROPIC_API_KEY': 'test-key'})
     def test_anthropic_provider_configured(self):
-        """Test que Anthropic está configurado cuando hay API key."""
+        """Test que Anthropic está configurado cuando hay API key en la base de datos."""
+        from matching.models import AIConfiguration
+        config = AIConfiguration.get_config()
+        config.anthropic_enabled = True
+        config.set_anthropic_key('test-key')
+        config.save()
+        
+        # Limpiar cache del servicio
+        self.service._config = None
+        
         self.assertTrue(self.service.is_provider_configured('anthropic'))
     
     def test_unknown_provider(self):
