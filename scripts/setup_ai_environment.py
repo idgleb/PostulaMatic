@@ -16,7 +16,16 @@ def setup_environment():
     env_file = Path('.env')
     if not env_file.exists():
         print("📝 Creando archivo .env...")
-        env_file.touch()
+        # Crear archivo .env con configuración básica
+        with open(env_file, 'w', encoding='utf-8') as f:
+            f.write("# Configuración de PostulaMatic\n")
+            f.write("# Configuración de IA\n")
+            f.write("OPENAI_API_KEY=your-openai-api-key-here\n")
+            f.write("OPENAI_MODEL=gpt-3.5-turbo\n")
+            f.write("ANTHROPIC_API_KEY=your-anthropic-api-key-here\n")
+            f.write("ANTHROPIC_MODEL=claude-3-haiku-20240307\n")
+            f.write("AI_PROVIDER=openai\n")
+            f.write("\n")
     
     # Leer archivo .env existente
     env_vars = {}

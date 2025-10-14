@@ -46,10 +46,22 @@ class OpenAIProvider(AIProvider):
     """Proveedor OpenAI para generación de emails."""
     
     def __init__(self):
-        self.client = openai.OpenAI(
-            api_key=os.getenv('OPENAI_API_KEY')
-        )
-        self.model = os.getenv('OPENAI_MODEL', 'gpt-3.5-turbo')
+        self._client = None
+        self._model = os.getenv('OPENAI_MODEL', 'gpt-3.5-turbo')
+    
+    @property
+    def client(self):
+        """Lazy initialization del cliente OpenAI."""
+        if self._client is None:
+            api_key = os.getenv('OPENAI_API_KEY')
+            if not api_key:
+                raise ValueError("OPENAI_API_KEY no está configurada")
+            self._client = openai.OpenAI(api_key=api_key)
+        return self._client
+    
+    @property
+    def model(self):
+        return self._model
     
     def generate_email_content(
         self, 
@@ -189,10 +201,22 @@ class AnthropicProvider(AIProvider):
     """Proveedor Anthropic para generación de emails."""
     
     def __init__(self):
-        self.client = anthropic.Anthropic(
-            api_key=os.getenv('ANTHROPIC_API_KEY')
-        )
-        self.model = os.getenv('ANTHROPIC_MODEL', 'claude-3-haiku-20240307')
+        self._client = None
+        self._model = os.getenv('ANTHROPIC_MODEL', 'claude-3-haiku-20240307')
+    
+    @property
+    def client(self):
+        """Lazy initialization del cliente Anthropic."""
+        if self._client is None:
+            api_key = os.getenv('ANTHROPIC_API_KEY')
+            if not api_key:
+                raise ValueError("ANTHROPIC_API_KEY no está configurada")
+            self._client = anthropic.Anthropic(api_key=api_key)
+        return self._client
+    
+    @property
+    def model(self):
+        return self._model
     
     def generate_email_content(
         self, 
@@ -322,7 +346,7 @@ class AIEmailService:
                     None
                 )
                 
-                if fallback_provider:
+                if fallback_provider and self.is_provider_configured(fallback_provider):
                     logger.warning(
                         f"Error con {provider_name}, intentando con {fallback_provider}"
                     )
@@ -332,7 +356,18 @@ class AIEmailService:
             
             return result
             
+        except ValueError as e:
+            # Error de configuración (API key faltante)
+            logger.error(f"Error de configuración con {provider_name}: {e}")
+            return EmailContent(
+                subject="",
+                body="",
+                provider=provider_name,
+                model="unknown",
+                error=f"Proveedor no configurado: {str(e)}"
+            )
         except Exception as e:
+            # Otros errores
             logger.error(f"Error en servicio de IA: {e}")
             return EmailContent(
                 subject="",
@@ -349,9 +384,11 @@ class AIEmailService:
     def is_provider_configured(self, provider: str) -> bool:
         """Verifica si un proveedor está configurado correctamente."""
         if provider == 'openai':
-            return bool(os.getenv('OPENAI_API_KEY'))
+            api_key = os.getenv('OPENAI_API_KEY')
+            return bool(api_key and api_key != 'your-openai-api-key-here')
         elif provider == 'anthropic':
-            return bool(os.getenv('ANTHROPIC_API_KEY'))
+            api_key = os.getenv('ANTHROPIC_API_KEY')
+            return bool(api_key and api_key != 'your-anthropic-api-key-here')
         return False
 
 
