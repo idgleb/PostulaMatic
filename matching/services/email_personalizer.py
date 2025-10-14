@@ -99,29 +99,38 @@ class CVDataExtractor:
         experience_keywords = ['desarrollador', 'developer', 'analista', 'ingeniero', 'programador']
         summary_parts = []
         
-        # Buscar en el texto original para mantener capitalización
-        for keyword in experience_keywords:
-            if keyword in text_lower:
-                # Buscar la palabra en el texto original
-                lines = parsed_text.split('\n')
-                for line in lines:
-                    if keyword in line.lower():
-                        # Extraer la palabra tal como aparece
+        # Buscar líneas que contengan experiencia y tecnologías
+        lines = parsed_text.split('\n')
+        for line in lines:
+            line_lower = line.lower()
+            if any(keyword in line_lower for keyword in experience_keywords):
+                # Extraer tecnologías de la línea
+                tech_keywords = ['python', 'java', 'javascript', 'django', 'react', 'angular', 'vue', 'node', 'sql', 'postgresql', 'mysql']
+                found_techs = []
+                for tech in tech_keywords:
+                    if tech in line_lower:
+                        found_techs.append(tech.title())
+                
+                # Crear resumen combinando rol y tecnologías
+                role_parts = []
+                for keyword in experience_keywords:
+                    if keyword in line_lower:
+                        # Buscar la palabra tal como aparece
                         words = line.split()
                         for word in words:
                             if keyword in word.lower():
-                                summary_parts.append(word)
+                                role_parts.append(word)
                                 break
-                        break
-        
-        # Si no encontramos nada, usar el texto parseado
-        if not summary_parts:
-            lines = parsed_text.split('\n')
-            for line in lines:
-                line_lower = line.lower()
-                if any(keyword in line_lower for keyword in experience_keywords):
+                
+                if role_parts and found_techs:
+                    summary_parts.append(f"{role_parts[0]} {', '.join(found_techs[:2])}")
+                elif role_parts:
+                    summary_parts.append(role_parts[0])
+                elif found_techs:
+                    summary_parts.append(f"Desarrollador {', '.join(found_techs[:2])}")
+                else:
                     summary_parts.append(line.strip())
-                    break
+                break
         
         summary = ', '.join(summary_parts[:3]) if summary_parts else ''
         
@@ -167,16 +176,24 @@ class CVDataExtractor:
         lines = parsed_text.split('\n')
         for line in lines:
             line_lower = line.lower()
+            line_stripped = line.strip()
+            
+            # Filtrar líneas de encabezado como "Proyectos realizados:"
             if any(keyword in line_lower for keyword in project_keywords):
-                if len(line.strip()) > 10:  # Filtrar líneas muy cortas
-                    projects.append(line.strip())
+                if len(line_stripped) > 10 and not line_stripped.endswith(':'):
+                    projects.append(line_stripped)
+                # Si es una línea de encabezado, buscar las siguientes líneas
+                elif line_stripped.endswith(':'):
+                    continue  # Saltar líneas de encabezado
         
         # Si no encontramos proyectos específicos, buscar cualquier línea que contenga palabras clave
         if not projects:
             for line in lines:
                 line_lower = line.lower()
-                if any(keyword in line_lower for keyword in project_keywords):
-                    projects.append(line.strip())
+                line_stripped = line.strip()
+                if (any(keyword in line_lower for keyword in project_keywords) and 
+                    len(line_stripped) > 10 and not line_stripped.endswith(':')):
+                    projects.append(line_stripped)
         
         return projects[:3]  # Máximo 3 proyectos
 
@@ -311,7 +328,7 @@ class JobDataExtractor:
         # Buscar patrones más específicos
         remote_patterns = ['remoto', 'remote', 'home office', 'trabajo remoto', 'trabajo en casa']
         onsite_patterns = ['presencial', 'office', 'oficina', 'trabajo presencial', 'en oficina']
-        hybrid_patterns = ['híbrido', 'hybrid', 'mixto', 'combinado', 'parcial']
+        hybrid_patterns = ['híbrido', 'hybrid', 'mixto', 'combinado', 'parcial', 'modalidad híbrida']
         
         # Verificar en orden de prioridad
         if any(word in description_lower for word in hybrid_patterns):
@@ -334,14 +351,19 @@ class JobDataExtractor:
         
         # Patrones comunes de ubicación
         location_patterns = [
+            r'(?:Buenos Aires|CABA|Capital Federal|Córdoba|Rosario|Mendoza|Barcelona|Madrid|Lima|Santiago)',
             r'(?:en|ubicado en|localizado en)\s+([A-Z][a-záéíóúñ\s]+)',
-            r'(?:Buenos Aires|CABA|Capital Federal|Córdoba|Rosario|Mendoza)',
         ]
         
         for pattern in location_patterns:
             match = re.search(pattern, description, re.IGNORECASE)
             if match:
-                return match.group(1).strip()
+                # Si el patrón tiene un grupo de captura, usarlo
+                if match.groups():
+                    return match.group(1).strip()
+                else:
+                    # Si no, usar toda la coincidencia
+                    return match.group(0).strip()
         
         return ''
     
@@ -492,14 +514,14 @@ class EmailPersonalizationService:
         
         # Lógica para seleccionar template óptimo
         
-        # Si es startup (empresa pequeña), usar template startup
-        if len(job_data['description']) < 500:  # Descripciones cortas suelen ser startups
-            return 'startup'
-        
-        # Si es puesto técnico, usar template technical
+        # Si es puesto técnico específico, usar template technical
         technical_keywords = ['desarrollador', 'developer', 'programador', 'ingeniero']
         if any(keyword in job_data['title'].lower() for keyword in technical_keywords):
             return 'technical'
+        
+        # Si es startup (empresa pequeña), usar template startup
+        if len(job_data['description']) < 500:  # Descripciones cortas suelen ser startups
+            return 'startup'
         
         # Si es empresa grande (descripción muy larga), usar corporate
         if len(job_data['description']) > 2000:
@@ -529,7 +551,7 @@ class EmailPersonalizationService:
         description_lower = description.lower()
         
         industries = {
-            'Technology': ['fintech', 'financiero', 'bancario', 'finanzas'],
+            'Fintech': ['fintech', 'financiero', 'bancario', 'finanzas'],
             'E-commerce': ['ecommerce', 'e-commerce', 'retail', 'ventas online'],
             'Healthcare': ['salud', 'healthcare', 'médico', 'hospital'],
             'Education': ['educación', 'education', 'universidad', 'colegio'],
