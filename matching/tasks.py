@@ -1045,3 +1045,13 @@ def scrape_dvcarreras_jobs_playwright(self, user_id: int):
             raise self.retry(countdown=60 * (self.request.retries + 1))
 
         raise
+
+
+# Importar tareas de email para que estén disponibles en Celery
+from .tasks_email import (
+    send_personalized_email_task,
+    send_bulk_emails_task,
+    process_matching_and_send_emails_task,
+    cleanup_old_email_logs_task,
+    send_email_reminder_task
+)

@@ -1,17 +1,60 @@
-from django import forms
-from django.core.exceptions import ValidationError
+"""
+Formularios para la aplicación matching.
+"""
 
-from .models import UserCV, UserProfile
-from .utils.encryption import encrypt_credential
+from django import forms
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
+
+from .models import UserProfile, UserCV, AIConfiguration
+
+
+class UserRegistrationForm(UserCreationForm):
+    """Formulario de registro de usuario."""
+    
+    email = forms.EmailField(required=True)
+    
+    class Meta:
+        model = User
+        fields = ("username", "email", "password1", "password2")
+    
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.email = self.cleaned_data["email"]
+        if commit:
+            user.save()
+        return user
+
+
+class CVUploadForm(forms.ModelForm):
+    """Formulario para subir CV."""
+    
+    class Meta:
+        model = UserCV
+        fields = ['original_file']
+        widgets = {
+            'original_file': forms.FileInput(attrs={
+                'class': 'form-control',
+                'accept': '.pdf,.doc,.docx'
+            })
+        }
+        labels = {
+            'original_file': 'Archivo CV'
+        }
+        help_texts = {
+            'original_file': 'Sube tu CV en formato PDF, DOC o DOCX'
+        }
 
 
 class UserProfileForm(forms.ModelForm):
-    """Formulario para configurar perfil de usuario."""
-
+    """Formulario para editar perfil de usuario."""
+    
     class Meta:
         model = UserProfile
         fields = [
             "display_name",
+            "match_threshold",
+            "is_active",
             "smtp_host",
             "smtp_port",
             "smtp_use_tls",
@@ -20,90 +63,33 @@ class UserProfileForm(forms.ModelForm):
             "smtp_password",
             "dv_username",
             "dv_password",
-            "match_threshold",
-            "daily_limit",
-            "min_pause_seconds",
-            "max_pause_seconds",
         ]
         widgets = {
+            "match_threshold": forms.NumberInput(
+                attrs={
+                    "min": 0,
+                    "max": 100,
+                    "step": 1,
+                    "class": "form-control",
+                }
+            ),
             "smtp_password": forms.PasswordInput(
-                attrs={"placeholder": "Contraseña SMTP"}
+                attrs={
+                    "placeholder": "Contraseña SMTP",
+                    "autocomplete": "new-password",
+                    "spellcheck": "false",
+                    "class": "form-control",
+                }
             ),
             "dv_password": forms.PasswordInput(
-                attrs={"placeholder": "Contraseña dvcarreras"}
+                attrs={
+                    "placeholder": "Contraseña INTRANET DAVINCI",
+                    "autocomplete": "new-password",
+                    "spellcheck": "false",
+                    "class": "form-control",
+                }
             ),
-            "smtp_port": forms.NumberInput(attrs={"min": 1, "max": 65535}),
-            "match_threshold": forms.NumberInput(attrs={"min": 0, "max": 100}),
-            "daily_limit": forms.NumberInput(attrs={"min": 1, "max": 100}),
-            "min_pause_seconds": forms.NumberInput(attrs={"min": 1, "max": 300}),
-            "max_pause_seconds": forms.NumberInput(attrs={"min": 1, "max": 600}),
         }
-        help_texts = {
-            "match_threshold": "Porcentaje mínimo de coincidencia para enviar email (0-100)",
-            "daily_limit": "Máximo número de emails por día",
-            "min_pause_seconds": "Pausa mínima entre envíos (segundos)",
-            "max_pause_seconds": "Pausa máxima entre envíos (segundos)",
-        }
-
-    def clean(self):
-        cleaned_data = super().clean()
-        smtp_use_tls = cleaned_data.get("smtp_use_tls")
-        smtp_use_ssl = cleaned_data.get("smtp_use_ssl")
-
-        if smtp_use_tls and smtp_use_ssl:
-            raise ValidationError(
-                "No se puede usar TLS y SSL simultáneamente. Elige solo uno."
-            )
-
-        min_pause = cleaned_data.get("min_pause_seconds")
-        max_pause = cleaned_data.get("max_pause_seconds")
-
-        if min_pause and max_pause and min_pause > max_pause:
-            raise ValidationError("La pausa mínima no puede ser mayor que la máxima.")
-
-        return cleaned_data
-
-    def clean_smtp_port(self):
-        port = self.cleaned_data["smtp_port"]
-        if port and (port < 1 or port > 65535):
-            raise ValidationError("El puerto debe estar entre 1 y 65535.")
-        return port
-
-
-class CVUploadForm(forms.ModelForm):
-    """Formulario para subir CV."""
-
-    class Meta:
-        model = UserCV
-        fields = ["original_file"]
-        widgets = {
-            "original_file": forms.FileInput(
-                attrs={"accept": ".pdf,.docx", "class": "form-control"}
-            )
-        }
-
-    def clean_original_file(self):
-        file = self.cleaned_data["original_file"]
-        if file:
-            # Validar tipo de archivo
-            allowed_extensions = [".pdf", ".docx"]
-            file_extension = file.name.lower().split(".")[-1]
-
-            if f".{file_extension}" not in allowed_extensions:
-                raise ValidationError("Solo se permiten archivos PDF y DOCX.")
-
-            # Validar tamaño (máximo 10MB)
-            if file.size > 10 * 1024 * 1024:
-                raise ValidationError("El archivo no puede ser mayor a 10MB.")
-
-            # No filtrar por nombre de archivo - procesar todos los archivos
-
-        return file
-
-    def save(self, commit=True):
-        """Guarda el CV normalmente."""
-        instance = super().save(commit)
-        return instance
 
 
 class SMTPConfigForm(forms.ModelForm):
@@ -156,50 +142,8 @@ class SMTPConfigForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Aplicar clases CSS a todos los campos
         for field_name, field in self.fields.items():
-            if field.widget.__class__.__name__ == "CheckboxInput":
-                field.widget.attrs["class"] = "form-check-input"
-            else:
-                field.widget.attrs["class"] = "form-control"
-
-        # Configurar placeholder dinámico para contraseña
-        if self.instance and self.instance.smtp_password:
-            self.fields["smtp_password"].widget.attrs[
-                "placeholder"
-            ] = "•••••••• (contraseña guardada)"
-
-    def clean_smtp_password(self):
-        password = self.cleaned_data.get("smtp_password")
-        if not password:
-            raise ValidationError("La contraseña SMTP es obligatoria.")
-        return password
-
-    def save(self, commit=True):
-        instance = super().save(commit=False)
-
-        # Manejar encriptación de contraseña SMTP
-        smtp_password = self.cleaned_data.get("smtp_password")
-        if smtp_password:
-            # Encriptar nueva contraseña
-            instance.smtp_password = encrypt_credential(smtp_password)
-        elif self.instance and self.instance.smtp_password:
-            # Verificar si la contraseña existente está bien encriptada
-            try:
-                # Intentar desencriptar para verificar que está bien
-                test_decrypt = decrypt_credential(self.instance.smtp_password)
-                # Si funciona, mantener la contraseña existente
-                instance.smtp_password = self.instance.smtp_password
-            except Exception:
-                # Si falla la desencriptación, la contraseña está corrupta
-                # No mantener contraseña corrupta, dejarla vacía para forzar re-ingreso
-                instance.smtp_password = ""
-                # Log del problema para debugging
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.warning(f"Contraseña SMTP corrupta detectada para usuario {self.instance.user.username}")
-
-        if commit:
-            instance.save()
-        return instance
+            if field_name not in self.Meta.widgets:
+                field.widget.attrs.update({"class": "form-control"})
 
 
 class DVCredentialsForm(forms.ModelForm):
@@ -223,58 +167,20 @@ class DVCredentialsForm(forms.ModelForm):
             ),
         }
         labels = {
+            "dv_username": "Usuario INTRANET DAVINCI",
             "dv_password": "Contraseña INTRANET DAVINCI",
         }
         help_texts = {
-            "dv_password": "Contraseña de tu cuenta de INTRANET DAVINCI",
+            "dv_username": "Tu usuario para acceder al portal de estudiantes",
+            "dv_password": "Tu contraseña para acceder al portal de estudiantes",
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Aplicar clases CSS a todos los campos
         for field_name, field in self.fields.items():
-            field.widget.attrs["class"] = "form-control"
-
-        # Configurar placeholder dinámico para contraseña
-        if self.instance and self.instance.dv_password:
-            self.fields["dv_password"].widget.attrs[
-                "placeholder"
-            ] = "•••••••• (contraseña guardada)"
-
-    def clean_dv_password(self):
-        password = self.cleaned_data.get("dv_password")
-        if not password:
-            raise ValidationError("La contraseña INTRANET DAVINCI es obligatoria.")
-        return password
-
-    def save(self, commit=True):
-        instance = super().save(commit=False)
-
-        # Manejar encriptación de credenciales DVCarreras
-        dv_username = self.cleaned_data.get("dv_username")
-        dv_password = self.cleaned_data.get("dv_password")
-
-        if dv_username:
-            # Establecer usuario (no encriptado)
-            instance.dv_username = dv_username
-        elif self.instance and self.instance.dv_username:
-            # Mantener usuario existente si no se proporciona uno nuevo
-            instance.dv_username = self.instance.dv_username
-
-        if dv_password:
-            # Encriptar nueva contraseña
-            instance.dv_password = encrypt_credential(dv_password)
-        elif self.instance and self.instance.dv_password:
-            # Mantener contraseña existente si no se proporciona una nueva
-            instance.dv_password = self.instance.dv_password
-
-        # Resetear estado de conexión cuando se cambian las credenciales
-        if dv_username or dv_password:
-            instance.set_dv_connection_verified(False)
-
-        if commit:
-            instance.save()
-        return instance
+            if field_name not in self.Meta.widgets:
+                field.widget.attrs.update({"class": "form-control"})
 
 
 class MatchingConfigForm(forms.ModelForm):
@@ -282,21 +188,192 @@ class MatchingConfigForm(forms.ModelForm):
 
     class Meta:
         model = UserProfile
-        fields = ["match_threshold"]
+        fields = ["match_threshold", "is_active"]
         widgets = {
             "match_threshold": forms.NumberInput(
                 attrs={
-                    "type": "range",
                     "min": 0,
                     "max": 100,
                     "step": 1,
-                    "class": "form-range",
+                    "class": "form-control",
+                    "required": True,
                 }
             ),
+            "is_active": forms.CheckboxInput(
+                attrs={"class": "form-check-input"}
+            ),
+        }
+        labels = {
+            "match_threshold": "Umbral de Coincidencia (%)",
+            "is_active": "Aplicación Automática",
+        }
+        help_texts = {
+            "match_threshold": "Porcentaje mínimo de coincidencia para aplicar automáticamente (0-100)",
+            "is_active": "Habilitar aplicación automática cuando se supere el umbral",
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Aplicar clases CSS a todos los campos
+        for field_name, field in self.fields.items():
+            if field_name not in self.Meta.widgets:
+                field.widget.attrs.update({"class": "form-control"})
+
     def clean_match_threshold(self):
-        value = self.cleaned_data.get("match_threshold")
-        if value is not None and (value < 0 or value > 100):
-            raise ValidationError("El umbral debe estar entre 0 y 100.")
-        return value
+        threshold = self.cleaned_data.get("match_threshold")
+        if threshold is not None and (threshold < 0 or threshold > 100):
+            raise forms.ValidationError(
+                "El umbral debe estar entre 0 y 100"
+            )
+        return threshold
+
+
+class EmailConfigForm(forms.ModelForm):
+    """Formulario para configuración de email."""
+
+    class Meta:
+        model = UserProfile
+        fields = ["daily_limit", "min_pause_seconds", "max_pause_seconds"]
+        widgets = {
+            "daily_limit": forms.NumberInput(attrs={"class": "form-control"}),
+            "min_pause_seconds": forms.NumberInput(attrs={"class": "form-control"}),
+            "max_pause_seconds": forms.NumberInput(attrs={"class": "form-control"}),
+        }
+        labels = {
+            "daily_limit": "Límite Diario de Emails",
+            "min_pause_seconds": "Pausa Mínima (segundos)",
+            "max_pause_seconds": "Pausa Máxima (segundos)",
+        }
+        help_texts = {
+            "daily_limit": "Número máximo de emails que se pueden enviar por día",
+            "min_pause_seconds": "Pausa mínima entre envíos de emails",
+            "max_pause_seconds": "Pausa máxima entre envíos de emails",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Aplicar clases CSS a todos los campos
+        for field_name, field in self.fields.items():
+            if field_name not in self.Meta.widgets:
+                field.widget.attrs.update({"class": "form-control"})
+
+
+class AIConfigurationForm(forms.ModelForm):
+    """Formulario para configuración de IA."""
+    
+    # Campos adicionales para las API keys (no se guardan en el modelo)
+    openai_api_key_input = forms.CharField(
+        max_length=255,
+        required=False,
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'sk-...',
+            'autocomplete': 'new-password'
+        }),
+        help_text="API Key de OpenAI (se encripta automáticamente)"
+    )
+    
+    anthropic_api_key_input = forms.CharField(
+        max_length=255,
+        required=False,
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'sk-ant-...',
+            'autocomplete': 'new-password'
+        }),
+        help_text="API Key de Anthropic (se encripta automáticamente)"
+    )
+    
+    class Meta:
+        model = AIConfiguration
+        fields = [
+            'openai_model',
+            'openai_enabled',
+            'anthropic_model', 
+            'anthropic_enabled',
+            'default_provider'
+        ]
+        widgets = {
+            'openai_model': forms.Select(attrs={'class': 'form-control'}),
+            'anthropic_model': forms.Select(attrs={'class': 'form-control'}),
+            'default_provider': forms.Select(attrs={'class': 'form-control'}),
+            'openai_enabled': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'anthropic_enabled': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+        labels = {
+            'openai_model': 'Modelo de OpenAI',
+            'openai_enabled': 'Habilitar OpenAI',
+            'anthropic_model': 'Modelo de Anthropic',
+            'anthropic_enabled': 'Habilitar Anthropic',
+            'default_provider': 'Proveedor por Defecto',
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Agregar opciones de modelos
+        self.fields['openai_model'].choices = [
+            ('gpt-3.5-turbo', 'GPT-3.5 Turbo (Recomendado)'),
+            ('gpt-4', 'GPT-4 (Mejor calidad, más caro)'),
+            ('gpt-4-turbo', 'GPT-4 Turbo'),
+        ]
+        
+        self.fields['anthropic_model'].choices = [
+            ('claude-3-haiku-20240307', 'Claude 3 Haiku (Rápido)'),
+            ('claude-3-sonnet-20240229', 'Claude 3 Sonnet (Balanceado)'),
+            ('claude-3-opus-20240229', 'Claude 3 Opus (Mejor calidad)'),
+        ]
+        
+        # Hacer campos opcionales
+        self.fields['openai_model'].required = False
+        self.fields['anthropic_model'].required = False
+        
+        # Si es una instancia existente, mostrar preview de las keys
+        if self.instance.pk:
+            if self.instance.openai_api_key:
+                self.fields['openai_api_key_input'].help_text = "Deja vacío para mantener la clave actual"
+            if self.instance.anthropic_api_key:
+                self.fields['anthropic_api_key_input'].help_text = "Deja vacío para mantener la clave actual"
+    
+    def clean(self):
+        """Validación personalizada del formulario."""
+        cleaned_data = super().clean()
+        
+        openai_enabled = cleaned_data.get('openai_enabled', False)
+        anthropic_enabled = cleaned_data.get('anthropic_enabled', False)
+        
+        # Si OpenAI está habilitado, validar que tenga modelo y API key
+        if openai_enabled:
+            if not cleaned_data.get('openai_model'):
+                self.add_error('openai_model', 'Debes seleccionar un modelo si habilitas OpenAI.')
+            if not cleaned_data.get('openai_api_key_input'):
+                self.add_error('openai_api_key_input', 'Debes ingresar una API key si habilitas OpenAI.')
+        
+        # Si Anthropic está habilitado, validar que tenga modelo y API key
+        if anthropic_enabled:
+            if not cleaned_data.get('anthropic_model'):
+                self.add_error('anthropic_model', 'Debes seleccionar un modelo si habilitas Anthropic.')
+            if not cleaned_data.get('anthropic_api_key_input'):
+                self.add_error('anthropic_api_key_input', 'Debes ingresar una API key si habilitas Anthropic.')
+        
+        # Validar que al menos un proveedor esté habilitado
+        if not openai_enabled and not anthropic_enabled:
+            raise forms.ValidationError('Debes habilitar al menos un proveedor de IA (OpenAI o Anthropic).')
+        
+        return cleaned_data
+    
+    def save(self, commit=True):
+        """Guarda la configuración y procesa las API keys."""
+        instance = super().save(commit=False)
+        
+        # Procesar API keys si se proporcionaron
+        if self.cleaned_data.get('openai_api_key_input'):
+            instance.set_openai_key(self.cleaned_data['openai_api_key_input'])
+        
+        if self.cleaned_data.get('anthropic_api_key_input'):
+            instance.set_anthropic_key(self.cleaned_data['anthropic_api_key_input'])
+        
+        if commit:
+            instance.save()
+        
+        return instance

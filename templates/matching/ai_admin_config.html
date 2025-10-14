@@ -1,0 +1,623 @@
+{% extends 'matching/base.html' %}
+
+{% block matching_content %}
+<style>
+/* Estilos para campos deshabilitados */
+.form-control:disabled {
+    background-color: #f8f9fa !important;
+    border-color: #dee2e6 !important;
+    color: #6c757d !important;
+    cursor: not-allowed;
+}
+
+.form-control.bg-light {
+    background-color: #f8f9fa !important;
+}
+
+/* Mejorar la apariencia de los switches */
+.form-check-input:checked {
+    background-color: #667eea;
+    border-color: #667eea;
+}
+
+.form-check-input:focus {
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+/* Estilos para mensajes de ayuda */
+#form-help-message {
+    border-left: 4px solid #17a2b8;
+    animation: slideIn 0.3s ease-in-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>
+<!-- Header Section -->
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="text-center">
+            <h1 class="display-4 fw-bold mb-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                <i class="bi bi-robot me-3"></i>Configuración de IA
+            </h1>
+            <p class="lead text-muted">Configura los proveedores de IA para PostulaMatic</p>
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                <strong>Nota:</strong> Esta configuración es global para toda la aplicación.
+            </div>
+            
+            <!-- Mostrar errores del formulario -->
+            {% if form.errors %}
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                <strong>Error en el formulario:</strong>
+                <ul class="mb-0 mt-2">
+                    {% for field, errors in form.errors.items %}
+                        {% if field == '__all__' %}
+                            <!-- Errores generales del formulario -->
+                            {% for error in errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        {% else %}
+                            <!-- Errores de campos específicos -->
+                            {% for error in errors %}
+                                <li><strong>{{ field|title }}:</strong> {{ error }}</li>
+                            {% endfor %}
+                        {% endif %}
+                    {% endfor %}
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endif %}
+            
+            <!-- Mostrar mensajes de Django (solo para mensajes de éxito) -->
+            {% if messages %}
+                {% for message in messages %}
+                    {% if message.tags == 'success' %}
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="bi bi-check-circle me-2"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-12">
+        
+        <!-- Estado Actual -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="bi bi-openai me-2"></i>OpenAI
+                        </h5>
+                        {% if providers_status.openai.configured %}
+                            <span class="badge bg-success">Configurado</span>
+                        {% else %}
+                            <span class="badge bg-warning">No Configurado</span>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <strong>Estado:</strong>
+                            {% if providers_status.openai.configured %}
+                                <span class="text-success">✅ API Key configurada</span>
+                            {% else %}
+                                <span class="text-warning">⚠️ API Key no configurada</span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <strong>Modelo:</strong> {{ providers_status.openai.model }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <strong>API Key:</strong> 
+                            <code>{{ providers_status.openai.key_preview }}</code>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-outline-primary" onclick="testProvider('openai')" 
+                                    {% if not providers_status.openai.configured %}disabled{% endif %}>
+                                <i class="bi bi-play-circle me-2"></i>Probar OpenAI
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="bi bi-shield-check me-2"></i>Anthropic
+                        </h5>
+                        {% if providers_status.anthropic.configured %}
+                            <span class="badge bg-success">Configurado</span>
+                        {% else %}
+                            <span class="badge bg-warning">No Configurado</span>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <strong>Estado:</strong>
+                            {% if providers_status.anthropic.configured %}
+                                <span class="text-success">✅ API Key configurada</span>
+                            {% else %}
+                                <span class="text-warning">⚠️ API Key no configurada</span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <strong>Modelo:</strong> {{ providers_status.anthropic.model }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <strong>API Key:</strong> 
+                            <code>{{ providers_status.anthropic.key_preview }}</code>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-outline-primary" onclick="testProvider('anthropic')"
+                                    {% if not providers_status.anthropic.configured %}disabled{% endif %}>
+                                <i class="bi bi-play-circle me-2"></i>Probar Anthropic
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Configuración General -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-gear me-2"></i>Configuración General
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>Proveedor por Defecto:</strong> 
+                        <span class="badge bg-primary">{{ config.default_provider|title }}</span>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Proveedores Disponibles:</strong>
+                        {% for provider in available_providers %}
+                            <span class="badge bg-secondary me-1">{{ provider|title }}</span>
+                        {% empty %}
+                            <span class="badge bg-secondary">Ninguno</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulario de Configuración -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-gear me-2"></i>Configuración de Proveedores
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" id="ai-config-form">
+                    {% csrf_token %}
+                    
+                    <!-- OpenAI -->
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">
+                                <i class="bi bi-openai me-2"></i>OpenAI
+                            </h6>
+                            <div class="form-check form-switch">
+                                {{ form.openai_enabled }}
+                                <label for="{{ form.openai_enabled.id_for_label }}" class="form-check-label">
+                                    Habilitar
+                                </label>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.openai_model.id_for_label }}" class="form-label">
+                                            <i class="bi bi-cpu me-1"></i>Modelo
+                                        </label>
+                                        {{ form.openai_model }}
+                                        {% if form.openai_model.errors %}
+                                            <div class="text-danger small mt-1">
+                                                {% for error in form.openai_model.errors %}
+                                                    {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.openai_api_key_input.id_for_label }}" class="form-label">
+                                            <i class="bi bi-key me-1"></i>API Key
+                                        </label>
+                                        {{ form.openai_api_key_input }}
+                                        <div class="form-text">
+                                            {{ form.openai_api_key_input.help_text }}
+                                        </div>
+                                        {% if form.openai_api_key_input.errors %}
+                                            <div class="text-danger small mt-1">
+                                                {% for error in form.openai_api_key_input.errors %}
+                                                    {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Anthropic -->
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">
+                                <i class="bi bi-shield-check me-2"></i>Anthropic
+                            </h6>
+                            <div class="form-check form-switch">
+                                {{ form.anthropic_enabled }}
+                                <label for="{{ form.anthropic_enabled.id_for_label }}" class="form-check-label">
+                                    Habilitar
+                                </label>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.anthropic_model.id_for_label }}" class="form-label">
+                                            <i class="bi bi-cpu me-1"></i>Modelo
+                                        </label>
+                                        {{ form.anthropic_model }}
+                                        {% if form.anthropic_model.errors %}
+                                            <div class="text-danger small mt-1">
+                                                {% for error in form.anthropic_model.errors %}
+                                                    {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.anthropic_api_key_input.id_for_label }}" class="form-label">
+                                            <i class="bi bi-key me-1"></i>API Key
+                                        </label>
+                                        {{ form.anthropic_api_key_input }}
+                                        <div class="form-text">
+                                            {{ form.anthropic_api_key_input.help_text }}
+                                        </div>
+                                        {% if form.anthropic_api_key_input.errors %}
+                                            <div class="text-danger small mt-1">
+                                                {% for error in form.anthropic_api_key_input.errors %}
+                                                    {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Configuración General -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0">
+                                <i class="bi bi-gear me-2"></i>Configuración General
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="{{ form.default_provider.id_for_label }}" class="form-label">
+                                    <i class="bi bi-star me-1"></i>Proveedor por Defecto
+                                </label>
+                                {{ form.default_provider }}
+                                <div class="form-text">
+                                    Proveedor que se usará cuando no se especifique uno
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botones -->
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="button" class="btn btn-outline-primary me-md-2" onclick="testAllProviders()">
+                            <i class="bi bi-play-circle me-2"></i>Probar Todos
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save me-2"></i>Guardar Configuración
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Resultado de Pruebas -->
+        <div class="card" id="test-result-card" style="display: none;">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-clipboard-check me-2"></i>Resultado de Pruebas
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="test-result-content"></div>
+            </div>
+        </div>
+
+        <!-- Guía de Configuración -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-book me-2"></i>Guía de Configuración
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-openai me-2"></i>OpenAI</h6>
+                        <ol>
+                            <li>Ve a <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI API Keys</a></li>
+                            <li>Crea una nueva API key</li>
+                            <li>Copia la clave que empieza con <code>sk-</code></li>
+                            <li>Pégala en el campo "API Key" de arriba</li>
+                        </ol>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-shield-check me-2"></i>Anthropic</h6>
+                        <ol>
+                            <li>Ve a <a href="https://console.anthropic.com/" target="_blank">Anthropic Console</a></li>
+                            <li>Crea una nueva API key</li>
+                            <li>Copia la clave que empieza con <code>sk-ant-</code></li>
+                            <li>Pégala en el campo "API Key" de arriba</li>
+                        </ol>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info mt-3">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Nota:</strong> Las API keys se configuran en variables de entorno del servidor. 
+                    Contacta al administrador para configurarlas.
+                </div>
+                
+                <div class="alert alert-warning mt-3">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>Importante:</strong> Las API keys se almacenan encriptadas en la base de datos. 
+                    Asegúrate de tener backup de tus claves originales.
+                </div>
+            </div>
+        </div>
+        
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Probando...</span>
+                </div>
+                <p id="loading-text">Probando proveedores...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+    const testResultCard = document.getElementById('test-result-card');
+    const testResultContent = document.getElementById('test-result-content');
+    
+    // Mejorar la experiencia de usuario con los switches
+    const openaiEnabled = document.getElementById('{{ form.openai_enabled.id_for_label }}');
+    const anthropicEnabled = document.getElementById('{{ form.anthropic_enabled.id_for_label }}');
+    
+    // Función para habilitar/deshabilitar campos basado en el switch
+    function toggleProviderFields(provider, enabled) {
+        const modelField = document.getElementById(`{{ form.openai_model.id_for_label }}`.replace('openai', provider));
+        const keyField = document.getElementById(`{{ form.openai_api_key_input.id_for_label }}`.replace('openai', provider));
+        
+        if (modelField) {
+            modelField.disabled = !enabled;
+            modelField.required = enabled;
+            // Agregar clase visual para campos deshabilitados
+            if (enabled) {
+                modelField.classList.remove('bg-light');
+            } else {
+                modelField.classList.add('bg-light');
+            }
+        }
+        if (keyField) {
+            keyField.disabled = !enabled;
+            if (enabled) {
+                keyField.classList.remove('bg-light');
+            } else {
+                keyField.classList.add('bg-light');
+            }
+        }
+    }
+    
+    // Función para validar formulario en tiempo real
+    function validateForm() {
+        const openaiChecked = openaiEnabled ? openaiEnabled.checked : false;
+        const anthropicChecked = anthropicEnabled ? anthropicEnabled.checked : false;
+        
+        // Mostrar mensaje de ayuda si ningún proveedor está habilitado
+        let helpMessage = document.getElementById('form-help-message');
+        if (!helpMessage) {
+            helpMessage = document.createElement('div');
+            helpMessage.id = 'form-help-message';
+            helpMessage.className = 'alert alert-info mt-3';
+            document.getElementById('ai-config-form').appendChild(helpMessage);
+        }
+        
+        if (!openaiChecked && !anthropicChecked) {
+            helpMessage.innerHTML = '<i class="bi bi-info-circle me-2"></i><strong>Ayuda:</strong> Debes habilitar al menos un proveedor de IA para continuar.';
+            helpMessage.style.display = 'block';
+        } else {
+            helpMessage.style.display = 'none';
+        }
+    }
+    
+    // Configurar listeners para los switches
+    if (openaiEnabled) {
+        openaiEnabled.addEventListener('change', function() {
+            toggleProviderFields('openai', this.checked);
+            validateForm();
+        });
+        // Aplicar estado inicial
+        toggleProviderFields('openai', openaiEnabled.checked);
+    }
+    
+    if (anthropicEnabled) {
+        anthropicEnabled.addEventListener('change', function() {
+            toggleProviderFields('anthropic', this.checked);
+            validateForm();
+        });
+        // Aplicar estado inicial
+        toggleProviderFields('anthropic', anthropicEnabled.checked);
+    }
+    
+    // Validación inicial
+    validateForm();
+    
+    // Función para mostrar resultados
+    window.showTestResult = function(html) {
+        testResultContent.innerHTML = html;
+        testResultCard.style.display = 'block';
+        testResultCard.scrollIntoView({ behavior: 'smooth' });
+    };
+    
+    // Función para probar todos los proveedores
+    window.testAllProviders = function() {
+        const loadingText = document.getElementById('loading-text');
+        loadingText.textContent = 'Probando proveedores de IA...';
+        loadingModal.show();
+        
+        // Obtener configuración actual
+        const form = document.getElementById('ai-config-form');
+        const formData = new FormData(form);
+        
+        // Probar OpenAI si está habilitado
+        const openaiEnabled = formData.get('openai_enabled');
+        const anthropicEnabled = formData.get('anthropic_enabled');
+        
+        let tests = [];
+        
+        if (openaiEnabled) {
+            tests.push(testProvider('openai'));
+        }
+        
+        if (anthropicEnabled) {
+            tests.push(testProvider('anthropic'));
+        }
+        
+        if (tests.length === 0) {
+            loadingModal.hide();
+            showTestResult('<div class="alert alert-warning">⚠️ No hay proveedores habilitados para probar</div>');
+            return;
+        }
+        
+        Promise.all(tests).then(results => {
+            loadingModal.hide();
+            
+            let html = '<div class="row">';
+            results.forEach(result => {
+                html += '<div class="col-md-6 mb-3">';
+                html += '<div class="card">';
+                html += '<div class="card-header">';
+                html += `<h6 class="mb-0">${result.provider.toUpperCase()}</h6>`;
+                html += '</div>';
+                html += '<div class="card-body">';
+                
+                if (result.success) {
+                    html += '<div class="alert alert-success">';
+                    html += '<i class="bi bi-check-circle me-2"></i><strong>✅ Conectividad exitosa</strong>';
+                    html += '</div>';
+                    html += `<p><strong>Respuesta:</strong> ${result.response}</p>`;
+                    if (result.tokens_used) {
+                        html += `<p><strong>Tokens usados:</strong> ${result.tokens_used}</p>`;
+                    }
+                } else {
+                    html += '<div class="alert alert-danger">';
+                    html += '<i class="bi bi-x-circle me-2"></i><strong>❌ Error de conectividad</strong>';
+                    html += '</div>';
+                    html += `<p><strong>Error:</strong> ${result.error}</p>`;
+                }
+                
+                html += '</div>';
+                html += '</div>';
+                html += '</div>';
+            });
+            html += '</div>';
+            
+            showTestResult(html);
+        });
+    };
+    
+    // Función para probar un proveedor específico
+    function testProvider(provider) {
+        return fetch('/matching/admin/test-ai-provider/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({ provider: provider })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                return {
+                    success: true,
+                    provider: provider,
+                    response: data.response,
+                    tokens_used: data.tokens_used
+                };
+            } else {
+                return {
+                    success: false,
+                    provider: provider,
+                    error: data.error
+                };
+            }
+        })
+        .catch(error => {
+            return {
+                success: false,
+                provider: provider,
+                error: 'Error de red: ' + error.message
+            };
+        });
+    }
+});
+</script>
+{% endblock %}

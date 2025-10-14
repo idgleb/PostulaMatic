@@ -4,6 +4,9 @@ from . import views
 from . import views_email_generation
 from . import views_ai_testing
 from . import views_cv_personalization
+from . import views_email_monitoring
+from . import views_api
+from . import views_ai_admin
 
 urlpatterns = [
     path("", views.dashboard_view, name="dashboard"),
@@ -75,4 +78,27 @@ urlpatterns = [
     path("cv-personalization-history/", views_cv_personalization.cv_personalization_history, name="cv_personalization_history"),
     path("download-personalized-cv/<int:cv_id>/<int:job_id>/", views_cv_personalization.download_personalized_cv, name="download_personalized_cv"),
     path("cv-personalization-guide/", views_cv_personalization.cv_personalization_guide, name="cv_personalization_guide"),
+    
+    # URLs para monitoreo de emails
+    path("email-monitoring/", views_email_monitoring.email_monitoring_dashboard, name="email_monitoring"),
+    path("email-logs/", views_email_monitoring.email_logs_list, name="email_logs_list"),
+    path("email-log-detail/<int:log_id>/", views_email_monitoring.email_log_detail, name="email_log_detail"),
+    path("send-test-email/", views_email_monitoring.send_test_email, name="send_test_email"),
+    path("send-bulk-emails/", views_email_monitoring.send_bulk_emails, name="send_bulk_emails"),
+    path("process-auto-matching/", views_email_monitoring.process_auto_matching, name="process_auto_matching"),
+    path("email-statistics/", views_email_monitoring.email_statistics, name="email_statistics"),
+    path("task-status/<str:task_id>/", views_email_monitoring.task_status, name="task_status"),
+    path("cleanup-email-logs/", views_email_monitoring.cleanup_email_logs, name="cleanup_email_logs"),
+    path("email-settings/", views_email_monitoring.email_settings, name="email_settings"),
+    
+    # URLs para APIs
+    path("api/user-cvs/", views_api.user_cvs_api, name="user_cvs_api"),
+    path("api/job-postings/", views_api.job_postings_api, name="job_postings_api"),
+    path("api/email-logs/", views_api.email_logs_api, name="email_logs_api"),
+    path("api/email-statistics/", views_api.email_statistics_api, name="email_statistics_api"),
+    
+    # URLs para administración de IA (solo staff)
+    path("admin/ai-config/", views_ai_admin.ai_admin_config_view, name="ai_admin_config"),
+    path("admin/ai-status/", views_ai_admin.ai_admin_status_view, name="ai_admin_status"),
+    path("admin/test-ai-provider/", views_ai_admin.test_ai_provider_admin, name="test_ai_provider_admin"),
 ]

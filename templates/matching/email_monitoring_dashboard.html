@@ -1,0 +1,681 @@
+{% extends 'matching/base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - PostulaMatic{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stats-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 15px;
+        color: white;
+        transition: transform 0.3s ease;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .stats-card .card-body {
+        padding: 1.5rem;
+    }
+    
+    .stats-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stats-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+    
+    .email-log-item {
+        border-left: 4px solid #28a745;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        background: #f8f9fa;
+        border-radius: 0 8px 8px 0;
+    }
+    
+    .email-log-item.failed {
+        border-left-color: #dc3545;
+    }
+    
+    .email-log-item.retry {
+        border-left-color: #ffc107;
+    }
+    
+    .config-card {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        border-radius: 15px;
+    }
+    
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    
+    .status-sent {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    
+    .status-failed {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    
+    .status-queued {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    
+    .status-retry {
+        background-color: #d1ecf1;
+        color: #0c5460;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .btn-action {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-send-test {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+    }
+    
+    .btn-send-bulk {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        border: none;
+    }
+    
+    .btn-auto-matching {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        color: white;
+        border: none;
+    }
+    
+    .btn-action:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .floating-action-btn {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        font-size: 1.5rem;
+        transition: all 0.3s ease;
+        z-index: 1000;
+    }
+    
+    .floating-action-btn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="mb-0">
+                    <i class="bi bi-envelope-check me-2"></i>{{ page_title }}
+                </h2>
+                <div class="action-buttons">
+                    <button class="btn btn-action btn-send-test" onclick="showSendTestModal()">
+                        <i class="bi bi-send me-1"></i>Enviar Prueba
+                    </button>
+                    <button class="btn btn-action btn-send-bulk" onclick="showBulkSendModal()">
+                        <i class="bi bi-send-fill me-1"></i>Envío Masivo
+                    </button>
+                    <button class="btn btn-action btn-auto-matching" onclick="showAutoMatchingModal()">
+                        <i class="bi bi-robot me-1"></i>Matching Automático
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas Generales -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stats-card">
+                <div class="card-body text-center">
+                    <div class="stats-number">{{ stats.total_emails_sent }}</div>
+                    <div class="stats-label">Total Emails Enviados</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stats-card">
+                <div class="card-body text-center">
+                    <div class="stats-number">{{ stats.emails_today }}</div>
+                    <div class="stats-label">Emails Hoy</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stats-card">
+                <div class="card-body text-center">
+                    <div class="stats-number">{{ stats.emails_this_week }}</div>
+                    <div class="stats-label">Esta Semana</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stats-card">
+                <div class="card-body text-center">
+                    <div class="stats-number">{{ stats.success_rate }}%</div>
+                    <div class="stats-label">Tasa de Éxito</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Configuración del Usuario -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card config-card">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="bi bi-gear me-2"></i>Configuración Actual
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <strong>Límite Diario:</strong> {{ user_config.daily_limit }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Umbral de Match:</strong> {{ user_config.match_threshold }}%
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Estado:</strong> 
+                            <span class="badge {% if user_config.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                                {% if user_config.is_active %}Activo{% else %}Inactivo{% endif %}
+                            </span>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Pausa:</strong> {{ user_config.min_pause }}-{{ user_config.max_pause }}s
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Emails Recientes -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clock-history me-2"></i>Emails Recientes
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_emails %}
+                        {% for email in recent_emails %}
+                        <div class="email-log-item {% if email.status == 'failed' %}failed{% elif email.status == 'retry' %}retry{% endif %}">
+                            <div class="row align-items-center">
+                                <div class="col-md-6">
+                                    <h6 class="mb-1">{{ email.job_posting.title }}</h6>
+                                    <p class="mb-0 text-muted">{{ email.job_posting.email }}</p>
+                                </div>
+                                <div class="col-md-3">
+                                    <span class="status-badge status-{{ email.status }}">
+                                        {{ email.get_status_display }}
+                                    </span>
+                                </div>
+                                <div class="col-md-3 text-end">
+                                    <small class="text-muted">{{ email.sent_at|date:"d/m/Y H:i" }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-inbox display-1 text-muted"></i>
+                            <p class="text-muted mt-2">No hay emails enviados aún</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Envío de Prueba -->
+<div class="modal fade" id="sendTestModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Enviar Email de Prueba</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="sendTestForm">
+                    <div class="mb-3">
+                        <label class="form-label">CV a Usar</label>
+                        <select class="form-select" name="cv_id" required>
+                            <option value="">Seleccionar CV...</option>
+                            <!-- Se llenará dinámicamente -->
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Puesto de Trabajo</label>
+                        <select class="form-select" name="job_id" required>
+                            <option value="">Seleccionar puesto...</option>
+                            <!-- Se llenará dinámicamente -->
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Template de Email</label>
+                        <select class="form-select" name="email_template">
+                            <option value="base">Base</option>
+                            <option value="formal">Formal</option>
+                            <option value="creative">Creativo</option>
+                            <option value="technical">Técnico</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Proveedor de IA</label>
+                        <select class="form-select" name="ai_provider">
+                            <option value="openai">OpenAI</option>
+                            <option value="anthropic">Anthropic</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="sendTestEmail()">Enviar Prueba</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Envío Masivo -->
+<div class="modal fade" id="bulkSendModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Envío Masivo de Emails</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="bulkSendForm">
+                    <div class="mb-3">
+                        <label class="form-label">Puestos de Trabajo</label>
+                        <select class="form-select" name="job_ids" multiple required>
+                            <!-- Se llenará dinámicamente -->
+                        </select>
+                        <div class="form-text">Mantén presionado Ctrl para seleccionar múltiples puestos</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Template de Email</label>
+                                <select class="form-select" name="email_template">
+                                    <option value="base">Base</option>
+                                    <option value="formal">Formal</option>
+                                    <option value="creative">Creativo</option>
+                                    <option value="technical">Técnico</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Proveedor de IA</label>
+                                <select class="form-select" name="ai_provider">
+                                    <option value="openai">OpenAI</option>
+                                    <option value="anthropic">Anthropic</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Tamaño del Lote</label>
+                                <input type="number" class="form-control" name="batch_size" value="5" min="1" max="20">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Delay entre Lotes (segundos)</label>
+                                <input type="number" class="form-control" name="delay_between_batches" value="300" min="60" max="3600">
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="sendBulkEmails()">Iniciar Envío Masivo</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Matching Automático -->
+<div class="modal fade" id="autoMatchingModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Matching Automático</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="autoMatchingForm">
+                    <div class="mb-3">
+                        <label class="form-label">Score Mínimo de Coincidencia</label>
+                        <input type="number" class="form-control" name="min_match_score" value="70" min="0" max="100">
+                        <div class="form-text">Solo se enviarán emails a puestos con score igual o superior</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Template de Email</label>
+                        <select class="form-select" name="email_template">
+                            <option value="base">Base</option>
+                            <option value="formal">Formal</option>
+                            <option value="creative">Creativo</option>
+                            <option value="technical">Técnico</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Proveedor de IA</label>
+                        <select class="form-select" name="ai_provider">
+                            <option value="openai">OpenAI</option>
+                            <option value="anthropic">Anthropic</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="processAutoMatching()">Iniciar Matching Automático</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Botón Flotante -->
+<button class="floating-action-btn" onclick="window.location.href='{% url 'email_logs_list' %}'" title="Ver Historial Completo">
+    <i class="bi bi-list-ul"></i>
+</button>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Variables globales
+let currentTaskId = null;
+
+// Mostrar modal de envío de prueba
+function showSendTestModal() {
+    loadCVsAndJobs();
+    new bootstrap.Modal(document.getElementById('sendTestModal')).show();
+}
+
+// Mostrar modal de envío masivo
+function showBulkSendModal() {
+    loadJobs();
+    new bootstrap.Modal(document.getElementById('bulkSendModal')).show();
+}
+
+// Mostrar modal de matching automático
+function showAutoMatchingModal() {
+    new bootstrap.Modal(document.getElementById('autoMatchingModal')).show();
+}
+
+// Cargar CVs y puestos para el modal de prueba
+async function loadCVsAndJobs() {
+    try {
+        // Cargar CVs
+        const cvsResponse = await fetch('/matching/api/user-cvs/');
+        const cvs = await cvsResponse.json();
+        
+        const cvSelect = document.querySelector('#sendTestModal select[name="cv_id"]');
+        cvSelect.innerHTML = '<option value="">Seleccionar CV...</option>';
+        cvs.forEach(cv => {
+            cvSelect.innerHTML += `<option value="${cv.id}">CV - ${cv.created_at}</option>`;
+        });
+        
+        // Cargar puestos
+        const jobsResponse = await fetch('/matching/api/job-postings/');
+        const jobs = await jobsResponse.json();
+        
+        const jobSelect = document.querySelector('#sendTestModal select[name="job_id"]');
+        jobSelect.innerHTML = '<option value="">Seleccionar puesto...</option>';
+        jobs.forEach(job => {
+            jobSelect.innerHTML += `<option value="${job.id}">${job.title}</option>`;
+        });
+        
+    } catch (error) {
+        console.error('Error cargando datos:', error);
+        showAlert('Error cargando datos', 'error');
+    }
+}
+
+// Cargar puestos para el modal de envío masivo
+async function loadJobs() {
+    try {
+        const response = await fetch('/matching/api/job-postings/');
+        const jobs = await response.json();
+        
+        const jobSelect = document.querySelector('#bulkSendModal select[name="job_ids"]');
+        jobSelect.innerHTML = '';
+        jobs.forEach(job => {
+            jobSelect.innerHTML += `<option value="${job.id}">${job.title}</option>`;
+        });
+        
+    } catch (error) {
+        console.error('Error cargando puestos:', error);
+        showAlert('Error cargando puestos', 'error');
+    }
+}
+
+// Enviar email de prueba
+async function sendTestEmail() {
+    const form = document.getElementById('sendTestForm');
+    const formData = new FormData(form);
+    
+    const data = {
+        cv_id: parseInt(formData.get('cv_id')),
+        job_id: parseInt(formData.get('job_id')),
+        email_template: formData.get('email_template'),
+        ai_provider: formData.get('ai_provider')
+    };
+    
+    try {
+        const response = await fetch('/matching/send-test-email/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showAlert('Email de prueba enviado exitosamente', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('sendTestModal')).hide();
+            currentTaskId = result.task_id;
+            monitorTask(result.task_id);
+        } else {
+            showAlert(`Error: ${result.error}`, 'error');
+        }
+        
+    } catch (error) {
+        console.error('Error enviando email:', error);
+        showAlert('Error enviando email de prueba', 'error');
+    }
+}
+
+// Enviar emails masivos
+async function sendBulkEmails() {
+    const form = document.getElementById('bulkSendForm');
+    const formData = new FormData(form);
+    
+    const jobIds = Array.from(formData.getAll('job_ids')).map(id => parseInt(id));
+    
+    const data = {
+        job_ids: jobIds,
+        email_template: formData.get('email_template'),
+        ai_provider: formData.get('ai_provider'),
+        batch_size: parseInt(formData.get('batch_size')),
+        delay_between_batches: parseInt(formData.get('delay_between_batches'))
+    };
+    
+    try {
+        const response = await fetch('/matching/send-bulk-emails/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showAlert(`Envío masivo iniciado: ${result.message}`, 'success');
+            bootstrap.Modal.getInstance(document.getElementById('bulkSendModal')).hide();
+            currentTaskId = result.task_id;
+            monitorTask(result.task_id);
+        } else {
+            showAlert(`Error: ${result.error}`, 'error');
+        }
+        
+    } catch (error) {
+        console.error('Error enviando emails masivos:', error);
+        showAlert('Error iniciando envío masivo', 'error');
+    }
+}
+
+// Procesar matching automático
+async function processAutoMatching() {
+    const form = document.getElementById('autoMatchingForm');
+    const formData = new FormData(form);
+    
+    const data = {
+        min_match_score: parseInt(formData.get('min_match_score')),
+        email_template: formData.get('email_template'),
+        ai_provider: formData.get('ai_provider')
+    };
+    
+    try {
+        const response = await fetch('/matching/process-auto-matching/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showAlert(`Matching automático iniciado: ${result.message}`, 'success');
+            bootstrap.Modal.getInstance(document.getElementById('autoMatchingModal')).hide();
+            currentTaskId = result.task_id;
+            monitorTask(result.task_id);
+        } else {
+            showAlert(`Error: ${result.error}`, 'error');
+        }
+        
+    } catch (error) {
+        console.error('Error procesando matching automático:', error);
+        showAlert('Error iniciando matching automático', 'error');
+    }
+}
+
+// Monitorear tarea
+async function monitorTask(taskId) {
+    if (!taskId) return;
+    
+    try {
+        const response = await fetch(`/matching/task-status/${taskId}/`);
+        const result = await response.json();
+        
+        if (result.success) {
+            if (result.status === 'SUCCESS') {
+                showAlert('Tarea completada exitosamente', 'success');
+                // Recargar página para mostrar resultados actualizados
+                setTimeout(() => window.location.reload(), 2000);
+            } else if (result.status === 'FAILURE') {
+                showAlert('Tarea falló', 'error');
+            } else if (result.status === 'PENDING') {
+                // Continuar monitoreando
+                setTimeout(() => monitorTask(taskId), 5000);
+            }
+        }
+        
+    } catch (error) {
+        console.error('Error monitoreando tarea:', error);
+    }
+}
+
+// Función para obtener CSRF token
+function getCsrfToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]').value;
+}
+
+// Función para mostrar alertas
+function showAlert(message, type) {
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+    const alertHtml = `
+        <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    // Insertar al inicio del contenido
+    const container = document.querySelector('.container-fluid');
+    container.insertAdjacentHTML('afterbegin', alertHtml);
+    
+    // Auto-remover después de 5 segundos
+    setTimeout(() => {
+        const alert = container.querySelector('.alert');
+        if (alert) {
+            bootstrap.Alert.getInstance(alert)?.close();
+        }
+    }, 5000);
+}
+
+// Cargar datos al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    // Cargar datos iniciales si es necesario
+});
+</script>
+{% endblock %}

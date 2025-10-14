@@ -339,3 +339,234 @@ class ApplicationAttempt(models.Model):
     @property
     def is_pending(self):
         return self.smtp_status == "QUEUED"
+
+
+class EmailSentLog(models.Model):
+    """Log de emails enviados para auditoría y estadísticas."""
+    
+    STATUS_CHOICES = [
+        ('sent', 'Enviado'),
+        ('failed', 'Fallido'),
+        ('queued', 'En Cola'),
+        ('retry', 'Reintento'),
+    ]
+    
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="email_logs"
+    )
+    cv = models.ForeignKey(
+        UserCV, on_delete=models.CASCADE, related_name="email_logs"
+    )
+    job_posting = models.ForeignKey(
+        JobPosting, on_delete=models.CASCADE, related_name="email_logs"
+    )
+    
+    # Contenido del email
+    email_subject = models.CharField(max_length=500)
+    email_body = models.TextField()
+    
+    # Detalles del envío
+    sent_to = models.EmailField()
+    message_id = models.CharField(max_length=500, blank=True, null=True)
+    status = models.CharField(
+        max_length=10, 
+        choices=STATUS_CHOICES, 
+        default='sent'
+    )
+    error_message = models.TextField(blank=True, null=True)
+    
+    # Metadatos
+    task_id = models.CharField(max_length=255, blank=True, null=True)
+    email_template = models.CharField(max_length=50, default='base')
+    ai_provider = models.CharField(max_length=50, default='openai')
+    
+    # Timestamps
+    sent_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = "Log de Email Enviado"
+        verbose_name_plural = "Logs de Emails Enviados"
+        ordering = ["-sent_at"]
+        indexes = [
+            models.Index(fields=["user", "status"]),
+            models.Index(fields=["sent_at"]),
+            models.Index(fields=["status"]),
+            models.Index(fields=["task_id"]),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.username} -> {self.job_posting.title} ({self.status}) - {self.sent_at.strftime('%d/%m/%Y %H:%M')}"
+    
+    @property
+    def is_successful(self):
+        return self.status == 'sent'
+    
+    @property
+    def is_failed(self):
+        return self.status == 'failed'
+    
+    @property
+    def is_queued(self):
+        return self.status == 'queued'
+    
+    @property
+    def is_retry(self):
+        return self.status == 'retry'
+
+
+class AIConfiguration(models.Model):
+    """Configuración global de proveedores de IA."""
+    
+    # OpenAI
+    openai_api_key = models.CharField(
+        max_length=255, 
+        blank=True, 
+        help_text="API Key de OpenAI (sk-...)"
+    )
+    openai_model = models.CharField(
+        max_length=100,
+        default='gpt-3.5-turbo',
+        help_text="Modelo de OpenAI a usar"
+    )
+    openai_enabled = models.BooleanField(
+        default=False,
+        help_text="Habilitar OpenAI"
+    )
+    
+    # Anthropic
+    anthropic_api_key = models.CharField(
+        max_length=255, 
+        blank=True, 
+        help_text="API Key de Anthropic (sk-ant-...)"
+    )
+    anthropic_model = models.CharField(
+        max_length=100,
+        default='claude-3-haiku-20240307',
+        help_text="Modelo de Anthropic a usar"
+    )
+    anthropic_enabled = models.BooleanField(
+        default=False,
+        help_text="Habilitar Anthropic"
+    )
+    
+    # Configuración general
+    default_provider = models.CharField(
+        max_length=20,
+        choices=[
+            ('openai', 'OpenAI'),
+            ('anthropic', 'Anthropic'),
+        ],
+        default='openai',
+        help_text="Proveedor por defecto"
+    )
+    
+    # Metadatos
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Configuración de IA"
+        verbose_name_plural = "Configuración de IA"
+    
+    def __str__(self):
+        enabled_providers = []
+        if self.openai_enabled:
+            enabled_providers.append("OpenAI")
+        if self.anthropic_enabled:
+            enabled_providers.append("Anthropic")
+        
+        return f"IA Config - Proveedores: {', '.join(enabled_providers) or 'Ninguno'}"
+    
+    @classmethod
+    def get_config(cls):
+        """Obtiene la configuración actual, creándola si no existe."""
+        config, created = cls.objects.get_or_create(pk=1)
+        return config
+    
+    def get_openai_key(self):
+        """Obtiene la API key de OpenAI encriptada."""
+        if self.openai_enabled and self.openai_api_key:
+            return self._decrypt_key(self.openai_api_key)
+        return None
+    
+    def get_anthropic_key(self):
+        """Obtiene la API key de Anthropic encriptada."""
+        if self.anthropic_enabled and self.anthropic_api_key:
+            return self._decrypt_key(self.anthropic_api_key)
+        return None
+    
+    def set_openai_key(self, api_key):
+        """Establece la API key de OpenAI encriptada."""
+        if api_key:
+            self.openai_api_key = self._encrypt_key(api_key)
+            self.openai_enabled = True
+        else:
+            self.openai_api_key = ""
+            self.openai_enabled = False
+    
+    def set_anthropic_key(self, api_key):
+        """Establece la API key de Anthropic encriptada."""
+        if api_key:
+            self.anthropic_api_key = self._encrypt_key(api_key)
+            self.anthropic_enabled = True
+        else:
+            self.anthropic_api_key = ""
+            self.anthropic_enabled = False
+    
+    def _encrypt_key(self, key):
+        """Encripta una API key."""
+        try:
+            from cryptography.fernet import Fernet
+            import os
+            
+            # Obtener clave de encriptación
+            encryption_key = os.getenv('ENCRYPTION_KEY')
+            if not encryption_key:
+                # Generar clave si no existe
+                encryption_key = Fernet.generate_key().decode()
+                logger.warning(f"Nueva clave de encriptación generada: {encryption_key}")
+            
+            f = Fernet(encryption_key.encode())
+            return f.encrypt(key.encode()).decode()
+            
+        except ImportError:
+            logger.warning("No se pudo importar el módulo de encriptación. Las credenciales permanecen sin encriptar.")
+            return key
+        except Exception as e:
+            logger.error(f"Error encriptando clave: {e}")
+            return key
+    
+    def _decrypt_key(self, encrypted_key):
+        """Desencripta una API key."""
+        try:
+            from cryptography.fernet import Fernet
+            import os
+            
+            encryption_key = os.getenv('ENCRYPTION_KEY')
+            if not encryption_key:
+                logger.error("No se encontró clave de encriptación")
+                return None
+            
+            f = Fernet(encryption_key.encode())
+            return f.decrypt(encrypted_key.encode()).decode()
+            
+        except ImportError:
+            logger.warning("No se pudo importar el módulo de encriptación. Usando clave sin encriptar.")
+            return encrypted_key
+        except Exception as e:
+            logger.error(f"Error desencriptando clave: {e}")
+            return encrypted_key
+    
+    def get_available_providers(self):
+        """Retorna los proveedores disponibles."""
+        providers = []
+        if self.openai_enabled and self.openai_api_key:
+            providers.append('openai')
+        if self.anthropic_enabled and self.anthropic_api_key:
+            providers.append('anthropic')
+        return providers
+    
+    def is_configured(self):
+        """Verifica si al menos un proveedor está configurado."""
+        return len(self.get_available_providers()) > 0

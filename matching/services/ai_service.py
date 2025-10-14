@@ -47,20 +47,48 @@ class OpenAIProvider(AIProvider):
     
     def __init__(self):
         self._client = None
-        self._model = os.getenv('OPENAI_MODEL', 'gpt-3.5-turbo')
+        self._model = None
+        self._config = None
+    
+    def _get_config(self):
+        """Obtiene la configuración de IA desde la base de datos."""
+        if self._config is None:
+            try:
+                from matching.models import AIConfiguration
+                self._config = AIConfiguration.get_config()
+            except Exception as e:
+                logger.error(f"Error obteniendo configuración IA: {e}")
+                self._config = None
+        return self._config
     
     @property
     def client(self):
         """Lazy initialization del cliente OpenAI."""
         if self._client is None:
-            api_key = os.getenv('OPENAI_API_KEY')
+            api_key = self._get_api_key()
             if not api_key:
-                raise ValueError("OPENAI_API_KEY no está configurada")
+                raise ValueError("OpenAI API key no está configurada")
             self._client = openai.OpenAI(api_key=api_key)
         return self._client
     
+    def _get_api_key(self):
+        """Obtiene la API key de OpenAI desde la configuración."""
+        config = self._get_config()
+        if config and config.openai_enabled:
+            return config.get_openai_key()
+        # Fallback a variables de entorno
+        return os.getenv('OPENAI_API_KEY')
+    
     @property
     def model(self):
+        """Obtiene el modelo de OpenAI desde la configuración."""
+        if self._model is None:
+            config = self._get_config()
+            if config and config.openai_enabled:
+                self._model = config.openai_model
+            else:
+                # Fallback a variables de entorno
+                self._model = os.getenv('OPENAI_MODEL', 'gpt-3.5-turbo')
         return self._model
     
     def generate_email_content(
@@ -202,20 +230,48 @@ class AnthropicProvider(AIProvider):
     
     def __init__(self):
         self._client = None
-        self._model = os.getenv('ANTHROPIC_MODEL', 'claude-3-haiku-20240307')
+        self._model = None
+        self._config = None
+    
+    def _get_config(self):
+        """Obtiene la configuración de IA desde la base de datos."""
+        if self._config is None:
+            try:
+                from matching.models import AIConfiguration
+                self._config = AIConfiguration.get_config()
+            except Exception as e:
+                logger.error(f"Error obteniendo configuración IA: {e}")
+                self._config = None
+        return self._config
     
     @property
     def client(self):
         """Lazy initialization del cliente Anthropic."""
         if self._client is None:
-            api_key = os.getenv('ANTHROPIC_API_KEY')
+            api_key = self._get_api_key()
             if not api_key:
-                raise ValueError("ANTHROPIC_API_KEY no está configurada")
+                raise ValueError("Anthropic API key no está configurada")
             self._client = anthropic.Anthropic(api_key=api_key)
         return self._client
     
+    def _get_api_key(self):
+        """Obtiene la API key de Anthropic desde la configuración."""
+        config = self._get_config()
+        if config and config.anthropic_enabled:
+            return config.get_anthropic_key()
+        # Fallback a variables de entorno
+        return os.getenv('ANTHROPIC_API_KEY')
+    
     @property
     def model(self):
+        """Obtiene el modelo de Anthropic desde la configuración."""
+        if self._model is None:
+            config = self._get_config()
+            if config and config.anthropic_enabled:
+                self._model = config.anthropic_model
+            else:
+                # Fallback a variables de entorno
+                self._model = os.getenv('ANTHROPIC_MODEL', 'claude-3-haiku-20240307')
         return self._model
     
     def generate_email_content(
@@ -298,7 +354,26 @@ class AIEmailService:
             'openai': OpenAIProvider(),
             'anthropic': AnthropicProvider()
         }
-        self.default_provider = os.getenv('AI_PROVIDER', 'openai')
+        self._config = None  # Cache de configuración
+        self.default_provider = self._get_default_provider()
+    
+    def _get_config(self):
+        """Obtiene la configuración de IA desde la base de datos."""
+        if self._config is None:
+            try:
+                from matching.models import AIConfiguration
+                self._config = AIConfiguration.get_config()
+            except Exception as e:
+                logger.error(f"Error obteniendo configuración IA: {e}")
+                self._config = None
+        return self._config
+    
+    def _get_default_provider(self):
+        """Obtiene el proveedor por defecto desde la configuración."""
+        config = self._get_config()
+        if config:
+            return config.default_provider
+        return os.getenv('AI_PROVIDER', 'openai')
     
     def generate_email(
         self, 
@@ -383,12 +458,23 @@ class AIEmailService:
     
     def is_provider_configured(self, provider: str) -> bool:
         """Verifica si un proveedor está configurado correctamente."""
-        if provider == 'openai':
-            api_key = os.getenv('OPENAI_API_KEY')
-            return bool(api_key and api_key != 'your-openai-api-key-here')
-        elif provider == 'anthropic':
-            api_key = os.getenv('ANTHROPIC_API_KEY')
-            return bool(api_key and api_key != 'your-anthropic-api-key-here')
+        config = self._get_config()
+        
+        if config:
+            # Usar configuración de la base de datos
+            if provider == 'openai':
+                return config.openai_enabled and bool(config.get_openai_key())
+            elif provider == 'anthropic':
+                return config.anthropic_enabled and bool(config.get_anthropic_key())
+        else:
+            # Fallback a variables de entorno
+            if provider == 'openai':
+                api_key = os.getenv('OPENAI_API_KEY')
+                return bool(api_key and api_key != 'your-openai-api-key-here')
+            elif provider == 'anthropic':
+                api_key = os.getenv('ANTHROPIC_API_KEY')
+                return bool(api_key and api_key != 'your-anthropic-api-key-here')
+        
         return False
 
 

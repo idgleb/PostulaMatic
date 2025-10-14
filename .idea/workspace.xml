@@ -4,24 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7490a3f1-aae8-4f43-b267-c57b29ad0677" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/celerybeat-schedule" beforeDir="false" afterPath="$PROJECT_DIR$/celerybeat-schedule" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/AI_EMAIL_SERVICE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/EMAIL_PERSONALIZATION_SERVICE.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/EMAIL_PERSONALIZATION_SERVICE.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/matching/management/commands/test_ai_integration.py" beforeDir="false" afterPath="$PROJECT_DIR$/matching/management/commands/test_ai_integration.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/matching/services/ai_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/matching/services/ai_service.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/matching/services/email_prompts.py" beforeDir="false" afterPath="$PROJECT_DIR$/matching/services/email_prompts.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/matching/services/test_ai_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/matching/services/test_ai_service.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/matching/services/test_email_personalizer.py" beforeDir="false" afterPath="$PROJECT_DIR$/matching/services/test_email_personalizer.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/matching/views_ai_testing.py" beforeDir="false" afterPath="$PROJECT_DIR$/matching/views_ai_testing.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/matching/views_email_generation.py" beforeDir="false" afterPath="$PROJECT_DIR$/matching/views_email_generation.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/setup_ai_environment.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/setup_ai_environment.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/test_ai_connectivity.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/test_ai_connectivity.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/landing/home.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/landing/home.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/matching/ai_providers_status.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/matching/ai_providers_status.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/matching/email_generation_test.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/matching/email_generation_test.html" afterDir="false" />
-    </list>
+    <list default="true" id="7490a3f1-aae8-4f43-b267-c57b29ad0677" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -126,7 +109,7 @@
       <workItem from="1759449534931" duration="16764000" />
       <workItem from="1759780558240" duration="3095000" />
       <workItem from="1759876821639" duration="3045000" />
-      <workItem from="1760383160534" duration="2606000" />
+      <workItem from="1760383160534" duration="3102000" />
     </task>
     <servers />
   </component>
