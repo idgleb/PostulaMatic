@@ -178,6 +178,16 @@ class CVDataExtractor:
             line_lower = line.lower()
             line_stripped = line.strip()
             
+            # Filtrar líneas que no son proyectos (educación, experiencia, etc.)
+            education_keywords = ['universidad', 'university', 'ingeniería', 'engineering', 'licenciatura', 'degree']
+            experience_keywords = ['desarrollador', 'developer', 'analista', 'ingeniero', 'programador', 'años', 'experiencia']
+            
+            # Saltar líneas de educación o experiencia general
+            if any(keyword in line_lower for keyword in education_keywords):
+                continue
+            if any(keyword in line_lower for keyword in experience_keywords) and not any(proj_keyword in line_lower for proj_keyword in ['proyecto', 'project']):
+                continue
+            
             # Filtrar líneas de encabezado como "Proyectos realizados:"
             if any(keyword in line_lower for keyword in project_keywords):
                 if len(line_stripped) > 10 and not line_stripped.endswith(':'):
@@ -191,7 +201,10 @@ class CVDataExtractor:
             for line in lines:
                 line_lower = line.lower()
                 line_stripped = line.strip()
-                if (any(keyword in line_lower for keyword in project_keywords) and 
+                # Excluir líneas de educación y experiencia general
+                if (not any(keyword in line_lower for keyword in education_keywords) and
+                    not any(keyword in line_lower for keyword in experience_keywords) and
+                    any(keyword in line_lower for keyword in project_keywords) and 
                     len(line_stripped) > 10 and not line_stripped.endswith(':')):
                     projects.append(line_stripped)
         
@@ -514,14 +527,14 @@ class EmailPersonalizationService:
         
         # Lógica para seleccionar template óptimo
         
+        # Si es startup (empresa pequeña), usar template startup (prioridad alta)
+        if len(job_data['description']) < 500:  # Descripciones cortas suelen ser startups
+            return 'startup'
+        
         # Si es puesto técnico específico, usar template technical
         technical_keywords = ['desarrollador', 'developer', 'programador', 'ingeniero']
         if any(keyword in job_data['title'].lower() for keyword in technical_keywords):
             return 'technical'
-        
-        # Si es startup (empresa pequeña), usar template startup
-        if len(job_data['description']) < 500:  # Descripciones cortas suelen ser startups
-            return 'startup'
         
         # Si es empresa grande (descripción muy larga), usar corporate
         if len(job_data['description']) > 2000:
@@ -552,7 +565,7 @@ class EmailPersonalizationService:
         
         industries = {
             'Fintech': ['fintech', 'financiero', 'bancario', 'finanzas'],
-            'E-commerce': ['ecommerce', 'e-commerce', 'retail', 'ventas online'],
+            'E-Commerce': ['ecommerce', 'e-commerce', 'retail', 'ventas online'],
             'Healthcare': ['salud', 'healthcare', 'médico', 'hospital'],
             'Education': ['educación', 'education', 'universidad', 'colegio'],
             'Gaming': ['gaming', 'juegos', 'videojuegos', 'game'],
