@@ -239,6 +239,9 @@
                                             <i class="bi bi-cpu me-1"></i>Modelo
                                         </label>
                                         {{ form.openai_model }}
+                                        {% if form.openai_model.help_text %}
+                                            <div class="form-text">{{ form.openai_model.help_text }}</div>
+                                        {% endif %}
                                         {% if form.openai_model.errors %}
                                             <div class="text-danger small mt-1">
                                                 {% for error in form.openai_model.errors %}
@@ -291,6 +294,9 @@
                                             <i class="bi bi-cpu me-1"></i>Modelo
                                         </label>
                                         {{ form.anthropic_model }}
+                                        {% if form.anthropic_model.help_text %}
+                                            <div class="form-text">{{ form.anthropic_model.help_text }}</div>
+                                        {% endif %}
                                         {% if form.anthropic_model.errors %}
                                             <div class="text-danger small mt-1">
                                                 {% for error in form.anthropic_model.errors %}
@@ -335,6 +341,9 @@
                                     <i class="bi bi-star me-1"></i>Proveedor por Defecto
                                 </label>
                                 {{ form.default_provider }}
+                                {% if form.default_provider.help_text %}
+                                    <div class="form-text">{{ form.default_provider.help_text }}</div>
+                                {% endif %}
                                 <div class="form-text">
                                     Proveedor que se usará cuando no se especifique uno
                                 </div>

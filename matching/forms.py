@@ -284,47 +284,74 @@ class AIConfigurationForm(forms.ModelForm):
         help_text="API Key de Anthropic (se encripta automáticamente)"
     )
     
+    # Definir campos de selección explícitamente
+    openai_model = forms.ChoiceField(
+        choices=[],  # Se llena en __init__
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        label='Modelo de OpenAI',
+        help_text="Selecciona el modelo de OpenAI a utilizar"
+    )
+    
+    anthropic_model = forms.ChoiceField(
+        choices=[],  # Se llena en __init__
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        label='Modelo de Anthropic',
+        help_text="Selecciona el modelo de Anthropic a utilizar"
+    )
+    
+    default_provider = forms.ChoiceField(
+        choices=[],  # Se llena en __init__
+        required=True,
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        label='Proveedor por Defecto',
+        help_text="Proveedor de IA que se usará por defecto"
+    )
+
     class Meta:
         model = AIConfiguration
         fields = [
-            'openai_model',
             'openai_enabled',
-            'anthropic_model', 
             'anthropic_enabled',
-            'default_provider'
         ]
         widgets = {
-            'openai_model': forms.Select(attrs={'class': 'form-control'}),
-            'anthropic_model': forms.Select(attrs={'class': 'form-control'}),
-            'default_provider': forms.Select(attrs={'class': 'form-control'}),
             'openai_enabled': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'anthropic_enabled': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
         labels = {
-            'openai_model': 'Modelo de OpenAI',
             'openai_enabled': 'Habilitar OpenAI',
-            'anthropic_model': 'Modelo de Anthropic',
             'anthropic_enabled': 'Habilitar Anthropic',
-            'default_provider': 'Proveedor por Defecto',
         }
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        # Agregar opciones de modelos
+        # Agregar opciones de modelos de OpenAI
         self.fields['openai_model'].choices = [
+            ('', 'Selecciona un modelo...'),
             ('gpt-3.5-turbo', 'GPT-3.5 Turbo (Recomendado)'),
             ('gpt-4', 'GPT-4 (Mejor calidad, más caro)'),
             ('gpt-4-turbo', 'GPT-4 Turbo'),
+            ('gpt-4o', 'GPT-4o (Más reciente)'),
         ]
         
+        # Agregar opciones de modelos de Anthropic
         self.fields['anthropic_model'].choices = [
+            ('', 'Selecciona un modelo...'),
             ('claude-3-haiku-20240307', 'Claude 3 Haiku (Rápido)'),
             ('claude-3-sonnet-20240229', 'Claude 3 Sonnet (Balanceado)'),
             ('claude-3-opus-20240229', 'Claude 3 Opus (Mejor calidad)'),
+            ('claude-3-5-sonnet-20241022', 'Claude 3.5 Sonnet (Más reciente)'),
         ]
         
-        # Hacer campos opcionales
+        # Agregar opciones de proveedor por defecto
+        self.fields['default_provider'].choices = [
+            ('openai', 'OpenAI'),
+            ('anthropic', 'Anthropic'),
+        ]
+        
+        # Hacer campos opcionales inicialmente
         self.fields['openai_model'].required = False
         self.fields['anthropic_model'].required = False
         
