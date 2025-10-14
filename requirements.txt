@@ -16,4 +16,6 @@ django-celery-beat
 playwright
 django-allauth
 PyJWT
+openai
+anthropic
 
