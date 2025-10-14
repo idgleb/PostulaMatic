@@ -99,11 +99,31 @@ class CVDataExtractor:
         experience_keywords = ['desarrollador', 'developer', 'analista', 'ingeniero', 'programador']
         summary_parts = []
         
+        # Buscar en el texto original para mantener capitalización
         for keyword in experience_keywords:
             if keyword in text_lower:
-                summary_parts.append(keyword.title())
+                # Buscar la palabra en el texto original
+                lines = parsed_text.split('\n')
+                for line in lines:
+                    if keyword in line.lower():
+                        # Extraer la palabra tal como aparece
+                        words = line.split()
+                        for word in words:
+                            if keyword in word.lower():
+                                summary_parts.append(word)
+                                break
+                        break
         
-        summary = ', '.join(summary_parts[:3])  # Máximo 3 roles
+        # Si no encontramos nada, usar el texto parseado
+        if not summary_parts:
+            lines = parsed_text.split('\n')
+            for line in lines:
+                line_lower = line.lower()
+                if any(keyword in line_lower for keyword in experience_keywords):
+                    summary_parts.append(line.strip())
+                    break
+        
+        summary = ', '.join(summary_parts[:3]) if summary_parts else ''
         
         return {
             'years': years,
@@ -149,6 +169,13 @@ class CVDataExtractor:
             line_lower = line.lower()
             if any(keyword in line_lower for keyword in project_keywords):
                 if len(line.strip()) > 10:  # Filtrar líneas muy cortas
+                    projects.append(line.strip())
+        
+        # Si no encontramos proyectos específicos, buscar cualquier línea que contenga palabras clave
+        if not projects:
+            for line in lines:
+                line_lower = line.lower()
+                if any(keyword in line_lower for keyword in project_keywords):
                     projects.append(line.strip())
         
         return projects[:3]  # Máximo 3 proyectos
@@ -242,35 +269,59 @@ class JobDataExtractor:
     def _extract_experience_level(description: str) -> str:
         """Extrae nivel de experiencia requerido."""
         if not description:
-            return ''
+            return 'No especificado'
         
         description_lower = description.lower()
         
-        if any(word in description_lower for word in ['junior', 'jr', 'trainee', 'intern']):
-            return 'Junior'
-        elif any(word in description_lower for word in ['senior', 'sr', 'lead', 'principal']):
+        # Buscar patrones más específicos
+        senior_patterns = ['senior', 'sr', 'lead', 'principal', 'experto', 'avanzado']
+        junior_patterns = ['junior', 'jr', 'trainee', 'intern', 'inicial', 'entry-level']
+        mid_patterns = ['mid', 'middle', 'intermedio', 'semi-senior']
+        
+        # Verificar en orden de prioridad
+        if any(word in description_lower for word in senior_patterns):
             return 'Senior'
-        elif any(word in description_lower for word in ['mid', 'middle', 'intermedio']):
+        elif any(word in description_lower for word in junior_patterns):
+            return 'Junior'
+        elif any(word in description_lower for word in mid_patterns):
             return 'Mid-level'
-        else:
-            return 'No especificado'
+        
+        # Buscar por años de experiencia
+        import re
+        years_match = re.search(r'(\d+)\+?\s*(?:años?|years?)\s*(?:de\s*)?experiencia', description_lower)
+        if years_match:
+            years = int(years_match.group(1))
+            if years >= 5:
+                return 'Senior'
+            elif years >= 2:
+                return 'Mid-level'
+            else:
+                return 'Junior'
+        
+        return 'No especificado'
     
     @staticmethod
     def _extract_work_type(description: str) -> str:
         """Extrae tipo de trabajo."""
         if not description:
-            return ''
+            return 'No especificado'
         
         description_lower = description.lower()
         
-        if any(word in description_lower for word in ['remoto', 'remote', 'home office']):
-            return 'Remoto'
-        elif any(word in description_lower for word in ['presencial', 'office', 'oficina']):
-            return 'Presencial'
-        elif any(word in description_lower for word in ['híbrido', 'hybrid']):
+        # Buscar patrones más específicos
+        remote_patterns = ['remoto', 'remote', 'home office', 'trabajo remoto', 'trabajo en casa']
+        onsite_patterns = ['presencial', 'office', 'oficina', 'trabajo presencial', 'en oficina']
+        hybrid_patterns = ['híbrido', 'hybrid', 'mixto', 'combinado', 'parcial']
+        
+        # Verificar en orden de prioridad
+        if any(word in description_lower for word in hybrid_patterns):
             return 'Híbrido'
-        else:
-            return 'No especificado'
+        elif any(word in description_lower for word in remote_patterns):
+            return 'Remoto'
+        elif any(word in description_lower for word in onsite_patterns):
+            return 'Presencial'
+        
+        return 'No especificado'
     
     @staticmethod
     def _extract_location(description: str) -> str:
@@ -441,14 +492,14 @@ class EmailPersonalizationService:
         
         # Lógica para seleccionar template óptimo
         
+        # Si es startup (empresa pequeña), usar template startup
+        if len(job_data['description']) < 500:  # Descripciones cortas suelen ser startups
+            return 'startup'
+        
         # Si es puesto técnico, usar template technical
         technical_keywords = ['desarrollador', 'developer', 'programador', 'ingeniero']
         if any(keyword in job_data['title'].lower() for keyword in technical_keywords):
             return 'technical'
-        
-        # Si es startup (empresa pequeña), usar template startup
-        if len(job_data['description']) < 500:  # Descripciones cortas suelen ser startups
-            return 'startup'
         
         # Si es empresa grande (descripción muy larga), usar corporate
         if len(job_data['description']) > 2000:
@@ -478,20 +529,21 @@ class EmailPersonalizationService:
         description_lower = description.lower()
         
         industries = {
-            'fintech': ['fintech', 'financiero', 'bancario', 'finanzas'],
-            'e-commerce': ['ecommerce', 'e-commerce', 'retail', 'ventas online'],
-            'healthcare': ['salud', 'healthcare', 'médico', 'hospital'],
-            'education': ['educación', 'education', 'universidad', 'colegio'],
-            'gaming': ['gaming', 'juegos', 'videojuegos', 'game'],
-            'software': ['software', 'saas', 'plataforma', 'sistema']
+            'Technology': ['fintech', 'financiero', 'bancario', 'finanzas'],
+            'E-commerce': ['ecommerce', 'e-commerce', 'retail', 'ventas online'],
+            'Healthcare': ['salud', 'healthcare', 'médico', 'hospital'],
+            'Education': ['educación', 'education', 'universidad', 'colegio'],
+            'Gaming': ['gaming', 'juegos', 'videojuegos', 'game'],
+            'Technology': ['software', 'saas', 'plataforma', 'sistema', 'desarrollo', 'programación']
         }
         
         for industry, keywords in industries.items():
             if any(keyword in description_lower for keyword in keywords):
-                return industry.title()
+                return industry
         
         return 'Technology'  # Por defecto
 
 
 # Instancia global del servicio
 email_personalization_service = EmailPersonalizationService()
+
