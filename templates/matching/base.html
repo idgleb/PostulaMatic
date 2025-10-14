@@ -889,6 +889,11 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'ai_providers_status' %}active{% endif %}" href="{% url 'ai_providers_status' %}">
+                        <i class="bi bi-cpu me-1"></i>Estado IA
+                    </a>
+                </li>
+                <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'scraping_results' %}active{% endif %}" href="{% url 'scraping_results' %}">
                         <i class="bi bi-search me-1"></i>Resultados
                     </a>

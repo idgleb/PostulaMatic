@@ -2,6 +2,7 @@ from django.urls import path
 
 from . import views
 from . import views_email_generation
+from . import views_ai_testing
 
 urlpatterns = [
     path("", views.dashboard_view, name="dashboard"),
@@ -59,4 +60,10 @@ urlpatterns = [
     path("email-template-preview/", views_email_generation.email_template_preview_view, name="email_template_preview"),
     path("save-email-template/", views_email_generation.save_email_template_view, name="save_email_template"),
     path("email-analytics/", views_email_generation.email_analytics_view, name="email_analytics"),
+    
+    # URLs para testing de IA
+    path("ai-providers-status/", views_ai_testing.ai_providers_status_view, name="ai_providers_status"),
+    path("test-ai-provider/", views_ai_testing.test_ai_provider_view, name="test_ai_provider"),
+    path("ai-integration-guide/", views_ai_testing.ai_integration_guide_view, name="ai_integration_guide"),
+    path("update-ai-settings/", views_ai_testing.update_ai_settings_view, name="update_ai_settings"),
 ]
