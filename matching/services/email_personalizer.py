@@ -531,9 +531,10 @@ class EmailPersonalizationService:
         if len(job_data['description']) < 500:  # Descripciones cortas suelen ser startups
             return 'startup'
         
-        # Si es puesto técnico específico, usar template technical
+        # Si es puesto técnico específico con descripción detallada, usar template technical
         technical_keywords = ['desarrollador', 'developer', 'programador', 'ingeniero']
-        if any(keyword in job_data['title'].lower() for keyword in technical_keywords):
+        if (any(keyword in job_data['title'].lower() for keyword in technical_keywords) and 
+            len(job_data['description']) >= 500):  # Solo si la descripción es detallada
             return 'technical'
         
         # Si es empresa grande (descripción muy larga), usar corporate
