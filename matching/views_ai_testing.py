@@ -194,3 +194,4 @@ def update_ai_settings_view(request):
             'success': False,
             'message': f'Error interno: {str(e)}'
         })
+

@@ -284,3 +284,4 @@ class EmailPersonalizationData:
             cv_skills=skills_text,
             display_name=display_name
         )
+

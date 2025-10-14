@@ -247,3 +247,4 @@ class Command(BaseCommand):
             self.stdout.write(f'  ... ({len(body_lines) - 10} líneas más)')
         
         self.stdout.write('─' * 50)
+

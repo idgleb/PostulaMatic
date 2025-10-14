@@ -1,0 +1,442 @@
+{% extends "matching/base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="bi bi-file-earmark-person me-2"></i>Personalización de CV
+                </h1>
+                <a href="{% url 'cv_personalization_guide' %}" class="btn btn-outline-info">
+                    <i class="bi bi-question-circle me-1"></i>Guía
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Selección de CV y Puesto -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-gear me-2"></i>Configuración
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="personalizationForm">
+                        <div class="mb-3">
+                            <label for="cvSelect" class="form-label">
+                                <i class="bi bi-file-earmark-text me-1"></i>Seleccionar CV
+                            </label>
+                            <select class="form-select" id="cvSelect" name="cv_id" required>
+                                <option value="">-- Seleccionar CV --</option>
+                                {% for cv in user_cvs %}
+                                <option value="{{ cv.id }}">
+                                    {{ cv.original_file.name|default:"CV" }} 
+                                    ({{ cv.skills_list|length }} habilidades)
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="jobSelect" class="form-label">
+                                <i class="bi bi-briefcase me-1"></i>Seleccionar Puesto
+                            </label>
+                            <select class="form-select" id="jobSelect" name="job_id" required>
+                                <option value="">-- Seleccionar Puesto --</option>
+                                {% for job in job_postings %}
+                                <option value="{{ job.id }}">
+                                    {{ job.title }} 
+                                    {% if job.email %}
+                                        ({{ job.email|truncatechars:30 }})
+                                    {% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100" id="generateBtn">
+                            <i class="bi bi-magic me-1"></i>Personalizar CV
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Información del CV Seleccionado -->
+            <div class="card shadow-sm mt-3" id="cvInfoCard" style="display: none;">
+                <div class="card-header bg-info text-white">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-info-circle me-1"></i>Información del CV
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div id="cvInfo"></div>
+                </div>
+            </div>
+
+            <!-- Información del Puesto Seleccionado -->
+            <div class="card shadow-sm mt-3" id="jobInfoCard" style="display: none;">
+                <div class="card-header bg-success text-white">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-briefcase me-1"></i>Información del Puesto
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div id="jobInfo"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resultados de Personalización -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-file-earmark-arrow-up me-2"></i>CV Personalizado
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Loading -->
+                    <div id="loadingDiv" class="text-center" style="display: none;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Personalizando CV...</span>
+                        </div>
+                        <p class="mt-2">Analizando requisitos y personalizando CV...</p>
+                    </div>
+
+                    <!-- Error -->
+                    <div id="errorDiv" class="alert alert-danger" style="display: none;">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <span id="errorMessage"></span>
+                    </div>
+
+                    <!-- Resultados -->
+                    <div id="resultsDiv" style="display: none;">
+                        <!-- Score de Coincidencia -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="alert alert-success">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <i class="bi bi-check-circle me-2"></i>
+                                            <strong>CV Personalizado Generado</strong>
+                                        </div>
+                                        <div class="text-end">
+                                            <span class="badge bg-success fs-6" id="matchScore">0%</span>
+                                            <small class="d-block text-muted">Coincidencia</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Resumen Profesional -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary mb-2">
+                                    <i class="bi bi-person-badge me-1"></i>Resumen Profesional
+                                </h6>
+                                <div class="card">
+                                    <div class="card-body">
+                                        <p id="resumenProfesional" class="mb-0"></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Habilidades Destacadas -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary mb-2">
+                                    <i class="bi bi-tools me-1"></i>Habilidades Destacadas
+                                </h6>
+                                <div id="habilidadesDestacadas"></div>
+                            </div>
+                        </div>
+
+                        <!-- Experiencia Relevante -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary mb-2">
+                                    <i class="bi bi-briefcase me-1"></i>Experiencia Relevante
+                                </h6>
+                                <div class="card">
+                                    <div class="card-body">
+                                        <p id="experienciaRelevante" class="mb-0"></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Proyectos Relevantes -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary mb-2">
+                                    <i class="bi bi-folder me-1"></i>Proyectos Relevantes
+                                </h6>
+                                <div id="proyectosRelevantes"></div>
+                            </div>
+                        </div>
+
+                        <!-- Puntos Clave -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary mb-2">
+                                    <i class="bi bi-star me-1"></i>Puntos Clave
+                                </h6>
+                                <div id="puntosClave"></div>
+                            </div>
+                        </div>
+
+                        <!-- Requisitos del Puesto -->
+                        <div class="row">
+                            <div class="col-12">
+                                <h6 class="text-secondary mb-2">
+                                    <i class="bi bi-list-check me-1"></i>Requisitos del Puesto
+                                </h6>
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <strong>Habilidades Requeridas:</strong>
+                                                <div id="habilidadesRequeridas"></div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <strong>Tecnologías:</strong>
+                                                <div id="tecnologiasRequeridas"></div>
+                                            </div>
+                                        </div>
+                                        <div class="row mt-3">
+                                            <div class="col-md-6">
+                                                <strong>Nivel:</strong> <span id="nivelRequerido"></span>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <strong>Tipo de Empresa:</strong> <span id="tipoEmpresa"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Estado Inicial -->
+                    <div id="initialDiv" class="text-center text-muted">
+                        <i class="bi bi-file-earmark-text fs-1 d-block mb-3"></i>
+                        <h5>Selecciona un CV y un puesto para personalizar</h5>
+                        <p>El sistema analizará los requisitos y generará una versión personalizada del CV</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.badge {
+    font-size: 0.9rem;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.card-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.skill-badge {
+    margin: 2px;
+}
+
+.requirement-item {
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    padding: 4px 8px;
+    margin: 2px;
+    display: inline-block;
+    font-size: 0.85rem;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('personalizationForm');
+    const generateBtn = document.getElementById('generateBtn');
+    const loadingDiv = document.getElementById('loadingDiv');
+    const errorDiv = document.getElementById('errorDiv');
+    const resultsDiv = document.getElementById('resultsDiv');
+    const initialDiv = document.getElementById('initialDiv');
+
+    // Mostrar información del CV seleccionado
+    document.getElementById('cvSelect').addEventListener('change', function() {
+        const cvId = this.value;
+        const cvInfoCard = document.getElementById('cvInfoCard');
+        const cvInfo = document.getElementById('cvInfo');
+        
+        if (cvId) {
+            // Buscar CV en la lista
+            const cvOption = this.options[this.selectedIndex];
+            const cvText = cvOption.text;
+            
+            cvInfo.innerHTML = `
+                <p class="mb-1"><strong>CV:</strong> ${cvText}</p>
+                <p class="mb-0"><strong>ID:</strong> ${cvId}</p>
+            `;
+            cvInfoCard.style.display = 'block';
+        } else {
+            cvInfoCard.style.display = 'none';
+        }
+    });
+
+    // Mostrar información del puesto seleccionado
+    document.getElementById('jobSelect').addEventListener('change', function() {
+        const jobId = this.value;
+        const jobInfoCard = document.getElementById('jobInfoCard');
+        const jobInfo = document.getElementById('jobInfo');
+        
+        if (jobId) {
+            // Buscar puesto en la lista
+            const jobOption = this.options[this.selectedIndex];
+            const jobText = jobOption.text;
+            
+            jobInfo.innerHTML = `
+                <p class="mb-1"><strong>Puesto:</strong> ${jobText}</p>
+                <p class="mb-0"><strong>ID:</strong> ${jobId}</p>
+            `;
+            jobInfoCard.style.display = 'block';
+        } else {
+            jobInfoCard.style.display = 'none';
+        }
+    });
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const cvId = document.getElementById('cvSelect').value;
+        const jobId = document.getElementById('jobSelect').value;
+        
+        if (!cvId || !jobId) {
+            alert('Por favor selecciona un CV y un puesto');
+            return;
+        }
+        
+        // Mostrar loading
+        loadingDiv.style.display = 'block';
+        errorDiv.style.display = 'none';
+        resultsDiv.style.display = 'none';
+        initialDiv.style.display = 'none';
+        generateBtn.disabled = true;
+        
+        // Enviar request
+        fetch('{% url "generate_personalized_cv" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({
+                cv_id: cvId,
+                job_id: jobId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            loadingDiv.style.display = 'none';
+            generateBtn.disabled = false;
+            
+            if (data.success) {
+                displayResults(data);
+            } else {
+                showError(data.error || 'Error desconocido');
+            }
+        })
+        .catch(error => {
+            loadingDiv.style.display = 'none';
+            generateBtn.disabled = false;
+            showError('Error de conexión: ' + error.message);
+        });
+    });
+    
+    function displayResults(data) {
+        const personalizedCv = data.personalized_cv;
+        const jobRequirements = data.job_requirements;
+        
+        // Score de coincidencia
+        document.getElementById('matchScore').textContent = data.match_score + '%';
+        
+        // Resumen profesional
+        document.getElementById('resumenProfesional').textContent = personalizedCv.resumen_profesional || 'No disponible';
+        
+        // Habilidades destacadas
+        const habilidadesDestacadas = document.getElementById('habilidadesDestacadas');
+        if (personalizedCv.habilidades_destacadas && personalizedCv.habilidades_destacadas.length > 0) {
+            habilidadesDestacadas.innerHTML = personalizedCv.habilidades_destacadas
+                .map(skill => `<span class="badge bg-primary skill-badge">${skill}</span>`)
+                .join('');
+        } else {
+            habilidadesDestacadas.innerHTML = '<span class="text-muted">No especificado</span>';
+        }
+        
+        // Experiencia relevante
+        document.getElementById('experienciaRelevante').textContent = personalizedCv.experiencia_relevante || 'No disponible';
+        
+        // Proyectos relevantes
+        const proyectosRelevantes = document.getElementById('proyectosRelevantes');
+        if (personalizedCv.proyectos_relevantes && personalizedCv.proyectos_relevantes.length > 0) {
+            proyectosRelevantes.innerHTML = personalizedCv.proyectos_relevantes
+                .map(proyecto => `<div class="requirement-item">${proyecto}</div>`)
+                .join('');
+        } else {
+            proyectosRelevantes.innerHTML = '<span class="text-muted">No especificado</span>';
+        }
+        
+        // Puntos clave
+        const puntosClave = document.getElementById('puntosClave');
+        if (personalizedCv.puntos_clave && personalizedCv.puntos_clave.length > 0) {
+            puntosClave.innerHTML = '<ul class="mb-0">' + 
+                personalizedCv.puntos_clave.map(punto => `<li>${punto}</li>`).join('') + 
+                '</ul>';
+        } else {
+            puntosClave.innerHTML = '<span class="text-muted">No especificado</span>';
+        }
+        
+        // Requisitos del puesto
+        const habilidadesRequeridas = document.getElementById('habilidadesRequeridas');
+        if (jobRequirements.required_skills && jobRequirements.required_skills.length > 0) {
+            habilidadesRequeridas.innerHTML = jobRequirements.required_skills
+                .map(skill => `<span class="badge bg-secondary skill-badge">${skill}</span>`)
+                .join('');
+        } else {
+            habilidadesRequeridas.innerHTML = '<span class="text-muted">No especificado</span>';
+        }
+        
+        const tecnologiasRequeridas = document.getElementById('tecnologiasRequeridas');
+        if (jobRequirements.technologies && jobRequirements.technologies.length > 0) {
+            tecnologiasRequeridas.innerHTML = jobRequirements.technologies
+                .map(tech => `<span class="badge bg-info skill-badge">${tech}</span>`)
+                .join('');
+        } else {
+            tecnologiasRequeridas.innerHTML = '<span class="text-muted">No especificado</span>';
+        }
+        
+        document.getElementById('nivelRequerido').textContent = jobRequirements.experience_level || 'No especificado';
+        document.getElementById('tipoEmpresa').textContent = jobRequirements.company_type || 'No especificado';
+        
+        resultsDiv.style.display = 'block';
+    }
+    
+    function showError(message) {
+        document.getElementById('errorMessage').textContent = message;
+        errorDiv.style.display = 'block';
+    }
+});
+</script>
+{% endblock %}

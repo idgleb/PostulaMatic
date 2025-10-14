@@ -235,3 +235,4 @@ def email_analytics_view(request):
     }
     
     return render(request, 'matching/email_analytics.html', context)
+

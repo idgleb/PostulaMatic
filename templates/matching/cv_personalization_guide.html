@@ -1,0 +1,307 @@
+{% extends "matching/base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="bi bi-question-circle me-2"></i>Guía de Personalización de CV
+                </h1>
+                <a href="{% url 'cv_personalization_test' %}" class="btn btn-primary">
+                    <i class="bi bi-magic me-1"></i>Probar Personalización
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Qué es la Personalización de CV -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-info-circle me-2"></i>¿Qué es la Personalización de CV?
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="lead">
+                        La personalización de CV es un sistema inteligente que adapta tu CV original 
+                        para destacar las habilidades y experiencia más relevantes para cada puesto específico.
+                    </p>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-primary">🎯 Objetivo Principal</h6>
+                            <p>Maximizar las posibilidades de que tu CV sea seleccionado para entrevistas, 
+                            destacando lo que cada empleador está buscando específicamente.</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-primary">🤖 Tecnología IA</h6>
+                            <p>Utiliza inteligencia artificial para analizar requisitos del puesto y 
+                            adaptar automáticamente el contenido de tu CV.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cómo Funciona -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-gear me-2"></i>¿Cómo Funciona?
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 text-center mb-3">
+                            <div class="bg-light p-3 rounded">
+                                <i class="bi bi-search text-primary fs-1"></i>
+                                <h6 class="mt-2">1. Análisis</h6>
+                                <small>Analiza requisitos del puesto</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 text-center mb-3">
+                            <div class="bg-light p-3 rounded">
+                                <i class="bi bi-cpu text-success fs-1"></i>
+                                <h6 class="mt-2">2. IA Procesa</h6>
+                                <small>IA personaliza el contenido</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 text-center mb-3">
+                            <div class="bg-light p-3 rounded">
+                                <i class="bi bi-star text-warning fs-1"></i>
+                                <h6 class="mt-2">3. Destaca</h6>
+                                <small>Resalta habilidades relevantes</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 text-center mb-3">
+                            <div class="bg-light p-3 rounded">
+                                <i class="bi bi-file-earmark-arrow-up text-info fs-1"></i>
+                                <h6 class="mt-2">4. Genera</h6>
+                                <small>CV personalizado listo</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Proceso Detallado -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-list-ol me-2"></i>Proceso Detallado
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="accordion" id="processAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="heading1">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse1">
+                                    <i class="bi bi-search me-2"></i>Análisis de Requisitos del Puesto
+                                </button>
+                            </h2>
+                            <div id="collapse1" class="accordion-collapse collapse show" data-bs-parent="#processAccordion">
+                                <div class="accordion-body">
+                                    <ul class="mb-0">
+                                        <li><strong>Habilidades requeridas:</strong> Python, Django, React, etc.</li>
+                                        <li><strong>Nivel de experiencia:</strong> Junior, Mid-level, Senior</li>
+                                        <li><strong>Tecnologías específicas:</strong> Frameworks, bases de datos, herramientas</li>
+                                        <li><strong>Responsabilidades clave:</strong> Tareas principales del puesto</li>
+                                        <li><strong>Tipo de empresa:</strong> Startup, Corporate, Fintech, etc.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="heading2">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse2">
+                                    <i class="bi bi-cpu me-2"></i>Personalización con IA
+                                </button>
+                            </h2>
+                            <div id="collapse2" class="accordion-collapse collapse" data-bs-parent="#processAccordion">
+                                <div class="accordion-body">
+                                    <ul class="mb-0">
+                                        <li><strong>Resumen profesional:</strong> Adaptado al puesto específico</li>
+                                        <li><strong>Habilidades destacadas:</strong> Prioriza las más relevantes</li>
+                                        <li><strong>Experiencia relevante:</strong> Enfoca en lo que buscan</li>
+                                        <li><strong>Proyectos destacados:</strong> Los más relacionados</li>
+                                        <li><strong>Puntos clave:</strong> Por qué eres ideal para el puesto</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="heading3">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse3">
+                                    <i class="bi bi-graph-up me-2"></i>Cálculo de Coincidencia
+                                </button>
+                            </h2>
+                            <div id="collapse3" class="accordion-collapse collapse" data-bs-parent="#processAccordion">
+                                <div class="accordion-body">
+                                    <p>El sistema calcula un score de coincidencia basado en:</p>
+                                    <ul class="mb-0">
+                                        <li><strong>Habilidades coincidentes (40%):</strong> Cuántas habilidades requeridas tienes</li>
+                                        <li><strong>Nivel de experiencia (30%):</strong> Si tu experiencia coincide con lo requerido</li>
+                                        <li><strong>Tecnologías específicas (30%):</strong> Conocimiento de las tecnologías del puesto</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Consejos para Mejores Resultados -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-lightbulb me-2"></i>Consejos para Mejores Resultados
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-primary">📝 Mantén tu CV Actualizado</h6>
+                            <ul>
+                                <li>Incluye todas tus habilidades técnicas</li>
+                                <li>Actualiza proyectos recientes</li>
+                                <li>Mantén información de educación actualizada</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-primary">🎯 Usa Palabras Clave Relevantes</h6>
+                            <ul>
+                                <li>Incluye nombres de tecnologías específicas</li>
+                                <li>Menciona frameworks y herramientas</li>
+                                <li>Usa términos de la industria</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <h6 class="text-primary">📊 Analiza los Scores</h6>
+                            <ul>
+                                <li>Scores altos (80%+) indican buena coincidencia</li>
+                                <li>Scores medios (50-79%) pueden mejorarse</li>
+                                <li>Scores bajos (<50%) requieren más habilidades</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-primary">🔄 Personaliza para Cada Puesto</h6>
+                            <ul>
+                                <li>Cada puesto requiere personalización específica</li>
+                                <li>No uses el mismo CV para todos</li>
+                                <li>Ajusta según el tipo de empresa</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Tips Rápidos -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-lightning me-1"></i>Tips Rápidos
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        {% for tip in tips %}
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            {{ tip }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Beneficios -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-star me-1"></i>Beneficios
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="bi bi-clock text-primary me-2"></i>
+                        <small><strong>Ahorra tiempo</strong> - No personalices manualmente</small>
+                    </div>
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="bi bi-target text-success me-2"></i>
+                        <small><strong>Mayor precisión</strong> - Enfoque específico por puesto</small>
+                    </div>
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="bi bi-graph-up text-warning me-2"></i>
+                        <small><strong>Mejor matching</strong> - Score de coincidencia</small>
+                    </div>
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="bi bi-shield-check text-info me-2"></i>
+                        <small><strong>Información veraz</strong> - Basado en tu CV real</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Acciones -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-play-circle me-1"></i>Empezar
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <a href="{% url 'cv_personalization_test' %}" class="btn btn-primary w-100 mb-2">
+                        <i class="bi bi-magic me-1"></i>Probar Personalización
+                    </a>
+                    <a href="{% url 'cv_list' %}" class="btn btn-outline-secondary w-100 mb-2">
+                        <i class="bi bi-file-earmark-text me-1"></i>Ver Mis CVs
+                    </a>
+                    <a href="{% url 'scraping_results' %}" class="btn btn-outline-info w-100">
+                        <i class="bi bi-briefcase me-1"></i>Ver Puestos
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.accordion-button:not(.collapsed) {
+    background-color: #e7f3ff;
+    border-color: #b3d9ff;
+}
+
+.accordion-button:focus {
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.card-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.bg-light {
+    transition: transform 0.2s;
+}
+
+.bg-light:hover {
+    transform: translateY(-2px);
+}
+</style>
+{% endblock %}
