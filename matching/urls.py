@@ -69,7 +69,7 @@ urlpatterns = [
     path("update-ai-settings/", views_ai_testing.update_ai_settings_view, name="update_ai_settings"),
     
     # URLs para personalización de CV
-    path("cv-personalization-test/", views_cv_personalization.cv_personalization_test_view, name="cv_personalization_test"),
+    path("cv-personalization-test/", views_cv_personalization.cv_personalization_test, name="cv_personalization_test"),
     path("generate-personalized-cv/", views_cv_personalization.generate_personalized_cv, name="generate_personalized_cv"),
     path("cv-personalization-analytics/", views_cv_personalization.cv_personalization_analytics, name="cv_personalization_analytics"),
     path("cv-personalization-history/", views_cv_personalization.cv_personalization_history, name="cv_personalization_history"),
