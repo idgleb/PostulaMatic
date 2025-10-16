@@ -230,13 +230,13 @@ class DVCarrerasPlaywrightSimple:
                 f"Conectando a INTRANET DAVINCI para usuario: {self.username}", "info"
             )
 
-            # Navegar a la página de login
-            await self.page.goto(self.LOGIN_URL, wait_until="domcontentloaded", timeout=120000)
+            # Navegar a la página de login (timeout extendido)
+            await self.page.goto(self.LOGIN_URL, wait_until="domcontentloaded", timeout=180000)
             # Detección temprana de CAPTCHA y resolución
             try:
                 sitekey_early = None
-                # Sondear hasta 120s buscando Turnstile/hCaptcha (Cloudflare)
-                for _ in range(60):
+                # Sondear hasta 180s buscando Turnstile/hCaptcha (Cloudflare)
+                for _ in range(90):
                     sitekey_early = await self.page.evaluate(
                         """
                         () => {
@@ -251,7 +251,7 @@ class DVCarrerasPlaywrightSimple:
                     if sitekey_early:
                         break
                     try:
-                        await self.page.wait_for_selector('iframe[src*="turnstile"], iframe[src*="hcaptcha"], div[data-sitekey]', timeout=2000)
+                        await self.page.wait_for_selector('iframe[src*="turnstile"], iframe[src*="hcaptcha"], div[data-sitekey]', timeout=3000)
                     except Exception:
                         pass
                 await self._log(f"Detección temprana CAPTCHA: sitekey={sitekey_early}", "info")
@@ -272,10 +272,15 @@ class DVCarrerasPlaywrightSimple:
                 pass
             # Espera resiliente por el formulario/login o por posibles redirecciones
             try:
-                await self.page.wait_for_selector('input[type="password"], form[action*="login"], input[name*="user" i]', timeout=90000)
+                await self.page.wait_for_selector('input[type="password"], form[action*="login"], input[name*="user" i]', timeout=120000)
             except Exception:
-                await self._log("Timeout esperando formulario de login", "warning")
-                return False
+                await self._log("Timeout esperando formulario de login - refrescando una vez", "warning")
+                try:
+                    await self.page.reload(wait_until="domcontentloaded", timeout=90000)
+                    await self.page.wait_for_selector('input[type="password"], form[action*="login"], input[name*="user" i]', timeout=90000)
+                except Exception:
+                    await self._log("Formulario de login no apareció tras refresco", "error")
+                    return False
 
             # Verificar si hay Cloudflare
             page_content = await self.page.content()
