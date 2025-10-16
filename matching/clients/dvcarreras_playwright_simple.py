@@ -257,7 +257,7 @@ class DVCarrerasPlaywrightSimple:
                         # Inyectar posible respuesta en inputs estándar
                         try:
                             await self.page.evaluate(
-                                "(t)=>{let i=document.querySelector('input[name="cf-turnstile-response"], input[name="h-captcha-response"]'); if(i){i.value=t;} }",
+                                '(t)=>{var i=document.querySelector(\'input[name="cf-turnstile-response"], input[name="h-captcha-response"]\'); if(i){i.value=t;}}',
                                 token,
                             )
                             await asyncio.sleep(2)
