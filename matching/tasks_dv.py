@@ -1,5 +1,7 @@
 import logging
 from celery import shared_task
+import os
+from datetime import datetime
 
 from .models import UserProfile
 
@@ -28,26 +30,55 @@ def verify_dv_login_task(self, user_id: int, timeout_seconds: int = 90):
         )
 
         async def run_check():
+            debug_paths = {}
             async with DVCarrerasPlaywrightSimple(
                 username=profile.get_dv_username(),
                 password=profile.get_dv_password(),
             ) as client:
-                return await client.login()
+                success_login = await client.login()
+                if not success_login:
+                    # Capturar evidencia de la página actual
+                    try:
+                        ts = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+                        base_dir = os.path.join("media", "debug", "dv_login", ts)
+                        os.makedirs(base_dir, exist_ok=True)
+                        screenshot_path = os.path.join(base_dir, "login.png")
+                        html_path = os.path.join(base_dir, "login.html")
+                        try:
+                            await client.page.screenshot(path=screenshot_path, full_page=True)
+                            debug_paths["screenshot_path"] = screenshot_path
+                        except Exception as se:
+                            logger.warning(f"No se pudo guardar screenshot: {se}")
+                        try:
+                            content = await client.page.content()
+                            with open(html_path, "w", encoding="utf-8") as f:
+                                f.write(content)
+                            debug_paths["html_path"] = html_path
+                        except Exception as he:
+                            logger.warning(f"No se pudo guardar HTML: {he}")
+                    except Exception as de:
+                        logger.warning(f"Error preparando directorios de debug: {de}")
+                return success_login, debug_paths
 
         try:
-            success = asyncio.run(asyncio.wait_for(run_check(), timeout=timeout_seconds))
+            success, debug_paths = asyncio.run(asyncio.wait_for(run_check(), timeout=timeout_seconds))
         except asyncio.TimeoutError:
             success = False
+            debug_paths = {}
             logger.warning("Timeout verificando login DV")
 
         # Guardar resultado
         profile.set_dv_connection_verified(True if success else False)
         profile.save(update_fields=["dv_connection_status"])
 
-        return {
+        result = {
             "success": bool(success),
             "message": "Conexión verificada" if success else "Credenciales inválidas o timeout",
         }
+        if not success and debug_paths:
+            result.update(debug_paths)
+            logger.info(f"DV debug paths: {debug_paths}")
+        return result
 
     except Exception as e:
         logger.error(f"Error verificando login DV: {e}")
