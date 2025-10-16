@@ -145,13 +145,14 @@ class DVCarrerasPlaywrightSimple:
 
             # Usar Chromium con configuraciones anti-detección
             self.browser = await self.playwright.chromium.launch(
-                headless=True,  # Cambiar a False para ver el navegador
+                headless=False,  # Navegador visible para fingerprint más humano
                 args=[
                     "--no-sandbox",
                     "--disable-blink-features=AutomationControlled",
                     "--disable-dev-shm-usage",
                     "--disable-web-security",
                     "--disable-features=VizDisplayCompositor",
+                    "--start-maximized",
                 ],
             )
 
