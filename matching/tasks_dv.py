@@ -34,6 +34,7 @@ def verify_dv_login_task(self, user_id: int, timeout_seconds: int = 90):
             async with DVCarrerasPlaywrightSimple(
                 username=profile.get_dv_username(),
                 password=profile.get_dv_password(),
+                storage_state_path=os.path.join("media", "dv_sessions", f"{profile.user.username}.json"),
             ) as client:
                 success_login = await client.login()
                 if not success_login:

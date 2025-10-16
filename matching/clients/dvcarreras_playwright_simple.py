@@ -105,7 +105,7 @@ class DVCarrerasPlaywrightSimple:
     LOGIN_URL = "https://dvcarreras.davinci.edu.ar/login.html"
     JOB_BOARD_URL = "https://dvcarreras.davinci.edu.ar/job_board-0.html"
 
-    def __init__(self, username: str, password: str, log_callback=None):
+    def __init__(self, username: str, password: str, log_callback=None, storage_state_path: str | None = None):
         self.username = username
         self.password = password
         self.browser = None
@@ -115,6 +115,7 @@ class DVCarrerasPlaywrightSimple:
         self.login_attempts = 0
         self.max_login_attempts = 2
         self.log_callback = log_callback
+        self.storage_state_path = storage_state_path
 
     async def _log(self, message: str, log_type: str = "info"):
         """Envía un log a través del callback si está disponible."""
@@ -138,6 +139,7 @@ class DVCarrerasPlaywrightSimple:
         """Inicia el navegador."""
         try:
             from playwright.async_api import async_playwright
+            import os
 
             self.playwright = await async_playwright().start()
 
@@ -153,13 +155,18 @@ class DVCarrerasPlaywrightSimple:
                 ],
             )
 
-            # Crear contexto
-            self.context = await self.browser.new_context(
+            # Crear contexto (si hay storage_state, usarlo)
+            new_context_kwargs = dict(
                 viewport={"width": 1920, "height": 1080},
                 user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                 locale="es-AR",
                 timezone_id="America/Argentina/Buenos_Aires",
             )
+            if self.storage_state_path and os.path.exists(self.storage_state_path):
+                new_context_kwargs["storage_state"] = self.storage_state_path
+                logger.info(f"Usando storage_state desde {self.storage_state_path}")
+
+            self.context = await self.browser.new_context(**new_context_kwargs)
 
             # Crear página
             self.page = await self.context.new_page()
@@ -178,6 +185,13 @@ class DVCarrerasPlaywrightSimple:
         except Exception as e:
             logger.error(f"Error iniciando Playwright: {e}")
             raise
+
+    async def save_storage_state(self, path: str):
+        try:
+            await self.context.storage_state(path=path)
+            logger.info(f"storage_state guardado en {path}")
+        except Exception as e:
+            logger.error(f"No se pudo guardar storage_state: {e}")
 
     async def close(self):
         """Cierra el navegador."""
