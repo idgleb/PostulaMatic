@@ -4,7 +4,15 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7490a3f1-aae8-4f43-b267-c57b29ad0677" name="Changes" comment="" />
+    <list default="true" id="7490a3f1-aae8-4f43-b267-c57b29ad0677" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/matching/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/matching/forms.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/matching/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/matching/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/matching/services/test_ai_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/matching/services/test_ai_service.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/matching/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/matching/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/matching/ai_admin_config.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/matching/ai_admin_config.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/matching/profile.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/matching/profile.html" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -110,6 +118,7 @@
       <workItem from="1759780558240" duration="3095000" />
       <workItem from="1759876821639" duration="3045000" />
       <workItem from="1760383160534" duration="3102000" />
+      <workItem from="1760609408334" duration="2605000" />
     </task>
     <servers />
   </component>

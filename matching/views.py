@@ -9,13 +9,8 @@ from django.http import JsonResponse, HttpResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
-from .forms import (
-    CVUploadForm,
-    DVCredentialsForm,
-    MatchingConfigForm,
-    SMTPConfigForm,
-    DVCookiesForm,
-)
+from .forms import (CVUploadForm, DVCredentialsForm, MatchingConfigForm,
+                    SMTPConfigForm)
 from .forms_email import EmailConfigForm
 from .models import JobPosting, MatchScore, ScrapingLog, UserCV, UserProfile
 from .services.cv_parser import cv_parser
@@ -68,7 +63,6 @@ def profile_view(request):
     dv_form = DVCredentialsForm(instance=profile)
     matching_form = MatchingConfigForm(instance=profile)
     email_form = EmailConfigForm(instance=profile)
-    cookies_form = DVCookiesForm(instance=profile)
 
     if request.method == "POST":
         section = request.POST.get("section")
@@ -125,17 +119,6 @@ def profile_view(request):
                         request,
                         "Credenciales INTRANET DAVINCI guardadas correctamente.",
                     )
-        elif section == "dv_cookies":
-            cookies_form = DVCookiesForm(request.POST, instance=profile)
-            if cookies_form.is_valid():
-                cookies_form.save()
-                if is_ajax:
-                    return JsonResponse({"success": True, "message": "Cookies DV guardadas (cifradas)."})
-                else:
-                    messages.success(request, "Cookies DV guardadas correctamente.")
-            else:
-                if is_ajax:
-                    return JsonResponse({"success": False, "message": "Error al guardar cookies."})
             else:
                 if is_ajax:
                     # Obtener errores específicos del formulario
@@ -272,7 +255,6 @@ def profile_view(request):
         "dv_form": dv_form,
         "matching_form": matching_form,
         "email_form": email_form,
-        "cookies_form": cookies_form,
         "profile": profile,
         "title": "Mi Perfil",
     }
