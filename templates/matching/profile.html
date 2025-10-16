@@ -1039,7 +1039,10 @@
         }
         
         statusCheckInterval = setInterval(() => {
-            updateDVConnectionStatusFromServer();
+            // Llamada protegida: puede no estar definida hasta que se inicialice el DOM
+            if (typeof window.updateDVConnectionStatusFromServer === 'function') {
+                window.updateDVConnectionStatusFromServer();
+            }
             // Detener el intervalo si ya no está en proceso
             if (!isConnectionInProgress) {
                 stopStatusMonitoring();
@@ -1225,6 +1228,8 @@
                 console.error('Error actualizando estado de conexión DV desde servidor:', error);
             });
         }
+        // Exponer función al ámbito global para que otros bloques puedan usarla con seguridad
+        window.updateDVConnectionStatusFromServer = updateDVConnectionStatusFromServer;
         
         // Iniciar monitoreo solo si está en proceso de verificación
         if (isConnectionInProgress) {
