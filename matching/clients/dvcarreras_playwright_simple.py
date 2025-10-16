@@ -144,9 +144,11 @@ class DVCarrerasPlaywrightSimple:
             self.playwright = await async_playwright().start()
 
             # Usar Chromium con configuraciones anti-detección
-            self.browser = await self.playwright.chromium.launch(
-                headless=False,  # Navegador visible para fingerprint más humano
-                args=[
+            from matching.services.session_bootstrap import build_playwright_proxy, bootstrap_dv_session
+            proxy_cfg = build_playwright_proxy()
+            launch_kwargs = {
+                "headless": False,
+                "args": [
                     "--no-sandbox",
                     "--disable-blink-features=AutomationControlled",
                     "--disable-dev-shm-usage",
@@ -154,7 +156,10 @@ class DVCarrerasPlaywrightSimple:
                     "--disable-features=VizDisplayCompositor",
                     "--start-maximized",
                 ],
-            )
+            }
+            if proxy_cfg:
+                launch_kwargs["proxy"] = proxy_cfg
+            self.browser = await self.playwright.chromium.launch(**launch_kwargs)
 
             # Crear contexto (si hay storage_state, usarlo)
             new_context_kwargs = dict(
@@ -166,6 +171,15 @@ class DVCarrerasPlaywrightSimple:
             if self.storage_state_path and os.path.exists(self.storage_state_path):
                 new_context_kwargs["storage_state"] = self.storage_state_path
                 logger.info(f"Usando storage_state desde {self.storage_state_path}")
+            else:
+                # Bootstrap de sesión: intentar obtener cookies iniciales con requests
+                try:
+                    cookies = bootstrap_dv_session()
+                    if cookies:
+                        new_context_kwargs["storage_state"] = {"cookies": cookies, "origins": []}
+                        logger.info(f"Bootstrap aplicado: {len(cookies)} cookies")
+                except Exception as e:
+                    logger.warning(f"Bootstrap falló: {e}")
 
             self.context = await self.browser.new_context(**new_context_kwargs)
 
