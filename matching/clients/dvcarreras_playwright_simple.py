@@ -219,26 +219,31 @@ class DVCarrerasPlaywrightSimple:
             await self.page.goto(self.LOGIN_URL, wait_until="domcontentloaded", timeout=120000)
             # Detección temprana de CAPTCHA y resolución
             try:
-                const sitekeyEarly = await this.page.evaluate(() => {
-                    const el = document.querySelector('div[data-sitekey], iframe[src*="turnstile" i], iframe[src*="hcaptcha" i]');
-                    if (!el) return null;
-                    const sk = el.getAttribute('data-sitekey');
-                    if (sk) return sk;
-                    try { return new URL(el.src).searchParams.get('sitekey'); } catch (e) { return null; }
-                });
-                await this._log(`Detección temprana CAPTCHA: sitekey=${sitekeyEarly}`, 'info');
-                if (sitekeyEarly && captcha_solver.is_configured()) {
-                    const tokenEarly = captcha_solver.solve_turnstile(this.LOGIN_URL, sitekeyEarly) || captcha_solver.solve_hcaptcha(this.LOGIN_URL, sitekeyEarly);
-                    await this._log(`2Captcha(token temprano)=${Boolean(tokenEarly)}`, 'info');
-                    if (tokenEarly) {
-                        try {
-                            await this.page.evaluate('(t)=>{var i=document.querySelector(\'input[name="cf-turnstile-response"], input[name="h-captcha-response"]\'); if(!i){ i=document.createElement("input"); i.name="cf-turnstile-response"; i.type="hidden"; document.forms[0]?.appendChild(i);} i.value=t; document.forms[0]?.submit?.();}', tokenEarly);
-                            await this.page.wait_for_load_state('load', {timeout: 60000});
-                            await asyncio.sleep(3);
-                        } catch (e) {}
-                    }
-                }
-            } catch (e) {}
+                sitekey_early = await self.page.evaluate(
+                    "() => {\n"
+                    "  const el = document.querySelector('div[data-sitekey], iframe[src*="turnstile" i], iframe[src*="hcaptcha" i]');\n"
+                    "  if (!el) return null;\n"
+                    "  const sk = el.getAttribute('data-sitekey');\n"
+                    "  if (sk) return sk;\n"
+                    "  try { return new URL(el.src).searchParams.get('sitekey'); } catch (e) { return null; }\n"
+                    "}"
+                )
+                await self._log(f"Detección temprana CAPTCHA: sitekey={sitekey_early}", "info")
+                if sitekey_early and captcha_solver.is_configured():
+                    token_early = captcha_solver.solve_turnstile(self.LOGIN_URL, sitekey_early) or captcha_solver.solve_hcaptcha(self.LOGIN_URL, sitekey_early)
+                    await self._log(f"2Captcha(token temprano)={bool(token_early)}", "info")
+                    if token_early:
+                        try:
+                            await self.page.evaluate(
+                                '(t)=>{var i=document.querySelector(\'input[name="cf-turnstile-response"], input[name="h-captcha-response"]\'); if(!i){ i=document.createElement("input"); i.name="cf-turnstile-response"; i.type="hidden"; document.forms[0]?.appendChild(i);} i.value=t; document.forms[0]?.submit?.();}',
+                                token_early,
+                            )
+                            await self.page.wait_for_load_state('load', timeout=60000)
+                            await asyncio.sleep(3)
+                        except Exception:
+                            pass
+            except Exception:
+                pass
             # Espera resiliente por el formulario/login o por posibles redirecciones
             try:
                 await self.page.wait_for_selector('input[type="password"], form[action*="login"], input[name*="user" i]', timeout=90000)
