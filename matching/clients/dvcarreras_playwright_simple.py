@@ -219,17 +219,26 @@ class DVCarrerasPlaywrightSimple:
             await self.page.goto(self.LOGIN_URL, wait_until="domcontentloaded", timeout=120000)
             # Detección temprana de CAPTCHA y resolución
             try:
-                sitekey_early = await self.page.evaluate(
-                    """
-                    () => {
-                      const el = document.querySelector('div[data-sitekey], iframe[src*="turnstile" i], iframe[src*="hcaptcha" i]');
-                      if (!el) return null;
-                      const sk = el.getAttribute('data-sitekey');
-                      if (sk) return sk;
-                      try { return new URL(el.src).searchParams.get('sitekey'); } catch (e) { return null; }
-                    }
-                    """
-                )
+                sitekey_early = None
+                # Sondear hasta 120s buscando Turnstile/hCaptcha (Cloudflare)
+                for _ in range(60):
+                    sitekey_early = await self.page.evaluate(
+                        """
+                        () => {
+                          const el = document.querySelector('div[data-sitekey], iframe[src*"turnstile" i], iframe[src*"hcaptcha" i]');
+                          if (!el) return null;
+                          const sk = el.getAttribute('data-sitekey');
+                          if (sk) return sk;
+                          try { return new URL(el.src).searchParams.get('sitekey'); } catch (e) { return null; }
+                        }
+                        """
+                    )
+                    if sitekey_early:
+                        break
+                    try:
+                        await self.page.wait_for_selector('iframe[src*="turnstile"], iframe[src*="hcaptcha"], div[data-sitekey]', timeout=2000)
+                    except Exception:
+                        pass
                 await self._log(f"Detección temprana CAPTCHA: sitekey={sitekey_early}", "info")
                 if sitekey_early and captcha_solver.is_configured():
                     token_early = captcha_solver.solve_turnstile(self.LOGIN_URL, sitekey_early) or captcha_solver.solve_hcaptcha(self.LOGIN_URL, sitekey_early)
