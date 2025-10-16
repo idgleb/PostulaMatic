@@ -991,6 +991,7 @@
     // Variable para mantener el estado de verificación desde la base de datos
     let isConnectionVerified = {{ profile.is_dv_connection_verified|yesno:"true,false" }};
     let isConnectionInProgress = {{ profile.is_dv_connection_in_progress|yesno:"true,false" }};
+    let statusCheckInterval = null; // Variable para controlar el intervalo de verificación
     console.log('Estado de conexión DV desde la base de datos:', isConnectionVerified);
     console.log('Estado en proceso desde la base de datos:', isConnectionInProgress);
     console.log('Valor crudo del template:', '{{ profile.is_dv_connection_verified }}');
@@ -1016,15 +1017,44 @@
         if (verified === true) {
             isConnectionVerified = true;
             isConnectionInProgress = false;
+            stopStatusMonitoring(); // Detener monitoreo cuando está verificado
             console.log('Estado de verificación DV: VERIFICADO');
         } else if (verified === false) {
             isConnectionVerified = false;
             isConnectionInProgress = false;
+            stopStatusMonitoring(); // Detener monitoreo cuando no está verificado
             console.log('Estado de verificación DV: NO VERIFICADO');
         } else { // null, undefined, o 'in_progress'
             isConnectionVerified = false;
             isConnectionInProgress = true;
+            startStatusMonitoring(); // Iniciar monitoreo cuando está en proceso
             console.log('Estado de verificación DV: EN PROCESO');
+        }
+    }
+
+    // Función para iniciar el monitoreo de estado
+    function startStatusMonitoring() {
+        if (statusCheckInterval) {
+            clearInterval(statusCheckInterval);
+        }
+        
+        statusCheckInterval = setInterval(() => {
+            updateDVConnectionStatusFromServer();
+            // Detener el intervalo si ya no está en proceso
+            if (!isConnectionInProgress) {
+                stopStatusMonitoring();
+            }
+        }, 2000);
+        
+        console.log('Monitoreo de estado DV iniciado');
+    }
+
+    // Función para detener el monitoreo de estado
+    function stopStatusMonitoring() {
+        if (statusCheckInterval) {
+            clearInterval(statusCheckInterval);
+            statusCheckInterval = null;
+            console.log('Monitoreo de estado DV detenido');
         }
     }
 
@@ -1061,6 +1091,8 @@
             } else {
                 // Solo ocultar tilde verde visualmente, NO cambiar estado persistente
                 showConnectionStatus(false);
+                // Actualizar estado para detener monitoreo
+                setConnectionVerifiedState(false);
                 // Mostrar error en el botón brevemente
                 btn.innerHTML = '<i class="bi bi-exclamation-triangle me-2"></i>Error: ' + data.message.substring(0, 30) + '...';
                 btn.disabled = false;
@@ -1077,6 +1109,8 @@
             console.error('Error en prueba automática DV:', error);
             // Solo ocultar tilde verde visualmente, NO cambiar estado persistente
             showConnectionStatus(false);
+            // Actualizar estado para detener monitoreo
+            setConnectionVerifiedState(false);
             // Mostrar error en el botón brevemente
             btn.innerHTML = '<i class="bi bi-exclamation-triangle me-2"></i>Error de conexión';
             btn.disabled = false;
@@ -1103,21 +1137,15 @@
         if (isConnectionVerified) {
             // Si está verificada según la base de datos, mostrar el estado verificado
             console.log('Credenciales verificadas - aplicando estado verificado');
-            btn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Credenciales verificadas';
-            btn.disabled = true;
-            showConnectionStatus(true);
+            setConnectionVerifiedState(true);
         } else if (isConnectionInProgress) {
             // Si está en proceso, mostrar estado de verificación
             console.log('Credenciales en proceso - aplicando estado de verificación');
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" style="color: white !important; border-color: white !important; border-top-color: transparent !important; opacity: 1 !important;" role="status" aria-hidden="true"></span>Verificando conexión...';
-            btn.disabled = true;
-            showConnectionStatus(false);
+            setConnectionVerifiedState('in_progress');
         } else {
             // Si no está verificada, asegurar que esté en estado inicial
             console.log('Credenciales no verificadas - aplicando estado inicial');
-            btn.innerHTML = '<i class="bi bi-shield-check me-2"></i>Conectar a DAVINCI';
-            btn.disabled = false;
-            showConnectionStatus(false);
+            setConnectionVerifiedState(false);
         }
     }
 
@@ -1166,9 +1194,14 @@
             .then(data => {
                 console.log('Estado DV actualizado desde servidor:', data);
                 
-                // Actualizar variables globales
-                isConnectionVerified = data.credentials_verified;
-                isConnectionInProgress = data.credentials_in_progress;
+                // Actualizar variables globales y estado de monitoreo
+                if (data.credentials_verified) {
+                    setConnectionVerifiedState(true);
+                } else if (data.credentials_in_progress) {
+                    setConnectionVerifiedState('in_progress');
+                } else {
+                    setConnectionVerifiedState(false);
+                }
                 
                 // Actualizar botón y checkmark según el estado
                 const btn = document.getElementById('btn-dv');
@@ -1193,8 +1226,10 @@
             });
         }
         
-        // Actualizar estado cada 2 segundos
-        setInterval(updateDVConnectionStatusFromServer, 2000);
+        // Iniciar monitoreo solo si está en proceso de verificación
+        if (isConnectionInProgress) {
+            startStatusMonitoring();
+        }
     });
 })();
 </script>
