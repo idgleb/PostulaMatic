@@ -25,57 +25,26 @@ def verify_dv_login_task(self, user_id: int, timeout_seconds: int = 90):
         except UserProfile.DoesNotExist:
             return {"success": False, "message": "Perfil no encontrado"}
 
-        # Ejecutar verificación con Playwright asincrónico
-        import asyncio
-        from .clients.dvcarreras_playwright_simple import (
-            DVCarrerasPlaywrightSimple,
-        )
-
-        async def run_check():
-            debug_paths = {}
-            async with DVCarrerasPlaywrightSimple(
+        # Ejecutar verificación con Playwright de forma SINCRÓNICA (evita conflictos de event loop)
+        from .clients.dvcarreras_playwright_simple import DVCarrerasPlaywrightSimple
+        debug_paths = {}
+        def do_sync_login():
+            client = DVCarrerasPlaywrightSimple(
                 username=profile.get_dv_username(),
                 password=profile.get_dv_password(),
+                log_callback=None,
                 storage_state_path=os.path.join("media", "dv_sessions", f"{profile.user.username}.json"),
-            ) as client:
-                success_login = await client.login()
-                if not success_login:
-                    # Capturar evidencia de la página actual
-                    try:
-                        ts = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
-                        base_dir = os.path.join("media", "debug", "dv_login", ts)
-                        os.makedirs(base_dir, exist_ok=True)
-                        screenshot_path = os.path.join(base_dir, "login.png")
-                        html_path = os.path.join(base_dir, "login.html")
-                        try:
-                            await client.page.screenshot(path=screenshot_path, full_page=True)
-                            debug_paths["screenshot_path"] = screenshot_path
-                        except Exception as se:
-                            logger.warning(f"No se pudo guardar screenshot: {se}")
-                        try:
-                            content = await client.page.content()
-                            with open(html_path, "w", encoding="utf-8") as f:
-                                f.write(content)
-                            debug_paths["html_path"] = html_path
-                        except Exception as he:
-                            logger.warning(f"No se pudo guardar HTML: {he}")
-                    except Exception as de:
-                        logger.warning(f"Error preparando directorios de debug: {de}")
-                return success_login, debug_paths
+            )
+            # Usa el método síncrono que gestiona su propio event loop
+            return client.test_login()
 
-        # Ejecutar Playwright en un hilo separado para evitar conflictos de event loop
-        result_container = {"success": False, "debug_paths": {}}
+        # Ejecutar en hilo separado para no bloquear
+        result_container = {"success": False}
 
         def thread_target():
             try:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                try:
-                    res_success, res_debug = loop.run_until_complete(run_check())
-                    result_container["success"] = res_success
-                    result_container["debug_paths"] = res_debug
-                finally:
-                    loop.close()
+                res_success = do_sync_login()
+                result_container["success"] = bool(res_success)
             except Exception as te:
                 logger.error(f"Error en hilo de verificación DV: {te}")
 
@@ -89,7 +58,7 @@ def verify_dv_login_task(self, user_id: int, timeout_seconds: int = 90):
             logger.warning("Timeout verificando login DV")
         else:
             success = bool(result_container.get("success"))
-            debug_paths = result_container.get("debug_paths") or {}
+            debug_paths = {}
 
         # Guardar resultado
         profile.set_dv_connection_verified(True if success else False)
