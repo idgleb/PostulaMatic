@@ -200,19 +200,28 @@ class DVCarrerasPlaywrightSimple:
             )
 
             # Navegar a la página de login
-            await self.page.goto(self.LOGIN_URL, wait_until="networkidle")
-            await asyncio.sleep(3)  # Esperar a que se cargue completamente
+            await self.page.goto(self.LOGIN_URL, wait_until="domcontentloaded", timeout=90000)
+            # Espera resiliente por el formulario/login o por posibles redirecciones
+            try:
+                await self.page.wait_for_selector('input[type="password"], form[action*="login"], input[name*="user" i]', timeout=90000)
+            except Exception:
+                await self._log("Timeout esperando formulario de login", "warning")
+                return False
 
             # Verificar si hay Cloudflare
             page_content = await self.page.content()
             if "Just a moment" in page_content or "cloudflare" in page_content.lower():
                 await self._log("Detectado Cloudflare, esperando...", "warning")
-                await asyncio.sleep(10)  # Esperar más tiempo para Cloudflare
+                await asyncio.sleep(15)  # Esperar más tiempo para Cloudflare
+                # Reintentar detectar el formulario tras la espera
+                try:
+                    await self.page.wait_for_selector('input[type="password"], form[action*="login"], input[name*="user" i]', timeout=60000)
+                except Exception:
+                    await self._log("Formulario de login no apareció tras Cloudflare", "error")
+                    return False
 
             # Buscar campos de login
-            username_field = await self.page.query_selector(
-                'input[name="username"], input[name="user"], input[type="text"]'
-            )
+            username_field = await self.page.query_selector('input[name="username"], input[name="user"], input[id*="user" i], input[type="text"]')
             password_field = await self.page.query_selector('input[type="password"]')
 
             if not username_field or not password_field:
