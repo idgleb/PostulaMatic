@@ -220,13 +220,15 @@ class DVCarrerasPlaywrightSimple:
             # Detección temprana de CAPTCHA y resolución
             try:
                 sitekey_early = await self.page.evaluate(
-                    "() => {\n"
-                    "  const el = document.querySelector('div[data-sitekey], iframe[src*="turnstile" i], iframe[src*="hcaptcha" i]');\n"
-                    "  if (!el) return null;\n"
-                    "  const sk = el.getAttribute('data-sitekey');\n"
-                    "  if (sk) return sk;\n"
-                    "  try { return new URL(el.src).searchParams.get('sitekey'); } catch (e) { return null; }\n"
-                    "}"
+                    """
+                    () => {
+                      const el = document.querySelector('div[data-sitekey], iframe[src*="turnstile" i], iframe[src*="hcaptcha" i]');
+                      if (!el) return null;
+                      const sk = el.getAttribute('data-sitekey');
+                      if (sk) return sk;
+                      try { return new URL(el.src).searchParams.get('sitekey'); } catch (e) { return null; }
+                    }
+                    """
                 )
                 await self._log(f"Detección temprana CAPTCHA: sitekey={sitekey_early}", "info")
                 if sitekey_early and captcha_solver.is_configured():
