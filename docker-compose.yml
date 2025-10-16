@@ -13,7 +13,7 @@ services:
   worker:
     build: .
     # env_file: .env
-    command: celery -A postulamatic worker -l info
+    command: bash -lc "xvfb-run -a celery -A postulamatic worker -l info"
     restart: unless-stopped
     networks: [web]
     volumes:
