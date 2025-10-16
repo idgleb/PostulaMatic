@@ -147,7 +147,7 @@ class DVCarrerasPlaywrightSimple:
             from matching.services.session_bootstrap import build_playwright_proxy, bootstrap_dv_session
             proxy_cfg = build_playwright_proxy()
             launch_kwargs = {
-                "headless": False,
+                "headless": True,
                 "args": [
                     "--no-sandbox",
                     "--disable-blink-features=AutomationControlled",
