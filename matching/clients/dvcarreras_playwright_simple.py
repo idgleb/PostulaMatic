@@ -216,7 +216,7 @@ class DVCarrerasPlaywrightSimple:
             )
 
             # Navegar a la página de login
-            await self.page.goto(self.LOGIN_URL, wait_until="domcontentloaded", timeout=90000)
+            await self.page.goto(self.LOGIN_URL, wait_until="domcontentloaded", timeout=120000)
             # Espera resiliente por el formulario/login o por posibles redirecciones
             try:
                 await self.page.wait_for_selector('input[type="password"], form[action*="login"], input[name*="user" i]', timeout=90000)
@@ -228,10 +228,10 @@ class DVCarrerasPlaywrightSimple:
             page_content = await self.page.content()
             if "Just a moment" in page_content or "cloudflare" in page_content.lower():
                 await self._log("Detectado Cloudflare, esperando...", "warning")
-                await asyncio.sleep(15)  # Esperar más tiempo para Cloudflare
+                await asyncio.sleep(20)  # Esperar más tiempo para Cloudflare
                 # Reintentar detectar el formulario tras la espera
                 try:
-                    await self.page.wait_for_selector('input[type="password"], form[action*="login"], input[name*="user" i]', timeout=60000)
+                    await self.page.wait_for_selector('input[type="password"], form[action*="login"], input[name*="user" i]', timeout=90000)
                 except Exception:
                     await self._log("Formulario de login no apareció tras Cloudflare", "error")
                     return False
@@ -245,14 +245,16 @@ class DVCarrerasPlaywrightSimple:
                 try:
                     site_key = await self.page.eval_on_selector(
                         'div[data-sitekey], iframe[src*="turnstile" i], iframe[src*="hcaptcha" i]',
-                        'el => el ? (el.getAttribute("data-sitekey") || new URL(el.src).searchParams.get("sitekey")) : null'
+                        'el => el ? (el.getAttribute("data-sitekey") || (el.src ? new URL(el.src).searchParams.get("sitekey") : null)) : null'
                     )
                 except Exception:
                     site_key = None
+                await self._log(f"Detección CAPTCHA: sitekey={site_key}", "info")
 
                 if site_key and captcha_solver.is_configured():
                     await self._log("Detectado CAPTCHA; intentando resolver...", "warning")
                     token = captcha_solver.solve_turnstile(self.LOGIN_URL, site_key) or captcha_solver.solve_hcaptcha(self.LOGIN_URL, site_key)
+                    await self._log(f"2Captcha token recibido={bool(token)}", "info")
                     if token:
                         # Inyectar posible respuesta en inputs estándar
                         try:

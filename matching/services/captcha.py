@@ -37,8 +37,11 @@ class CaptchaSolver:
 
     # --- Implementación 2Captcha -----------------------------------------
     def _solve_2captcha(self, method: str, page_url: str, site_key: str) -> Optional[str]:
-        """Resuelve usando 2Captcha. Retorna token o None."""
+        """Resuelve usando 2Captcha. Retorna token o None.
+        Aumenta timeout de polling a ~90s y registra pasos clave en logs.
+        """
         try:
+            logger.info(f"2Captcha: iniciando resolución ({method}) sitekey={site_key} url={page_url}")
             in_payload: Dict[str, str] = {
                 "key": self.api_key,
                 "method": method,  # "turnstile" | "hcaptcha"
@@ -55,8 +58,8 @@ class CaptchaSolver:
                 return None
             request_id = data.get("request")
 
-            # Polling por el resultado
-            for _ in range(30):  # hasta ~60s
+            # Polling por el resultado (hasta 90s)
+            for _ in range(45):
                 time.sleep(2)
                 poll = requests.get(
                     "https://2captcha.com/res.php",
@@ -71,11 +74,12 @@ class CaptchaSolver:
                 poll.raise_for_status()
                 pdata = poll.json()
                 if pdata.get("status") == 1:
+                    logger.info("2Captcha: token recibido correctamente")
                     return pdata.get("request")
                 if pdata.get("request") == "ERROR_CAPTCHA_UNSOLVABLE":
                     logger.warning("2Captcha: CAPTCHA no resoluble")
                     return None
-            logger.warning("2Captcha: timeout esperando resultado")
+            logger.warning("2Captcha: timeout esperando resultado (90s)")
             return None
         except Exception as e:
             logger.error(f"Error resolviendo CAPTCHA con 2Captcha: {e}")
