@@ -2,6 +2,8 @@ import logging
 from celery import shared_task
 import os
 from datetime import datetime
+import threading
+import asyncio
 
 from .models import UserProfile
 
@@ -61,12 +63,28 @@ def verify_dv_login_task(self, user_id: int, timeout_seconds: int = 90):
                         logger.warning(f"Error preparando directorios de debug: {de}")
                 return success_login, debug_paths
 
-        try:
-            success, debug_paths = asyncio.run(asyncio.wait_for(run_check(), timeout=timeout_seconds))
-        except asyncio.TimeoutError:
+        # Ejecutar Playwright en un hilo separado para evitar conflictos de event loop
+        result_container = {"success": False, "debug_paths": {}}
+
+        def thread_target():
+            try:
+                res_success, res_debug = asyncio.run(run_check())
+                result_container["success"] = res_success
+                result_container["debug_paths"] = res_debug
+            except Exception as te:
+                logger.error(f"Error en hilo de verificación DV: {te}")
+
+        t = threading.Thread(target=thread_target, daemon=True)
+        t.start()
+        t.join(timeout_seconds)
+
+        if t.is_alive():
             success = False
             debug_paths = {}
             logger.warning("Timeout verificando login DV")
+        else:
+            success = bool(result_container.get("success"))
+            debug_paths = result_container.get("debug_paths") or {}
 
         # Guardar resultado
         profile.set_dv_connection_verified(True if success else False)
