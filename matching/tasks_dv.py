@@ -68,9 +68,14 @@ def verify_dv_login_task(self, user_id: int, timeout_seconds: int = 90):
 
         def thread_target():
             try:
-                res_success, res_debug = asyncio.run(run_check())
-                result_container["success"] = res_success
-                result_container["debug_paths"] = res_debug
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                try:
+                    res_success, res_debug = loop.run_until_complete(run_check())
+                    result_container["success"] = res_success
+                    result_container["debug_paths"] = res_debug
+                finally:
+                    loop.close()
             except Exception as te:
                 logger.error(f"Error en hilo de verificación DV: {te}")
 
