@@ -1329,7 +1329,7 @@ def test_smtp_email_view(request):
 
 
 def test_dv_login_view(request):
-    """Vista para probar el login en INTRANET DAVINCI."""
+    """Encola verificación de login DV en Celery y devuelve task_id."""
     if not request.user.is_authenticated:
         return JsonResponse({"success": False, "message": "Usuario no autenticado"})
 
@@ -1345,55 +1345,22 @@ def test_dv_login_view(request):
                 }
             )
 
-        # Importar el cliente Playwright
-        from matching.clients.dvcarreras_playwright_simple import \
-            DVCarrerasPlaywrightSimple
+        # Marcar estado en progreso inmediatamente
+        user_profile.set_dv_connection_verified(None)
+        user_profile.save(update_fields=["dv_connection_status"])
 
-        # Crear instancia del cliente
-        client = DVCarrerasPlaywrightSimple(
-            username=user_profile.get_dv_username(),
-            password=user_profile.get_dv_password(),
+        # Encolar tarea Celery
+        from .tasks_dv import verify_dv_login_task
+
+        async_result = verify_dv_login_task.delay(request.user.id)
+
+        return JsonResponse(
+            {
+                "success": True,
+                "message": "Verificación encolada",
+                "task_id": async_result.id,
+            }
         )
-
-        # Probar login real
-        try:
-            # Intentar login
-            success = client.test_login()
-
-            if success:
-                # Actualizar estado de conexión en la base de datos
-                user_profile.set_dv_connection_verified(True)
-                user_profile.save()
-
-                return JsonResponse(
-                    {
-                        "success": True,
-                        "message": f"✅ Conexión a INTRANET DAVINCI verificada correctamente (Playwright). Usuario: {user_profile.dv_username}",
-                    }
-                )
-            else:
-                # Actualizar estado de conexión en la base de datos
-                user_profile.set_dv_connection_verified(False)
-                user_profile.save()
-
-                return JsonResponse(
-                    {
-                        "success": False,
-                        "message": "❌ Error de autenticación en INTRANET DAVINCI. Verifica usuario y contraseña.",
-                    }
-                )
-
-        except Exception as login_error:
-            # Actualizar estado de conexión en la base de datos
-            user_profile.set_dv_connection_verified(False)
-            user_profile.save()
-
-            return JsonResponse(
-                {
-                    "success": False,
-                    "message": f"❌ Error de conexión: {str(login_error)}",
-                }
-            )
 
     except UserProfile.DoesNotExist:
         return JsonResponse(

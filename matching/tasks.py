@@ -1053,5 +1053,11 @@ from .tasks_email import (
     send_bulk_emails_task,
     process_matching_and_send_emails_task,
     cleanup_old_email_logs_task,
-    send_email_reminder_task
+    send_email_reminder_task,
 )
+
+# Intentar importar la tarea de verificación DV (puede no existir aún en algunos entornos)
+try:  # pragma: no cover
+    from .tasks_dv import verify_dv_login_task  # noqa: F401
+except Exception:
+    pass

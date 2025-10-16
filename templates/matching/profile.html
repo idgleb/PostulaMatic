@@ -1085,10 +1085,17 @@
         })
         .then(response => response.json())
         .then(data => {
-            if (data.success) {
+            if (data.success && data.task_id) {
+                // Verificación encolada: pasar a EN PROCESO y monitorear
+                setConnectionVerifiedState('in_progress');
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" style="color: white !important; border-color: white !important; border-top-color: transparent !important; opacity: 1 !important;" role="status" aria-hidden="true"></span>Verificando conexión...';
+                btn.disabled = true;
+                // Iniciar monitoreo periódico por estado persistido
+                startStatusMonitoring();
+            } else if (data.success) {
+                // Compatibilidad por si la vista devuelve verificación directa
                 btn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Credenciales verificadas';
                 btn.disabled = true;
-                // Actualizar estado persistente y mostrar tilde verde
                 setConnectionVerifiedState(true);
                 showConnectionStatus(true);
             } else {
