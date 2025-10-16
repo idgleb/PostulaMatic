@@ -1092,6 +1092,10 @@
                 btn.disabled = true;
                 // Iniciar monitoreo periódico por estado persistido
                 startStatusMonitoring();
+                // Extra: ping inmediato para acelerar el primer refresh
+                if (typeof window.updateDVConnectionStatusFromServer === 'function') {
+                    window.updateDVConnectionStatusFromServer();
+                }
             } else if (data.success) {
                 // Compatibilidad por si la vista devuelve verificación directa
                 btn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Credenciales verificadas';

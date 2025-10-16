@@ -1352,15 +1352,30 @@ def test_dv_login_view(request):
         # Encolar tarea Celery
         from .tasks_dv import verify_dv_login_task
 
-        async_result = verify_dv_login_task.delay(request.user.id)
-
-        return JsonResponse(
-            {
-                "success": True,
-                "message": "Verificación encolada",
-                "task_id": async_result.id,
-            }
-        )
+        try:
+            async_result = verify_dv_login_task.delay(request.user.id)
+            logger.info(
+                "DV verify task enqueued",
+                extra={"user_id": request.user.id, "task_id": async_result.id},
+            )
+            return JsonResponse(
+                {
+                    "success": True,
+                    "message": "Verificación encolada",
+                    "task_id": async_result.id,
+                }
+            )
+        except Exception as e:
+            # Revertir estado a not_verified si no se pudo encolar
+            user_profile.set_dv_connection_verified(False)
+            user_profile.save(update_fields=["dv_connection_status"])
+            logger.error(f"No se pudo encolar verify_dv_login_task: {e}")
+            return JsonResponse(
+                {
+                    "success": False,
+                    "message": "No se pudo iniciar la verificación. Intenta nuevamente.",
+                }
+            )
 
     except UserProfile.DoesNotExist:
         return JsonResponse(
