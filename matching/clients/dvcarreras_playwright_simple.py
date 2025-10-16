@@ -103,7 +103,7 @@ class DVCarrerasPlaywrightSimple:
     LOGIN_URL = "https://dvcarreras.davinci.edu.ar/login.html"
     JOB_BOARD_URL = "https://dvcarreras.davinci.edu.ar/job_board-0.html"
 
-    def __init__(self, username: str, password: str, log_callback=None):
+    def __init__(self, username: str, password: str, log_callback=None, cookies: str | None = None):
         self.username = username
         self.password = password
         self.browser = None
@@ -113,6 +113,7 @@ class DVCarrerasPlaywrightSimple:
         self.login_attempts = 0
         self.max_login_attempts = 2
         self.log_callback = log_callback
+        self.initial_cookies_json = cookies
 
     async def _log(self, message: str, log_type: str = "info"):
         """Envía un log a través del callback si está disponible."""
@@ -161,6 +162,22 @@ class DVCarrerasPlaywrightSimple:
 
             # Crear página
             self.page = await self.context.new_page()
+
+            # Cargar cookies iniciales si fueron provistas
+            if self.initial_cookies_json:
+                try:
+                    import json
+                    cookies = json.loads(self.initial_cookies_json)
+                    for c in cookies:
+                        domain = c.get('domain')
+                        if domain and domain.startswith('https://'):
+                            c['domain'] = domain.replace('https://', '')
+                        if domain and domain.startswith('http://'):
+                            c['domain'] = domain.replace('http://', '')
+                    await self.context.add_cookies(cookies)
+                    await self._log("Cookies DV iniciales cargadas en el contexto", "info")
+                except Exception as e:
+                    await self._log(f"No se pudieron cargar cookies iniciales: {e}", "warning")
 
             # Inyectar scripts anti-detección
             await self.page.add_init_script(

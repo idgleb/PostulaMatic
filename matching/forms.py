@@ -183,6 +183,27 @@ class DVCredentialsForm(forms.ModelForm):
                 field.widget.attrs.update({"class": "form-control"})
 
 
+class DVCookiesForm(forms.ModelForm):
+    """Formulario para pegar cookies DV (JSON)."""
+
+    dv_cookies = forms.CharField(
+        widget=forms.Textarea(
+            attrs={
+                "class": "form-control",
+                "rows": 6,
+                "placeholder": "Pega aquí el JSON de cookies exportado (incluye cf_clearance)"
+            }
+        ),
+        required=False,
+        help_text="Se almacenan cifradas y se usan para evitar CAPTCHA.",
+        label="Cookies DV (JSON)",
+    )
+
+    class Meta:
+        model = UserProfile
+        fields = ["dv_cookies"]
+
+
 class MatchingConfigForm(forms.ModelForm):
     """Formulario para configuración de matching."""
 

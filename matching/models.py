@@ -28,6 +28,8 @@ class UserProfile(models.Model):
         max_length=255, blank=True, null=True
     )  # Usuario público (no encriptado)
     dv_password = models.TextField(blank=True, null=True)  # Encriptado automáticamente
+    # Cookies de sesión DV (JSON) - guardadas cifradas
+    dv_cookies = models.TextField(blank=True, null=True, help_text="Cookies DV en formato JSON (cifradas)")
     dv_connection_status = models.CharField(
         max_length=20,
         choices=[
@@ -100,6 +102,28 @@ class UserProfile(models.Model):
             self.dv_password = encrypt_credential(password)
         else:
             self.dv_password = ""
+
+    # Manejo de cookies DV
+    def get_dv_cookies(self):
+        """Retorna cookies DV como JSON string (desencriptado) o cadena vacía."""
+        if not self.dv_cookies:
+            return ""
+        try:
+            return decrypt_credential(self.dv_cookies)
+        except Exception:
+            logger.warning("No se pudieron desencriptar cookies DV, devolviendo texto plano")
+            return self.dv_cookies
+
+    def set_dv_cookies(self, cookies_json: str):
+        """Establece cookies DV cifradas a partir de un JSON string (tal cual exportado)."""
+        if cookies_json:
+            try:
+                self.dv_cookies = encrypt_credential(cookies_json)
+            except Exception:
+                logger.warning("No se pudieron encriptar cookies DV, guardando en texto plano")
+                self.dv_cookies = cookies_json
+        else:
+            self.dv_cookies = ""
 
     def set_dv_connection_verified(self, verified=True):
         """Establece el estado de conexión DV."""
