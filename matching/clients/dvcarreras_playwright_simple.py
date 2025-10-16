@@ -9,6 +9,8 @@ import logging
 from dataclasses import dataclass
 from typing import List
 
+from matching.services.captcha import captcha_solver
+
 logger = logging.getLogger(__name__)
 
 
@@ -103,7 +105,7 @@ class DVCarrerasPlaywrightSimple:
     LOGIN_URL = "https://dvcarreras.davinci.edu.ar/login.html"
     JOB_BOARD_URL = "https://dvcarreras.davinci.edu.ar/job_board-0.html"
 
-    def __init__(self, username: str, password: str, log_callback=None, cookies: str | None = None):
+    def __init__(self, username: str, password: str, log_callback=None):
         self.username = username
         self.password = password
         self.browser = None
@@ -113,7 +115,6 @@ class DVCarrerasPlaywrightSimple:
         self.login_attempts = 0
         self.max_login_attempts = 2
         self.log_callback = log_callback
-        self.initial_cookies_json = cookies
 
     async def _log(self, message: str, log_type: str = "info"):
         """Envía un log a través del callback si está disponible."""
@@ -162,22 +163,6 @@ class DVCarrerasPlaywrightSimple:
 
             # Crear página
             self.page = await self.context.new_page()
-
-            # Cargar cookies iniciales si fueron provistas
-            if self.initial_cookies_json:
-                try:
-                    import json
-                    cookies = json.loads(self.initial_cookies_json)
-                    for c in cookies:
-                        domain = c.get('domain')
-                        if domain and domain.startswith('https://'):
-                            c['domain'] = domain.replace('https://', '')
-                        if domain and domain.startswith('http://'):
-                            c['domain'] = domain.replace('http://', '')
-                    await self.context.add_cookies(cookies)
-                    await self._log("Cookies DV iniciales cargadas en el contexto", "info")
-                except Exception as e:
-                    await self._log(f"No se pudieron cargar cookies iniciales: {e}", "warning")
 
             # Inyectar scripts anti-detección
             await self.page.add_init_script(
@@ -240,6 +225,33 @@ class DVCarrerasPlaywrightSimple:
             # Buscar campos de login
             username_field = await self.page.query_selector('input[name="username"], input[name="user"], input[id*="user" i], input[type="text"]')
             password_field = await self.page.query_selector('input[type="password"]')
+
+            if not username_field or not password_field:
+                # Intentar resolver CAPTCHA si está presente
+                try:
+                    site_key = await self.page.eval_on_selector(
+                        'div[data-sitekey], iframe[src*="turnstile" i], iframe[src*="hcaptcha" i]',
+                        'el => el ? (el.getAttribute("data-sitekey") || new URL(el.src).searchParams.get("sitekey")) : null'
+                    )
+                except Exception:
+                    site_key = None
+
+                if site_key and captcha_solver.is_configured():
+                    await self._log("Detectado CAPTCHA; intentando resolver...", "warning")
+                    token = captcha_solver.solve_turnstile(self.LOGIN_URL, site_key) or captcha_solver.solve_hcaptcha(self.LOGIN_URL, site_key)
+                    if token:
+                        # Inyectar posible respuesta en inputs estándar
+                        try:
+                            await self.page.evaluate(
+                                "(t)=>{let i=document.querySelector('input[name="cf-turnstile-response"], input[name="h-captcha-response"]'); if(i){i.value=t;} }",
+                                token,
+                            )
+                            await asyncio.sleep(2)
+                            # Reintentar localizar campos
+                            username_field = await self.page.query_selector('input[name="username"], input[name="user"], input[id*="user" i], input[type="text"]')
+                            password_field = await self.page.query_selector('input[type="password"]')
+                        except Exception:
+                            pass
 
             if not username_field or not password_field:
                 await self._log(
