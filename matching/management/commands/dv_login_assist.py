@@ -5,8 +5,8 @@ from pathlib import Path
 from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth.models import User
 
-from matching.clients.dvcarreras_playwright_simple import (
-    DVCarrerasPlaywrightSimple,
+from matching.clients.dvcarreras_playwright_flaresolverr import (
+    DVCarrerasPlaywrightFlareSolverr,
 )
 
 
@@ -37,7 +37,7 @@ class Command(BaseCommand):
         Path(os.path.dirname(out_path)).mkdir(parents=True, exist_ok=True)
 
         async def run():
-            client = DVCarrerasPlaywrightSimple(
+            client = DVCarrerasPlaywrightFlareSolverr(
                 username=profile.get_dv_username(),
                 password=profile.get_dv_password(),
                 log_callback=None,

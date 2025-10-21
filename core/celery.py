@@ -7,7 +7,12 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "postulamatic.settings")
 
 app = Celery("postulamatic")
 app.config_from_object("django.conf:settings", namespace="CELERY")
-app.autodiscover_tasks()
+
+# Especificar paquetes donde buscar tareas
+app.autodiscover_tasks(['matching'], related_name='tasks')
+app.autodiscover_tasks(['matching'], related_name='tasks_dv')
+app.autodiscover_tasks(['matching'], related_name='tasks_email')
+app.autodiscover_tasks(['matching'], related_name='tasks_stealth')
 
 # Configuración de tareas periódicas
 app.conf.beat_schedule = {

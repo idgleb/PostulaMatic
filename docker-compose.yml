@@ -13,8 +13,10 @@ services:
   worker:
     build: .
     # env_file: .env
-    command: bash -lc "xvfb-run -a celery -A postulamatic worker -l info"
+    command: bash -c "cd /app && celery -A postulamatic worker -l info"
     restart: unless-stopped
+    environment:
+      - DISPLAY=:99
     networks: [web]
     volumes:
       - .:/app
@@ -34,6 +36,18 @@ services:
     image: redis:7-alpine
     restart: unless-stopped
     networks: [web]
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    restart: unless-stopped
+    networks: [web]
+    ports:
+      - "8191:8191"
+    environment:
+      - LOG_LEVEL=info
+      - LOG_HTML=false
+      - HEADLESS=true
+      - TEST_URL=https://www.google.com
 
 networks:
   web:

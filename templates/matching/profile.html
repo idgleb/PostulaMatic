@@ -773,91 +773,72 @@
             clonedBtn.addEventListener('click', handleSmtpTestClick);
         }
 
-        // DV Form
+        // DV Form - CON PROTECCIÓN: Solo 1 tarea a la vez + timeout de 2 minutos
         if (dvForm) {
             dvForm.addEventListener('submit', function(e) {
                 e.preventDefault();
                 
-                // Validar contraseña INTRANET DAVINCI
+                // Validar contraseña
                 const dvPassword = document.getElementById('id_dv_password');
                 if (dvPassword && (!dvPassword.value || dvPassword.value.trim() === '')) {
-                    // Solo ocultar tilde verde visualmente, NO cambiar estado persistente
-                    showConnectionStatus(false);
                     const btn = document.getElementById('btn-dv');
                     if (btn) {
                         btn.innerHTML = '<i class="bi bi-exclamation-triangle me-2"></i>Contraseña obligatoria';
                         setTimeout(() => {
-                            if (!isConnectionVerified) {
-                                btn.innerHTML = '<i class="bi bi-shield-check me-2"></i>Conectar a DAVINCI';
-                            }
+                            btn.innerHTML = '<i class="bi bi-shield-check me-2"></i>Probar Conexión DV';
                         }, 2000);
                     }
                     return;
                 }
                 
-                // Resetear la variable de campos modificados al iniciar el proceso
-                dvFieldsModified = false;
-                console.log('Iniciando proceso DV - reactivando actualizaciones automáticas');
-                
-                // Desactivar botón y mostrar spinner
                 const btn = document.getElementById('btn-dv');
                 if (btn) {
-                    // Establecer estado "en proceso" al iniciar
-                    setConnectionVerifiedState(null); // null = in_progress
-                    
-                    // Usar texto hardcodeado para evitar problemas con el estado previo del botón
-                    const originalText = '<i class="bi bi-shield-check me-2"></i>Conectar a DAVINCI';
                     btn.disabled = true;
-                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" style="color: white !important; border-color: white !important; border-top-color: transparent !important; opacity: 1 !important;" role="status" aria-hidden="true"></span>Conectando...';
-                    
-                    const formData = new FormData(this);
-                    
-                    fetch(this.action, {
-                        method: 'POST',
-                        body: formData,
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest',
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando y verificando...';
+                }
+                
+                // Guardar credenciales
+                const formData = new FormData(this);
+                
+                fetch(this.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Credenciales guardadas, ahora iniciar verificación
+                        if (btn) {
+                            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Verificando login...';
                         }
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            // Cambiar botón a estado de verificación automática
-                            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" style="color: white !important; border-color: white !important; border-top-color: transparent !important; opacity: 1 !important;" role="status" aria-hidden="true"></span>Verificando conexión...';
-                            btn.disabled = true;
-                            
-                            // Ejecutar automáticamente la prueba de conexión
-                            autoTestDVConnection();
-                        } else {
-                            // Solo ocultar tilde verde visualmente, NO cambiar estado persistente
-                            showConnectionStatus(false);
-                            // Mostrar error en el botón brevemente
-                            btn.innerHTML = '<i class="bi bi-exclamation-triangle me-2"></i>Error: ' + data.message.substring(0, 30) + '...';
+                        
+                        // Marcar que vamos a iniciar verificación
+                        dvFieldsModified = false;
+                        
+                        // Iniciar verificación automática (con protección de 1 tarea)
+                        autoTestDVConnection();
+                    } else {
+                        if (btn) {
+                            btn.innerHTML = '<i class="bi bi-exclamation-triangle me-2"></i>Error al guardar';
                             btn.disabled = false;
-                            
-                            // Restaurar después de 3 segundos solo si no estaba previamente verificada
                             setTimeout(() => {
-                                if (!isConnectionVerified) {
-                                    btn.innerHTML = originalText;
-                                }
-                            }, 3000);
+                                btn.innerHTML = '<i class="bi bi-shield-check me-2"></i>Probar Conexión DV';
+                            }, 2000);
                         }
-                    })
-                    .catch(error => {
-                        // Solo ocultar tilde verde visualmente, NO cambiar estado persistente
-                        showConnectionStatus(false);
-                        // Mostrar error en el botón brevemente
+                    }
+                })
+                .catch(error => {
+                    if (btn) {
                         btn.innerHTML = '<i class="bi bi-exclamation-triangle me-2"></i>Error de conexión';
                         btn.disabled = false;
-                        
-                        // Restaurar después de 3 segundos solo si no estaba previamente verificada
                         setTimeout(() => {
-                            if (!isConnectionVerified) {
-                                btn.innerHTML = originalText;
-                            }
-                        }, 3000);
-                    });
-                }
+                            btn.innerHTML = '<i class="bi bi-shield-check me-2"></i>Probar Conexión DV';
+                        }, 2000);
+                    }
+                });
             });
         }
 
@@ -1032,13 +1013,52 @@
         }
     }
 
+    // Variables globales para timeout
+    let monitoringStartTime = null;
+    const MAX_MONITORING_TIME = 120000; // 2 minutos máximo
+    
     // Función para iniciar el monitoreo de estado
     function startStatusMonitoring() {
+        // Si ya hay un intervalo activo, NO crear otro
         if (statusCheckInterval) {
-            clearInterval(statusCheckInterval);
+            console.log('⚠️ Monitoreo ya activo, no se inicia uno nuevo');
+            return;
         }
         
+        // Iniciar el tiempo de monitoreo
+        monitoringStartTime = Date.now();
+        console.log('🕐 Monitoreo iniciado. Timeout en 2 minutos.');
+        
         statusCheckInterval = setInterval(() => {
+            // Verificar timeout
+            if (monitoringStartTime) {
+                const elapsedTime = Date.now() - monitoringStartTime;
+                const remainingSeconds = Math.floor((MAX_MONITORING_TIME - elapsedTime) / 1000);
+                
+                if (elapsedTime > MAX_MONITORING_TIME) {
+                    console.warn('⚠️ TIMEOUT alcanzado (2 minutos). Deteniendo polling.');
+                    stopStatusMonitoring();
+                    
+                    // Reset del estado
+                    isConnectionInProgress = false;
+                    
+                    // Mostrar mensaje de error
+                    const btnDV = document.getElementById('btn-dv');
+                    if (btnDV) {
+                        btnDV.innerHTML = '<i class="bi bi-exclamation-triangle me-2"></i>Timeout - Intentar de nuevo';
+                        btnDV.disabled = false;
+                        btnDV.classList.remove('btn-warning');
+                        btnDV.classList.add('btn-danger');
+                    }
+                    return;
+                }
+                
+                // Log cada 10 segundos
+                if (remainingSeconds % 10 === 0 && remainingSeconds > 0) {
+                    console.log(`⏱️ Tiempo restante: ${remainingSeconds}s`);
+                }
+            }
+            
             // Llamada protegida: puede no estar definida hasta que se inicialice el DOM
             if (typeof window.updateDVConnectionStatusFromServer === 'function') {
                 window.updateDVConnectionStatusFromServer();
@@ -1049,7 +1069,7 @@
             }
         }, 2000);
         
-        console.log('Monitoreo de estado DV iniciado');
+        console.log('✅ Monitoreo de estado DV iniciado (timeout: 2 minutos)');
     }
 
     // Función para detener el monitoreo de estado
@@ -1057,7 +1077,8 @@
         if (statusCheckInterval) {
             clearInterval(statusCheckInterval);
             statusCheckInterval = null;
-            console.log('Monitoreo de estado DV detenido');
+            monitoringStartTime = null; // Resetear el tiempo de inicio
+            console.log('🛑 Monitoreo de estado DV detenido');
         }
     }
 
@@ -1107,16 +1128,28 @@
                 showConnectionStatus(false);
                 // Actualizar estado para detener monitoreo
                 setConnectionVerifiedState(false);
-                // Mostrar error en el botón brevemente
-                btn.innerHTML = '<i class="bi bi-exclamation-triangle me-2"></i>Error: ' + data.message.substring(0, 30) + '...';
-                btn.disabled = false;
                 
-                // Restaurar después de 3 segundos solo si no estaba previamente verificada
-                setTimeout(() => {
-                    if (!isConnectionVerified) {
-                        btn.innerHTML = '<i class="bi bi-shield-check me-2"></i>Conectar a DAVINCI';
-                    }
-                }, 3000);
+                // Verificar si el error es por CAPTCHA/Cloudflare
+                if (data.message && (data.message.includes('Cloudflare') || data.message.includes('CAPTCHA') || data.message.includes('Turnstile') || data.message.includes('timeout'))) {
+                    // Mostrar opción de login manual
+                    btn.innerHTML = '<i class="bi bi-shield-exclamation me-2"></i>Resolver CAPTCHA manualmente';
+                    btn.disabled = false;
+                    btn.onclick = function() { autoTestDVConnectionManual(); };
+                    
+                    // Mostrar notificación explicativa
+                    showNotification('warning', 'Cloudflare está bloqueando la verificación automática. Haz clic en "Resolver CAPTCHA manualmente" para abrir un navegador y resolver el CAPTCHA una sola vez.');
+                } else {
+                    // Error normal
+                    btn.innerHTML = '<i class="bi bi-exclamation-triangle me-2"></i>Error: ' + data.message.substring(0, 30) + '...';
+                    btn.disabled = false;
+                    
+                    // Restaurar después de 3 segundos solo si no estaba previamente verificada
+                    setTimeout(() => {
+                        if (!isConnectionVerified) {
+                            btn.innerHTML = '<i class="bi bi-shield-check me-2"></i>Conectar a DAVINCI';
+                        }
+                    }, 3000);
+                }
             }
         })
         .catch(error => {
@@ -1130,6 +1163,78 @@
             btn.disabled = false;
             
             // Restaurar después de 3 segundos solo si no estaba previamente verificada
+            setTimeout(() => {
+                if (!isConnectionVerified) {
+                    btn.innerHTML = '<i class="bi bi-shield-check me-2"></i>Conectar a DAVINCI';
+                }
+            }, 3000);
+        });
+    }
+
+    // Función para ejecutar login manual asistido
+    function autoTestDVConnectionManual() {
+        const btn = document.getElementById('btn-dv');
+        
+        if (!btn) {
+            console.error('Botón DV no encontrado');
+            return;
+        }
+        
+        // Mostrar mensaje de login manual
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" style="color: white !important; border-color: white !important; border-top-color: transparent !important; opacity: 1 !important;" role="status" aria-hidden="true"></span>Iniciando login manual...';
+        btn.disabled = true;
+        
+        // Crear FormData para la prueba
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        
+        // Ejecutar la prueba de login manual
+        fetch('{% url "dv_login_manual" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.task_id) {
+                // Login manual iniciado: pasar a EN PROCESO y monitorear
+                setConnectionVerifiedState('in_progress');
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" style="color: white !important; border-color: white !important; border-top-color: transparent !important; opacity: 1 !important;" role="status" aria-hidden="true"></span>Resolviendo CAPTCHA manualmente...';
+                btn.disabled = true;
+                // Iniciar monitoreo periódico por estado persistido
+                startStatusMonitoring();
+                // Extra: ping inmediato para acelerar el primer refresh
+                if (typeof window.updateDVConnectionStatusFromServer === 'function') {
+                    window.updateDVConnectionStatusFromServer();
+                }
+                
+                // Mostrar mensaje informativo
+                showNotification('info', 'Se abrirá un navegador. Resuelve el CAPTCHA manualmente y espera a que se complete la verificación.');
+            } else {
+                // Error en login manual
+                showConnectionStatus(false);
+                setConnectionVerifiedState(false);
+                btn.innerHTML = '<i class="bi bi-exclamation-triangle me-2"></i>Error: ' + data.message.substring(0, 30) + '...';
+                btn.disabled = false;
+                
+                // Restaurar después de 3 segundos
+                setTimeout(() => {
+                    if (!isConnectionVerified) {
+                        btn.innerHTML = '<i class="bi bi-shield-check me-2"></i>Conectar a DAVINCI';
+                    }
+                }, 3000);
+            }
+        })
+        .catch(error => {
+            console.error('Error en login manual DV:', error);
+            showConnectionStatus(false);
+            setConnectionVerifiedState(false);
+            btn.innerHTML = '<i class="bi bi-exclamation-triangle me-2"></i>Error de conexión';
+            btn.disabled = false;
+            
+            // Restaurar después de 3 segundos
             setTimeout(() => {
                 if (!isConnectionVerified) {
                     btn.innerHTML = '<i class="bi bi-shield-check me-2"></i>Conectar a DAVINCI';
@@ -1229,9 +1334,23 @@
                         btn.disabled = true;
                         showConnectionStatus(false);
                     } else {
-                        btn.innerHTML = '<i class="bi bi-shield-check me-2"></i>Conectar a DAVINCI';
-                        btn.disabled = false;
-                        showConnectionStatus(false);
+                        // Si tiene credenciales pero no está verificado, mostrar botón de login manual
+                        if (data.has_credentials) {
+                            btn.innerHTML = '<i class="bi bi-shield-exclamation me-2"></i>Resolver CAPTCHA manualmente';
+                            btn.disabled = false;
+                            btn.onclick = function() { autoTestDVConnectionManual(); };
+                            showConnectionStatus(false);
+                            
+                            // Mostrar notificación explicativa solo una vez
+                            if (!window.captchaNotificationShown) {
+                                showNotification('warning', 'Cloudflare está bloqueando la verificación automática. Haz clic en "Resolver CAPTCHA manualmente" para abrir un navegador y resolver el CAPTCHA una sola vez.');
+                                window.captchaNotificationShown = true;
+                            }
+                        } else {
+                            btn.innerHTML = '<i class="bi bi-shield-check me-2"></i>Conectar a DAVINCI';
+                            btn.disabled = false;
+                            showConnectionStatus(false);
+                        }
                     }
                 }
             })
@@ -1241,6 +1360,29 @@
         }
         // Exponer función al ámbito global para que otros bloques puedan usarla con seguridad
         window.updateDVConnectionStatusFromServer = updateDVConnectionStatusFromServer;
+    
+    // Función para mostrar notificaciones
+    function showNotification(type, message) {
+        // Crear elemento de notificación
+        const notification = document.createElement('div');
+        notification.className = `alert alert-${type === 'info' ? 'info' : type === 'warning' ? 'warning' : 'danger'} alert-dismissible fade show position-fixed`;
+        notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 400px;';
+        notification.innerHTML = `
+            <i class="bi bi-${type === 'info' ? 'info-circle' : type === 'warning' ? 'exclamation-triangle' : 'x-circle'} me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        // Agregar al body
+        document.body.appendChild(notification);
+        
+        // Auto-remover después de 10 segundos
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 10000);
+    }
         
         // Iniciar monitoreo solo si está en proceso de verificación
         if (isConnectionInProgress) {

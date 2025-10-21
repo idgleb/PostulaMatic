@@ -30,6 +30,8 @@ urlpatterns = [
     path("estado-tareas/", views.task_status_view, name="task_status"),
     path("test-smtp-email/", views.test_smtp_email_view, name="test_smtp_email"),
     path("test-dv-login/", views.test_dv_login_view, name="test_dv_login"),
+    path("test-dv-login-task/", views.test_dv_login_task_view, name="test_dv_login_task"),
+    path("dv-login-manual/", views.dv_login_manual_view, name="dv_login_manual"),
     path(
         "dv-connection-status/",
         views.dv_connection_status_view,
@@ -38,6 +40,15 @@ urlpatterns = [
     path("delete-all-jobs/", views.delete_all_jobs_view, name="delete_all_jobs"),
     path(
         "scraping-logs/<str:task_id>/", views.scraping_logs_view, name="scraping_logs"
+    ),
+    path(
+        "scraping-logs/", views.scraping_logs_general_view, name="scraping_logs_general"
+    ),
+    path(
+        "latest-screenshot/<str:task_id>/", views.latest_screenshot_view, name="latest_screenshot"
+    ),
+    path(
+        "clear-session/", views.clear_session_view, name="clear_session"
     ),
     path("add-scraping-log/", views.add_scraping_log_view, name="add_scraping_log"),
     path(
@@ -57,6 +68,7 @@ urlpatterns = [
     path("matching-recalculation-status/<str:task_id>/", views.matching_recalculation_status_view, name="matching_recalculation_status"),
     path("recalculation-modal-partial/", views.recalculation_modal_partial_view, name="recalculation_modal_partial"),
     path("start-recalculation/", views.start_recalculation_view, name="start_recalculation"),
+    path("calculate-matches/", views.calculate_matches_view, name="calculate_matches"),
     
     # URLs para generación de emails
     path("email-generation-test/", views_email_generation.email_generation_test_view, name="email_generation_test"),

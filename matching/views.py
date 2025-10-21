@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponse, Http404
+from matching.tasks_dv import verify_dv_login_task
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
@@ -602,9 +603,8 @@ def test_scraper_view(request):
                 existing_task_id = None
                 for worker, tasks in active_tasks.items():
                     for t in tasks:
-                        if t.get("name", "").endswith(
-                            "scrape_dvcarreras_jobs_playwright"
-                        ):
+                        task_name = t.get("name", "")
+                        if task_name.endswith("scrape_dvcarreras_jobs_stealth") or task_name.endswith("scrape_dvcarreras_jobs_playwright"):
                             args = t.get("args") or ""
                             # args suele ser string como "(user_id,)" o lista
                             if str(request.user.id) in str(args):
@@ -630,23 +630,48 @@ def test_scraper_view(request):
                 # Si falla la inspección, continuamos y lanzamos la tarea
                 pass
 
-            # Iniciar tarea de scraping con PLAYWRIGHT
-            from .tasks import scrape_dvcarreras_jobs_playwright
+            # CANCELACIÓN SEGURA: Revocar tareas anteriores sin terminate=True
+            from celery import current_app
+            
+            try:
+                # Obtener tareas activas y reservadas
+                inspect = current_app.control.inspect()
+                active_tasks = inspect.active() or {}
+                reserved_tasks = inspect.reserved() or {}
+                
+                tasks_to_revoke = []
+                
+                # Buscar tareas de scraping para este usuario
+                for worker, tasks in {**active_tasks, **reserved_tasks}.items():
+                    for task in tasks:
+                        task_name = task.get('name', '')
+                        task_args = str(task.get('args', ''))
+                        
+                        # Buscar tareas de scraping para este usuario
+                        if ('scrape_dvcarreras_jobs_stealth' in task_name or 
+                            'scrape_dvcarreras_jobs_playwright' in task_name) and str(request.user.id) in task_args:
+                            tasks_to_revoke.append(task.get('id'))
+                
+                # Revocar tareas encontradas (SIN terminate=True para evitar duplicación)
+                if tasks_to_revoke:
+                    for task_id in tasks_to_revoke:
+                        current_app.control.revoke(task_id, terminate=False)  # SEGURO: no termina abruptamente
+                    logger.info(f"🛡️ Canceladas {len(tasks_to_revoke)} tareas de scraping previas para usuario {request.user.id}")
+                    
+            except Exception as e:
+                logger.warning(f"⚠️ No se pudieron cancelar tareas previas: {e}")
 
-            task = scrape_dvcarreras_jobs_playwright.delay(request.user.id)
+            # Iniciar tarea de scraping con STEALTH
+            from .tasks_stealth import scrape_dvcarreras_jobs_stealth
 
-            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-                return JsonResponse(
-                    {
-                        "success": True,
-                        "task_id": task.id,
-                        "message": f"Scraping con PLAYWRIGHT iniciado (navegador real). Task ID: {task.id}",
-                    }
-                )
+            task = scrape_dvcarreras_jobs_stealth.delay(request.user.id)
 
-            messages.success(
-                request,
-                f"Scraping con PLAYWRIGHT iniciado (navegador real). Task ID: {task.id}",
+            # Solo devolver el task_id, sin mensajes
+            return JsonResponse(
+                {
+                    "success": True,
+                    "task_id": task.id,
+                }
             )
 
         except UserProfile.DoesNotExist:
@@ -1345,6 +1370,39 @@ def test_dv_login_view(request):
                 }
             )
 
+        # PROTECCIÓN: Cancelar tareas anteriores de verificación DV para este usuario
+        try:
+            from celery import current_app
+            inspect = current_app.control.inspect()
+            active_tasks = inspect.active() or {}
+            reserved_tasks = inspect.reserved() or {}
+            
+            tasks_to_revoke = []
+            
+            # Buscar en tareas activas
+            for worker, tasks in active_tasks.items():
+                for task in tasks:
+                    if 'verify_dv_login_task' in task.get('name', ''):
+                        task_args = str(task.get('args', ''))
+                        if str(request.user.id) in task_args:
+                            tasks_to_revoke.append(task.get('id'))
+            
+            # Buscar en tareas reservadas
+            for worker, tasks in reserved_tasks.items():
+                for task in tasks:
+                    if 'verify_dv_login_task' in task.get('name', ''):
+                        task_args = str(task.get('args', ''))
+                        if str(request.user.id) in task_args:
+                            tasks_to_revoke.append(task.get('id'))
+            
+            # Revocar tareas encontradas
+            if tasks_to_revoke:
+                for task_id in tasks_to_revoke:
+                    current_app.control.revoke(task_id, terminate=True)
+                logger.info(f"🛡️ Revocadas {len(tasks_to_revoke)} tareas previas de verificación DV para usuario {request.user.id}")
+        except Exception as e:
+            logger.warning(f"⚠️ No se pudieron cancelar tareas previas: {e}")
+        
         # Marcar estado en progreso inmediatamente
         user_profile.set_dv_connection_verified(None)
         user_profile.save(update_fields=["dv_connection_status"])
@@ -1386,6 +1444,115 @@ def test_dv_login_view(request):
 
 
 @login_required
+def test_dv_login_task_view(request):
+    """Endpoint GET para disparar tarea DV sin CSRF (temporal)."""
+    try:
+        # Obtener credenciales del usuario actual
+        user_profile = UserProfile.objects.get(user=request.user)
+        
+        if not user_profile.dv_username or not user_profile.dv_password:
+            return JsonResponse({"success": False, "message": "Credenciales DV no configuradas"})
+        
+        # PROTECCIÓN: Cancelar tareas anteriores
+        try:
+            from celery import current_app
+            inspect = current_app.control.inspect()
+            active_tasks = inspect.active() or {}
+            reserved_tasks = inspect.reserved() or {}
+            
+            tasks_to_revoke = []
+            for worker, tasks in {**active_tasks, **reserved_tasks}.items():
+                for task in tasks:
+                    if 'verify_dv_login_task' in task.get('name', '') and str(request.user.id) in str(task.get('args', '')):
+                        tasks_to_revoke.append(task.get('id'))
+            
+            if tasks_to_revoke:
+                for task_id in tasks_to_revoke:
+                    current_app.control.revoke(task_id, terminate=True)
+                logger.info(f"🛡️ Revocadas {len(tasks_to_revoke)} tareas previas para usuario {request.user.id}")
+        except Exception as e:
+            logger.warning(f"⚠️ No se pudieron cancelar tareas previas: {e}")
+        
+        # Marcar estado en progreso inmediatamente
+        user_profile.set_dv_connection_verified(None)
+        user_profile.save(update_fields=["dv_connection_status"])
+        
+        # Encolar tarea Celery
+        async_result = verify_dv_login_task.delay(request.user.id)
+        
+        logger.info(f"Tarea DV encolada desde GET: {async_result.id}")
+        
+        return JsonResponse({
+            "success": True, 
+            "message": "Verificación iniciada",
+            "task_id": async_result.id
+        })
+        
+    except Exception as e:
+        logger.error(f"Error encolando tarea DV: {e}")
+        return JsonResponse({"success": False, "message": str(e)})
+
+
+@login_required
+def dv_login_manual_view(request):
+    """Vista para iniciar login manual asistido desde la web."""
+    if request.method == "POST":
+        try:
+            user_profile = UserProfile.objects.get(user=request.user)
+            
+            if not user_profile.dv_username or not user_profile.dv_password:
+                return JsonResponse({
+                    "success": False, 
+                    "message": "Configura primero usuario y contraseña de INTRANET DAVINCI"
+                })
+            
+            # PROTECCIÓN: Cancelar tareas anteriores
+            try:
+                from celery import current_app
+                inspect = current_app.control.inspect()
+                active_tasks = inspect.active() or {}
+                reserved_tasks = inspect.reserved() or {}
+                
+                tasks_to_revoke = []
+                for worker, tasks in {**active_tasks, **reserved_tasks}.items():
+                    for task in tasks:
+                        if 'verify_dv_login' in task.get('name', '') and str(request.user.id) in str(task.get('args', '')):
+                            tasks_to_revoke.append(task.get('id'))
+                
+                if tasks_to_revoke:
+                    for task_id in tasks_to_revoke:
+                        current_app.control.revoke(task_id, terminate=True)
+                    logger.info(f"🛡️ Revocadas {len(tasks_to_revoke)} tareas previas para usuario {request.user.id}")
+            except Exception as e:
+                logger.warning(f"⚠️ No se pudieron cancelar tareas previas: {e}")
+            
+            # Marcar estado en progreso
+            user_profile.set_dv_connection_verified(None)
+            user_profile.save(update_fields=["dv_connection_status"])
+            
+            # Encolar tarea de login manual
+            from .tasks_dv import verify_dv_login_manual_task
+            async_result = verify_dv_login_manual_task.delay(request.user.id)
+            
+            logger.info(f"Tarea DV login manual encolada: {async_result.id}")
+            
+            return JsonResponse({
+                "success": True,
+                "message": "Login manual iniciado - se abrirá un navegador",
+                "task_id": async_result.id
+            })
+            
+        except Exception as e:
+            logger.error(f"Error iniciando login manual DV: {e}")
+            return JsonResponse({
+                "success": False,
+                "message": f"Error iniciando login manual: {str(e)}"
+            })
+    
+    return JsonResponse({"success": False, "message": "Método no permitido"})
+
+
+@login_required
 def scraping_logs_view(request, task_id):
     """Vista para obtener los logs de un scraping específico."""
     try:
@@ -1413,6 +1580,97 @@ def scraping_logs_view(request, task_id):
         return JsonResponse(
             {"success": False, "error": str(e), "logs": [], "task_id": task_id}
         )
+
+
+@login_required
+def scraping_logs_general_view(request):
+    """Vista para obtener TODOS los logs generales del usuario"""
+    try:
+        logs = ScrapingLog.objects.filter(user=request.user).order_by('timestamp')
+        
+        logs_data = []
+        for log in logs:
+            logs_data.append({
+                "message": log.message,
+                "type": log.log_type,
+                "timestamp": log.timestamp.strftime("%H:%M:%S"),
+                "task_id": log.task_id
+            })
+
+        return JsonResponse({"success": True, "logs": logs_data})
+
+    except Exception as e:
+        logger.error(f"Error obteniendo logs generales: {e}")
+        return JsonResponse({"success": False, "error": str(e), "logs": []})
+
+
+@login_required
+def latest_screenshot_view(request, task_id):
+    """Vista para obtener el screenshot más reciente de una tarea"""
+    try:
+        import glob
+        import os
+        
+        # Buscar screenshots del usuario y task_id
+        screenshots_pattern = f"media/screenshots/user_{request.user.id}_{task_id}_*.png"
+        screenshots = glob.glob(screenshots_pattern)
+        
+        if screenshots:
+            # Obtener el más reciente
+            latest_screenshot = max(screenshots, key=os.path.getctime)
+            screenshot_url = latest_screenshot.replace('media/', '/media/')
+            
+            return JsonResponse({
+                "success": True, 
+                "screenshot_url": screenshot_url,
+                "timestamp": os.path.getctime(latest_screenshot)
+            })
+        else:
+            return JsonResponse({
+                "success": False, 
+                "message": "No hay screenshots disponibles"
+            })
+            
+    except Exception as e:
+        logger.error(f"Error obteniendo screenshot: {e}")
+        return JsonResponse({"success": False, "error": str(e)})
+
+
+@login_required
+def clear_session_view(request):
+    """Vista para limpiar la sesión guardada del scraper"""
+    if request.method != 'POST':
+        return JsonResponse({"success": False, "message": "Método no permitido"})
+    
+    try:
+        import os
+        from pathlib import Path
+        
+        # Buscar archivo de sesión del usuario en el directorio correcto
+        session_file = f"user_{request.user.id}_stealth_session.json"
+        session_path = Path("media/sessions") / session_file
+        
+        if session_path.exists():
+            # Eliminar archivo de sesión
+            session_path.unlink()
+            logger.info(f"✅ Sesión limpiada para usuario {request.user.id}: {session_file}")
+            return JsonResponse({
+                "success": True, 
+                "message": f"Sesión limpiada exitosamente"
+            })
+        else:
+            logger.info(f"ℹ️ No hay sesión guardada para usuario {request.user.id}")
+            return JsonResponse({
+                "success": True, 
+                "message": "No había sesión guardada"
+            })
+            
+    except Exception as e:
+        logger.error(f"Error limpiando sesión para usuario {request.user.id}: {e}")
+        return JsonResponse({
+            "success": False, 
+            "message": f"Error limpiando sesión: {str(e)}"
+        })
 
 
 @login_required
@@ -1598,3 +1856,99 @@ def download_cv_view(request, cv_id):
     except Exception as e:
         logger.error(f"Error descargando CV {cv_id} para usuario {request.user.email}: {e}")
         raise Http404("Error al descargar el archivo")
+
+
+@login_required
+def calculate_matches_view(request):
+    """Vista para calcular matches entre CVs y ofertas de trabajo."""
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "Método no permitido"})
+    
+    try:
+        from .services.matching import matching_service
+        
+        # Obtener perfil del usuario
+        user_profile = UserProfile.objects.get(user=request.user)
+        
+        # Obtener todas las ofertas de trabajo
+        jobs = JobPosting.objects.all()
+        
+        if not jobs.exists():
+            return JsonResponse({
+                "success": False,
+                "message": "No hay ofertas de trabajo para calcular matches"
+            })
+        
+        # Obtener CVs del usuario
+        user_cvs = UserCV.objects.filter(
+            user=request.user, 
+            parsed_text__isnull=False
+        ).exclude(parsed_text="")
+        
+        if not user_cvs.exists():
+            return JsonResponse({
+                "success": False,
+                "message": "No tienes CVs procesados para calcular matches"
+            })
+        
+        # Contadores
+        matches_calculated = 0
+        new_matches = 0
+        total_matches_before = MatchScore.objects.filter(user=request.user).count()
+        
+        # Calcular matches para cada oferta
+        for job in jobs:
+            # Calcular matches para todos los CVs del usuario contra esta oferta
+            matches = matching_service.calculate_user_job_matches(user_profile, job)
+            
+            for cv, match_result in matches:
+                # Solo guardar si supera el umbral del usuario
+                if match_result.score >= user_profile.match_threshold:
+                    # Verificar si ya existe este match
+                    existing_match = MatchScore.objects.filter(
+                        user=request.user,
+                        cv=cv,
+                        job_posting=job
+                    ).first()
+                    
+                    if not existing_match:
+                        # Crear nuevo match
+                        matching_service.save_match_score(
+                            user_profile, cv, job, match_result
+                        )
+                        new_matches += 1
+                        matches_calculated += 1
+                    else:
+                        # Actualizar match existente si el score cambió
+                        if abs(existing_match.score - match_result.score) > 0.1:
+                            existing_match.score = match_result.score
+                            existing_match.details = match_result.details
+                            existing_match.save()
+                            matches_calculated += 1
+        
+        # Obtener total de matches después del cálculo
+        total_matches_after = MatchScore.objects.filter(user=request.user).count()
+        
+        logger.info(f"Matches calculados para usuario {request.user.id}: {matches_calculated} procesados, {new_matches} nuevos")
+        
+        return JsonResponse({
+            "success": True,
+            "message": "Cálculo de matches completado exitosamente",
+            "matches_calculated": matches_calculated,
+            "new_matches": new_matches,
+            "total_matches": total_matches_after,
+            "jobs_processed": jobs.count(),
+            "cvs_processed": user_cvs.count()
+        })
+        
+    except UserProfile.DoesNotExist:
+        return JsonResponse({
+            "success": False,
+            "message": "Perfil de usuario no encontrado"
+        })
+    except Exception as e:
+        logger.error(f"Error calculando matches para usuario {request.user.id}: {e}")
+        return JsonResponse({
+            "success": False,
+            "message": f"Error calculando matches: {str(e)}"
+        })

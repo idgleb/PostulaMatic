@@ -260,7 +260,7 @@ class MatchingService:
             Instancia de MatchScore guardada
         """
         match_score, created = MatchScore.objects.update_or_create(
-            user=user,
+            user=user.user,  # user.user es el User real, no el UserProfile
             cv=cv,
             job_posting=job,
             defaults={"score": match_result.score, "details": match_result.details},

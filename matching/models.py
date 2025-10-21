@@ -221,6 +221,11 @@ class JobPosting(models.Model):
         blank=True, help_text="Email de contacto (decodificado de Cloudflare)"
     )
     raw_html = models.TextField(blank=True, help_text="HTML crudo para debugging")
+    source = models.CharField(
+        max_length=50,
+        default='dvcarreras',
+        help_text="Fuente de la oferta (dvcarreras, dvcarreras_stealth, etc.)"
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

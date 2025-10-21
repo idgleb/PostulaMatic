@@ -18,4 +18,6 @@ django-allauth
 PyJWT
 openai
 anthropic
+undetected-chromedriver
+selenium
 

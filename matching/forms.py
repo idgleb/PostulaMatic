@@ -67,10 +67,11 @@ class UserProfileForm(forms.ModelForm):
         widgets = {
             "match_threshold": forms.NumberInput(
                 attrs={
+                    "type": "range",
                     "min": 0,
                     "max": 100,
                     "step": 1,
-                    "class": "form-control",
+                    "class": "form-range",
                 }
             ),
             "smtp_password": forms.PasswordInput(
@@ -140,10 +141,14 @@ class SMTPConfigForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Aplicar clases CSS a todos los campos
+        # Aplicar clases CSS a todos los campos excepto checkboxes
         for field_name, field in self.fields.items():
             if field_name not in self.Meta.widgets:
-                field.widget.attrs.update({"class": "form-control"})
+                # No aplicar form-control a checkboxes
+                if isinstance(field.widget, forms.CheckboxInput):
+                    field.widget.attrs.update({"class": "form-check-input"})
+                else:
+                    field.widget.attrs.update({"class": "form-control"})
 
 
 class DVCredentialsForm(forms.ModelForm):
@@ -177,10 +182,14 @@ class DVCredentialsForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Aplicar clases CSS a todos los campos
+        # Aplicar clases CSS a todos los campos excepto checkboxes
         for field_name, field in self.fields.items():
             if field_name not in self.Meta.widgets:
-                field.widget.attrs.update({"class": "form-control"})
+                # No aplicar form-control a checkboxes
+                if isinstance(field.widget, forms.CheckboxInput):
+                    field.widget.attrs.update({"class": "form-check-input"})
+                else:
+                    field.widget.attrs.update({"class": "form-control"})
 
 
 class MatchingConfigForm(forms.ModelForm):
@@ -192,10 +201,11 @@ class MatchingConfigForm(forms.ModelForm):
         widgets = {
             "match_threshold": forms.NumberInput(
                 attrs={
+                    "type": "range",
                     "min": 0,
                     "max": 100,
                     "step": 1,
-                    "class": "form-control",
+                    "class": "form-range",
                     "required": True,
                 }
             ),
@@ -214,10 +224,14 @@ class MatchingConfigForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Aplicar clases CSS a todos los campos
+        # Aplicar clases CSS a todos los campos excepto checkboxes
         for field_name, field in self.fields.items():
             if field_name not in self.Meta.widgets:
-                field.widget.attrs.update({"class": "form-control"})
+                # No aplicar form-control a checkboxes
+                if isinstance(field.widget, forms.CheckboxInput):
+                    field.widget.attrs.update({"class": "form-check-input"})
+                else:
+                    field.widget.attrs.update({"class": "form-control"})
 
     def clean_match_threshold(self):
         threshold = self.cleaned_data.get("match_threshold")
@@ -252,10 +266,14 @@ class EmailConfigForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Aplicar clases CSS a todos los campos
+        # Aplicar clases CSS a todos los campos excepto checkboxes
         for field_name, field in self.fields.items():
             if field_name not in self.Meta.widgets:
-                field.widget.attrs.update({"class": "form-control"})
+                # No aplicar form-control a checkboxes
+                if isinstance(field.widget, forms.CheckboxInput):
+                    field.widget.attrs.update({"class": "form-check-input"})
+                else:
+                    field.widget.attrs.update({"class": "form-control"})
 
 
 class AIConfigurationForm(forms.ModelForm):

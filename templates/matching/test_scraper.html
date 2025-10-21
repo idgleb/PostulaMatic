@@ -70,6 +70,15 @@
     </div>
 </div>
 
+<!-- Botón para calcular matches -->
+<div class="row mb-4">
+    <div class="col-12 text-center">
+        <button type="button" class="btn btn-success btn-lg" id="calculateMatchesBtn">
+            <i class="bi bi-calculator me-2"></i>Calcular Matches
+        </button>
+    </div>
+</div>
+
 <!-- Configuration Check -->
 {% if not stats.has_credentials %}
 <div class="row mb-4">
@@ -128,10 +137,26 @@
                     
                     <form method="post" action="{% url 'test_scraper' %}" id="scraperForm">
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-primary btn-lg" id="scraperBtn">
-                            <i class="bi bi-play-fill me-2"></i>Iniciar Scraping
-                        </button>
+                    <button type="submit" class="btn btn-primary btn-lg" id="scraperBtn">
+                        <i class="bi bi-play-fill me-2"></i>Iniciar Scraping
+                    </button>
+                    <button type="button" class="btn btn-warning btn-lg ms-2" id="clearSessionBtn">
+                        <i class="bi bi-trash me-2"></i>Limpiar Sesión
+                    </button>
                     </form>
+                    
+                    <!-- Área de screenshots en tiempo real -->
+                    <div class="mt-3">
+                        <h6 class="text-primary">
+                            <i class="bi bi-camera-video me-2"></i>Vista en Vivo del Navegador
+                        </h6>
+            <div id="liveScreenshots" class="bg-dark p-3 rounded text-center" style="height: 400px; overflow-y: auto;">
+                <div class="text-light">
+                    <i class="bi bi-camera-video fs-1"></i>
+                    <p class="mt-2">Los screenshots aparecerán aquí durante el scraping</p>
+                </div>
+            </div>
+                    </div>
                     
                     <!-- Área para mostrar mensajes de resultado del scraping -->
                     <div id="scraperResult" class="mt-3" style="display: none;">
@@ -158,11 +183,12 @@
                                     </div>
                                 </div>
                                 
-                                <div id="statusLog" class="bg-light p-3 rounded" style="max-height: 200px; overflow-y: auto;">
+                                <div id="statusLog" class="bg-light p-3 rounded">
                                     <div class="log-entry text-muted">
                                         <small>No hay proceso de scraping activo</small>
                                     </div>
                                 </div>
+                                
                                 
                             </div>
                         </div>
@@ -362,17 +388,53 @@ function checkCurrentScrapingStatus() {
     const lastTaskId = localStorage.getItem('lastTaskId');
     
     if (lastTaskId) {
-        currentTaskId = lastTaskId;
-        console.log('Task ID encontrado:', lastTaskId);
+        console.log('Task ID encontrado en localStorage:', lastTaskId);
         
-        // Iniciar monitoreo simple de logs
-        startSimpleMonitoring();
+        // Verificar si la tarea existe y está activa antes de usarla
+        fetch(`/matching/scraper-status/${lastTaskId}/`)
+            .then(response => response.json())
+            .then(data => {
+                // Solo usar el task_id si la tarea está realmente activa
+                if (data.status === 'PENDING' || data.status === 'STARTED' || data.status === 'PROGRESS') {
+                    console.log('✅ Tarea activa encontrada, continuando monitoreo');
+                    currentTaskId = lastTaskId;
+                    startSimpleMonitoring();
+                } else {
+                    // La tarea ya terminó o no existe - limpiar localStorage
+                    console.log('⚠️ Tarea finalizada o inexistente, limpiando localStorage');
+                    localStorage.removeItem('lastTaskId');
+                    currentTaskId = null;
+                    updateProgressBar(0, 'Inicia un scraping para comenzar', 'secondary');
+                    addLogEntry('No hay scraping activo. Haz clic en "Iniciar Scraping" para comenzar.', 'info');
+                    enableScrapingButton();
+                }
+            })
+            .catch(error => {
+                // Si hay error al verificar (ej: tarea no existe), limpiar
+                console.error('❌ Error verificando tarea, limpiando localStorage:', error);
+                localStorage.removeItem('lastTaskId');
+                currentTaskId = null;
+                updateProgressBar(0, 'Inicia un scraping para comenzar', 'secondary');
+                addLogEntry('No hay scraping previo. Haz clic en "Iniciar Scraping" para comenzar.', 'info');
+                enableScrapingButton();
+            });
         
     } else {
-        // No hay Task ID - mostrar estado inicial
-        console.log('No hay Task ID disponible');
+        // No hay Task ID - cargar logs generales y mostrar estado inicial
+        console.log('No hay Task ID disponible, cargando logs generales...');
         updateProgressBar(0, 'Inicia un scraping para comenzar', 'secondary');
-        addLogEntry('No hay scraping previo. Haz clic en "Iniciar Scraping" para comenzar.', 'info');
+        
+        // Cargar logs generales del usuario
+        loadAllLogsFromDatabase();
+        
+        // Si no hay logs, mostrar mensaje inicial
+        setTimeout(() => {
+            const statusLog = document.getElementById('statusLog');
+            if (statusLog && statusLog.children.length === 0) {
+                addLogEntry('No hay scraping previo. Haz clic en "Iniciar Scraping" para comenzar.', 'info');
+            }
+        }, 1000);
+        
         enableScrapingButton();
     }
 }
@@ -393,6 +455,10 @@ function startSimpleMonitoring() {
     window.logsInterval = setInterval(() => {
         loadAllLogsFromDatabase();
         checkScrapingStatus();
+        // Actualizar screenshots en tiempo real
+        if (currentTaskId) {
+            updateLiveScreenshots();
+        }
     }, 2000);
 }
 
@@ -420,6 +486,10 @@ function checkScrapingStatus() {
                     }
                     // Cargar logs finales desde BD
                     loadAllLogsFromDatabase();
+                    // Limpiar task_id del localStorage al completar
+                    console.log('✅ Tarea completada exitosamente, limpiando localStorage');
+                    localStorage.removeItem('lastTaskId');
+                    currentTaskId = null;
                 } else if (data.status === 'FAILURE') {
                     updateProgressBar(0, 'Falló', 'danger');
                     enableScrapingButton();
@@ -428,6 +498,10 @@ function checkScrapingStatus() {
                         clearInterval(window.logsInterval);
                         window.logsInterval = null;
                     }
+                    // Limpiar task_id del localStorage al fallar
+                    console.log('❌ Tarea falló, limpiando localStorage');
+                    localStorage.removeItem('lastTaskId');
+                    currentTaskId = null;
                     // Cargar logs de error desde BD
                     loadAllLogsFromDatabase();
                 } else if (data.status === 'NOT_FOUND') {
@@ -715,32 +789,159 @@ function saveLogToDatabase(message, type) {
 }
 
 function loadAllLogsFromDatabase() {
+    // Si hay task_id específico, cargar logs de esa tarea
+    if (currentTaskId) {
+        fetch(`/matching/scraping-logs/${currentTaskId}/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.logs) {
+                    // Reemplazar todos los logs en la interfaz
+                    const statusLog = document.getElementById('statusLog');
+                    if (statusLog) {
+                        statusLog.innerHTML = '';
+                        
+                        // Cargar todos los logs desde la base de datos
+                        data.logs.forEach(log => {
+                            addLogEntryFromDatabase(log.message, log.type, log.timestamp);
+                        });
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error cargando logs:', error);
+            });
+    } else {
+        // Si no hay task_id, cargar logs generales del usuario
+        fetch('/matching/scraping-logs/')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.logs) {
+                    // Reemplazar todos los logs en la interfaz
+                    const statusLog = document.getElementById('statusLog');
+                    if (statusLog) {
+                        statusLog.innerHTML = '';
+                        
+                        // Cargar todos los logs desde la base de datos
+                        data.logs.forEach(log => {
+                            addLogEntryFromDatabase(log.message, log.type, log.timestamp);
+                        });
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error cargando logs generales:', error);
+            });
+    }
+}
+
+// Función para actualizar screenshots en tiempo real
+function updateLiveScreenshots() {
     if (!currentTaskId) return;
     
-    fetch(`/matching/scraping-logs/${currentTaskId}/`)
+    fetch(`/matching/latest-screenshot/${currentTaskId}/`)
         .then(response => response.json())
         .then(data => {
-            if (data.success && data.logs) {
-                // Reemplazar todos los logs en la interfaz
-                const statusLog = document.getElementById('statusLog');
-                if (statusLog) {
-                    statusLog.innerHTML = '';
-                    
-                    // Cargar todos los logs desde la base de datos
-                    data.logs.forEach(log => {
-                        addLogEntryFromDatabase(log.message, log.type, log.timestamp);
-                    });
+            if (data.success && data.screenshot_url) {
+                const screenshotContainer = document.getElementById('liveScreenshots');
+                if (screenshotContainer) {
+                    screenshotContainer.innerHTML = `
+                        <div class="text-center">
+                            <img src="${data.screenshot_url}" 
+                                 class="img-fluid rounded shadow" 
+                                 style="max-width: 100%; max-height: 400px; border: 2px solid #007bff;"
+                                 alt="Screenshot en vivo">
+                            <div class="mt-2">
+                                <small class="text-light">
+                                    <i class="bi bi-camera me-1"></i>
+                                    Vista en vivo - ${new Date().toLocaleTimeString()}
+                                </small>
+                            </div>
+                        </div>
+                    `;
                 }
             }
         })
         .catch(error => {
-            console.error('Error cargando logs:', error);
+            console.error('Error cargando screenshot:', error);
         });
+}
+
+// Función para actualizar progreso basándose en mensajes de log
+function updateProgressFromLogMessage(message) {
+    const msg = message.toLowerCase();
+    
+    // Mapear mensajes comunes del scraper a estados de progreso con más granularidad
+    
+    // === FASE 1: INICIALIZACIÓN (5-20%) ===
+    if (msg.includes('navegador stealth iniciado') || msg.includes('iniciando navegador')) {
+        updateProgressBar(8, '🚀 Navegador iniciado correctamente...', 'info');
+    } else if (msg.includes('error cargando cookie') || msg.includes('cookies obsoletas omitidas')) {
+        updateProgressBar(12, '🔄 Limpiando cookies antiguas...', 'info');
+    } else if (msg.includes('sesión cargada') || msg.includes('cookies activas')) {
+        updateProgressBar(15, '🍪 Sesión recuperada, verificando validez...', 'info');
+    } else if (msg.includes('probando validez') || msg.includes('validando sesión')) {
+        updateProgressBar(18, '🔍 Validando sesión guardada...', 'info');
+    } else if (msg.includes('sesión válida')) {
+        updateProgressBar(22, '✅ Sesión válida, omitiendo login...', 'success');
+    
+    // === FASE 2: LOGIN (25-60%) ===
+    } else if (msg.includes('sesión inválida') || msg.includes('procediendo con login')) {
+        updateProgressBar(25, '🔐 Sesión expirada, nuevo login requerido...', 'warning');
+    } else if (msg.includes('navegando a página de login') || msg.includes('iniciando login')) {
+        updateProgressBar(30, '🌐 Accediendo a página de autenticación...', 'info');
+    } else if (msg.includes('buscando campos de login')) {
+        updateProgressBar(35, '🔎 Localizando formulario de login...', 'info');
+    } else if (msg.includes('campos encontrados')) {
+        updateProgressBar(40, '📝 Completando formulario de login...', 'info');
+    } else if (msg.includes('formulario enviado')) {
+        updateProgressBar(45, '📤 Enviando credenciales al servidor...', 'info');
+    } else if (msg.includes('esperando respuesta')) {
+        updateProgressBar(50, '⏳ Esperando respuesta del servidor...', 'info');
+    } else if (msg.includes('url después del login')) {
+        updateProgressBar(55, '🔄 Redireccionando a panel principal...', 'info');
+    } else if (msg.includes('título de la página')) {
+        updateProgressBar(58, '📄 Verificando acceso exitoso...', 'info');
+    } else if (msg.includes('login exitoso')) {
+        updateProgressBar(62, '✅ Autenticación exitosa confirmada...', 'success');
+    } else if (msg.includes('sesión guardada')) {
+        updateProgressBar(65, '💾 Sesión almacenada para próximos usos...', 'success');
+    
+    // === FASE 3: SCRAPING (68-92%) ===
+    } else if (msg.includes('iniciando scraping') || msg.includes('scraping del tablero')) {
+        updateProgressBar(68, '📊 Accediendo al tablero de ofertas...', 'info');
+    } else if (msg.includes('navegando al tablero')) {
+        updateProgressBar(72, '🌐 Cargando página de ofertas...', 'info');
+    } else if (msg.includes('encontradas') && msg.includes('filas')) {
+        // Extraer número de ofertas si está en el mensaje
+        const match = message.match(/(\d+)\s+(?:filas|ofertas)/i);
+        const count = match ? match[1] : '?';
+        updateProgressBar(78, `📋 Analizando ${count} ofertas del tablero...`, 'info');
+    } else if (msg.includes('extrayendo datos') || msg.includes('procesando fila')) {
+        updateProgressBar(82, '⚙️ Extrayendo información de ofertas...', 'info');
+    } else if (msg.includes('scraping completado')) {
+        updateProgressBar(88, '✅ Extracción de datos completada...', 'success');
+    } else if (msg.includes('resumen:') && msg.includes('nuevas')) {
+        // Detectar el resumen final con estadísticas
+        const newMatch = message.match(/(\d+)\s+nuevas/i);
+        const savedMatch = message.match(/(\d+)\s+guardadas/i);
+        const newCount = newMatch ? newMatch[1] : '?';
+        const savedCount = savedMatch ? savedMatch[1] : '?';
+        updateProgressBar(92, `💾 Guardando ${newCount} ofertas nuevas (${savedCount} total)...`, 'success');
+    
+    // === FASE 4: FINALIZACIÓN (95-100%) ===
+    } else if (msg.includes('guardando en base de datos')) {
+        updateProgressBar(95, '💾 Almacenando resultados en base de datos...', 'info');
+    } else if (msg.includes('cerrando navegador') || msg.includes('navegador stealth cerrado')) {
+        updateProgressBar(98, '🧹 Liberando recursos del navegador...', 'info');
+    }
 }
 
 function addLogEntryFromDatabase(message, type, timestamp) {
     const statusLog = document.getElementById('statusLog');
     if (!statusLog) return;
+    
+    // Actualizar la barra de progreso basándose en los mensajes de log
+    updateProgressFromLogMessage(message);
     
     const logEntry = document.createElement('div');
     logEntry.className = 'log-entry mb-1';
@@ -849,6 +1050,24 @@ document.addEventListener('DOMContentLoaded', function() {
     const scraperResult = document.getElementById('scraperResult');
     const scraperMessage = document.getElementById('scraperMessage');
     
+    // Event listener para el botón de limpiar sesión
+    const clearSessionBtn = document.getElementById('clearSessionBtn');
+    if (clearSessionBtn) {
+        clearSessionBtn.addEventListener('click', function() {
+            if (confirm('¿Estás seguro de que quieres limpiar la sesión guardada? Esto requerirá un nuevo login en el próximo scraping.')) {
+                clearSession();
+            }
+        });
+    }
+
+    // Event listener para el botón de calcular matches
+    const calculateMatchesBtn = document.getElementById('calculateMatchesBtn');
+    if (calculateMatchesBtn) {
+        calculateMatchesBtn.addEventListener('click', function() {
+            calculateMatches();
+        });
+    }
+
     if (scraperForm) {
         scraperForm.addEventListener('submit', function(e) {
             e.preventDefault();
@@ -858,6 +1077,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             window.scrapeSubmitting = true;
+
+            // ✅ LIMPIEZA AUTOMÁTICA: Limpiar task_id anterior antes de iniciar nuevo scraping
+            if (currentTaskId) {
+                console.log('🧹 Limpiando task_id anterior antes de nuevo scraping:', currentTaskId);
+                localStorage.removeItem('lastTaskId');
+                currentTaskId = null;
+            }
+            
+            // Detener cualquier monitoreo previo
+            if (window.logsInterval) {
+                clearInterval(window.logsInterval);
+                window.logsInterval = null;
+            }
 
             // Deshabilitar botón y mostrar spinner
             disableScrapingButton();
@@ -924,7 +1156,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Si hubo task_id, ya queda deshabilitado hasta terminar
                 setTimeout(() => { window.scrapeSubmitting = false; }, 500);
             });
-        }, { once: true });
+        });
     }
     
     // Siempre verificar el estado actual del scraping (independiente de localStorage)
@@ -1026,6 +1258,135 @@ document.addEventListener('DOMContentLoaded', function() {
         updateDVConnectionStatus();
         updateStats();
     }, 2000);
+    
+    // Función para limpiar la sesión
+    function clearSession() {
+        console.log('🧹 Limpiando sesión guardada...');
+        
+        // Limpiar localStorage
+        localStorage.removeItem('lastTaskId');
+        currentTaskId = null;
+        
+        // Limpiar UI
+        updateProgressBar(0, 'Limpiando sesión...', 'warning');
+        
+        // Limpiar logs
+        const statusLog = document.getElementById('statusLog');
+        if (statusLog) {
+            statusLog.innerHTML = '';
+            addLogEntry('Limpiando sesión guardada...', 'info');
+        }
+        
+        // Limpiar screenshots
+        const liveScreenshots = document.getElementById('liveScreenshots');
+        if (liveScreenshots) {
+            liveScreenshots.innerHTML = `
+                <div class="text-light">
+                    <i class="bi bi-camera-video fs-1"></i>
+                    <p class="mt-2">Los screenshots aparecerán aquí durante el scraping</p>
+                </div>
+            `;
+        }
+        
+        // Parar monitoreo si está activo
+        if (window.logsInterval) {
+            clearInterval(window.logsInterval);
+            window.logsInterval = null;
+        }
+        
+        // Llamar al backend para limpiar la sesión real
+        fetch('/matching/clear-session/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                addLogEntry('✅ Sesión limpiada exitosamente. El próximo scraping requerirá un nuevo login.', 'success');
+                updateProgressBar(0, 'Sesión limpiada - próximo scraping requerirá login', 'success');
+            } else {
+                addLogEntry('❌ Error limpiando sesión: ' + data.message, 'error');
+                updateProgressBar(0, 'Error limpiando sesión', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error limpiando sesión:', error);
+            addLogEntry('❌ Error de conexión al limpiar sesión', 'error');
+            updateProgressBar(0, 'Error de conexión', 'danger');
+        });
+        
+        // Habilitar botón de scraping
+        enableScrapingButton();
+        
+        console.log('✅ Solicitud de limpieza de sesión enviada');
+    }
+    
+    // Función para calcular matches
+    function calculateMatches() {
+        console.log('🧮 Iniciando cálculo de matches...');
+        
+        // Deshabilitar botón y mostrar spinner
+        const calculateBtn = document.getElementById('calculateMatchesBtn');
+        if (calculateBtn) {
+            calculateBtn.disabled = true;
+            calculateBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Calculando...';
+        }
+        
+        // Mostrar mensaje en logs
+        addLogEntry('🧮 Iniciando cálculo de matches...', 'info');
+        updateProgressBar(10, 'Calculando matches...', 'info');
+        
+        // Llamar al backend para calcular matches
+        fetch('/matching/calculate-matches/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                addLogEntry('✅ Cálculo de matches completado exitosamente', 'success');
+                updateProgressBar(100, 'Matches calculados', 'success');
+                
+                // Mostrar resultados
+                if (data.matches_calculated !== undefined) {
+                    addLogEntry(`📊 Matches calculados: ${data.matches_calculated}`, 'success');
+                }
+                if (data.new_matches !== undefined) {
+                    addLogEntry(`🆕 Nuevos matches: ${data.new_matches}`, 'success');
+                }
+                if (data.total_matches !== undefined) {
+                    addLogEntry(`📈 Total matches: ${data.total_matches}`, 'success');
+                }
+                
+                // Actualizar estadísticas en la página
+                updateStats();
+                
+            } else {
+                addLogEntry('❌ Error calculando matches: ' + (data.message || 'Error desconocido'), 'error');
+                updateProgressBar(0, 'Error en cálculo', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error calculando matches:', error);
+            addLogEntry('❌ Error de conexión al calcular matches', 'error');
+            updateProgressBar(0, 'Error de conexión', 'danger');
+        })
+        .finally(() => {
+            // Reactivar botón
+            if (calculateBtn) {
+                calculateBtn.disabled = false;
+                calculateBtn.innerHTML = '<i class="bi bi-calculator me-2"></i>Calcular Matches';
+            }
+        });
+        
+        console.log('✅ Solicitud de cálculo de matches enviada');
+    }
     
 });
 })();
