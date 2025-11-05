@@ -3,282 +3,26 @@ Servicio de personalización de CV basado en requisitos del puesto.
 Genera versiones personalizadas del CV original destacando habilidades relevantes.
 """
 
+import json
 import logging
-import os
-import tempfile
-from typing import Dict, List, Optional, Tuple
-from pathlib import Path
 import re
+from typing import Dict, List, Optional
 
 from django.contrib.auth.models import User
 from django.core.files.base import ContentFile
 
 from matching.models import UserCV, JobPosting
 from .ai_service import ai_email_service
+from .ats_matcher import ats_matcher, KeywordExtractor
 
 logger = logging.getLogger(__name__)
-
-
-class JobRequirementsAnalyzer:
-    """Analizador de requisitos del puesto de trabajo."""
-    
-    @staticmethod
-    def analyze_job_requirements(job_posting: JobPosting) -> Dict:
-        """
-        Analiza los requisitos del puesto y extrae información clave.
-        
-        Args:
-            job_posting: Instancia de JobPosting
-            
-        Returns:
-            Dict con requisitos analizados
-        """
-        try:
-            description = job_posting.description
-            
-            # Extraer habilidades requeridas
-            required_skills = JobRequirementsAnalyzer._extract_required_skills(description)
-            
-            # Extraer nivel de experiencia requerido
-            experience_level = JobRequirementsAnalyzer._extract_experience_level(description)
-            
-            # Extraer tecnologías específicas
-            technologies = JobRequirementsAnalyzer._extract_technologies(description)
-            
-            # Extraer responsabilidades clave
-            key_responsibilities = JobRequirementsAnalyzer._extract_responsibilities(description)
-            
-            # Extraer beneficios y características del puesto
-            benefits = JobRequirementsAnalyzer._extract_benefits(description)
-            
-            # Determinar tipo de empresa (startup, corporate, etc.)
-            company_type = JobRequirementsAnalyzer._determine_company_type(description)
-            
-            return {
-                'required_skills': required_skills,
-                'experience_level': experience_level,
-                'technologies': technologies,
-                'key_responsibilities': key_responsibilities,
-                'benefits': benefits,
-                'company_type': company_type,
-                'title': job_posting.title,
-                'description': description,
-                'job_id': job_posting.id
-            }
-            
-        except Exception as e:
-            logger.error(f"Error analizando requisitos del puesto {job_posting.id}: {e}")
-            return {
-                'required_skills': [],
-                'experience_level': '',
-                'technologies': [],
-                'key_responsibilities': [],
-                'benefits': [],
-                'company_type': 'unknown',
-                'title': job_posting.title,
-                'description': job_posting.description,
-                'job_id': job_posting.id
-            }
-    
-    @staticmethod
-    def _extract_required_skills(description: str) -> List[str]:
-        """Extrae habilidades requeridas de la descripción."""
-        if not description:
-            return []
-        
-        description_lower = description.lower()
-        
-        # Lista de habilidades técnicas comunes
-        tech_skills = [
-            'python', 'javascript', 'java', 'c#', 'php', 'ruby', 'go', 'rust', 'kotlin', 'swift',
-            'django', 'flask', 'fastapi', 'react', 'angular', 'vue', 'node.js', 'express',
-            'postgresql', 'mysql', 'mongodb', 'redis', 'sqlite', 'elasticsearch',
-            'docker', 'kubernetes', 'aws', 'azure', 'gcp', 'terraform',
-            'git', 'jenkins', 'ci/cd', 'agile', 'scrum', 'devops',
-            'machine learning', 'ai', 'data science', 'analytics', 'big data',
-            'rest api', 'graphql', 'microservices', 'serverless'
-        ]
-        
-        found_skills = []
-        for skill in tech_skills:
-            if skill in description_lower:
-                found_skills.append(skill.title())
-        
-        return found_skills[:15]  # Máximo 15 habilidades
-    
-    @staticmethod
-    def _extract_experience_level(description: str) -> str:
-        """Extrae nivel de experiencia requerido."""
-        if not description:
-            return 'No especificado'
-        
-        description_lower = description.lower()
-        
-        # Patrones para diferentes niveles
-        senior_patterns = ['senior', 'sr', 'lead', 'principal', 'experto', 'avanzado', '5+ años', '5+ years']
-        junior_patterns = ['junior', 'jr', 'trainee', 'intern', 'inicial', 'entry-level', '1-2 años', '1-2 years']
-        mid_patterns = ['mid', 'middle', 'intermedio', 'semi-senior', '3-4 años', '3-4 years']
-        
-        # Verificar en orden de prioridad
-        if any(pattern in description_lower for pattern in senior_patterns):
-            return 'Senior'
-        elif any(pattern in description_lower for pattern in junior_patterns):
-            return 'Junior'
-        elif any(pattern in description_lower for pattern in mid_patterns):
-            return 'Mid-level'
-        
-        # Buscar por años de experiencia
-        years_match = re.search(r'(\d+)\+?\s*(?:años?|years?)\s*(?:de\s*)?experiencia', description_lower)
-        if years_match:
-            years = int(years_match.group(1))
-            if years >= 5:
-                return 'Senior'
-            elif years >= 2:
-                return 'Mid-level'
-            else:
-                return 'Junior'
-        
-        return 'No especificado'
-    
-    @staticmethod
-    def _extract_technologies(description: str) -> List[str]:
-        """Extrae tecnologías específicas mencionadas."""
-        if not description:
-            return []
-        
-        description_lower = description.lower()
-        
-        # Tecnologías específicas
-        technologies = [
-            'python', 'javascript', 'java', 'c#', 'php', 'ruby', 'go', 'rust',
-            'react', 'angular', 'vue', 'svelte', 'next.js', 'nuxt.js',
-            'django', 'flask', 'fastapi', 'spring', 'laravel', 'rails',
-            'postgresql', 'mysql', 'mongodb', 'redis', 'elasticsearch',
-            'docker', 'kubernetes', 'terraform', 'ansible',
-            'aws', 'azure', 'gcp', 'firebase', 'vercel',
-            'git', 'github', 'gitlab', 'bitbucket',
-            'jenkins', 'circleci', 'travis', 'github actions'
-        ]
-        
-        found_technologies = []
-        for tech in technologies:
-            if tech in description_lower:
-                found_technologies.append(tech.title())
-        
-        return found_technologies[:10]  # Máximo 10 tecnologías
-    
-    @staticmethod
-    def _extract_responsibilities(description: str) -> List[str]:
-        """Extrae responsabilidades clave del puesto."""
-        if not description:
-            return []
-        
-        # Buscar secciones de responsabilidades
-        responsibilities = []
-        lines = description.split('\n')
-        
-        in_responsibilities_section = False
-        for line in lines:
-            line_lower = line.lower()
-            line_stripped = line.strip()
-            
-            # Detectar inicio de sección de responsabilidades
-            if any(keyword in line_lower for keyword in ['responsabilidades', 'responsibilities', 'funciones', 'tareas']):
-                in_responsibilities_section = True
-                continue
-            
-            # Detectar fin de sección
-            if in_responsibilities_section and any(keyword in line_lower for keyword in ['requisitos', 'requirements', 'beneficios', 'benefits']):
-                break
-            
-            # Extraer responsabilidades
-            if in_responsibilities_section and line_stripped and len(line_stripped) > 10:
-                # Filtrar viñetas y numeración
-                clean_line = re.sub(r'^[\s\-\*\•\d\.\)]+', '', line_stripped)
-                if clean_line and len(clean_line) > 10:
-                    responsibilities.append(clean_line)
-        
-        return responsibilities[:8]  # Máximo 8 responsabilidades
-    
-    @staticmethod
-    def _extract_benefits(description: str) -> List[str]:
-        """Extrae beneficios mencionados."""
-        if not description:
-            return []
-        
-        description_lower = description.lower()
-        
-        benefits = []
-        benefit_keywords = [
-            'remoto', 'remote', 'home office', 'flexibilidad', 'flexible',
-            'vacaciones', 'vacation', 'seguro médico', 'health insurance',
-            'bonus', 'bono', 'comisiones', 'comissions', 'stock options',
-            'capacitación', 'training', 'desarrollo', 'development',
-            'equipo joven', 'young team', 'startup', 'crecimiento', 'growth'
-        ]
-        
-        # Mapeo de beneficios para capitalización correcta
-        benefit_mapping = {
-            'remoto': 'Remoto',
-            'remote': 'Remoto',
-            'vacaciones': 'Vacaciones',
-            'vacation': 'Vacaciones',
-            'seguro médico': 'Seguro Médico',
-            'health insurance': 'Seguro Médico',
-            'bonus': 'Bonus',
-            'bono': 'Bonus',
-            'comisiones': 'Comisiones',
-            'comissions': 'Comisiones',
-            'stock options': 'Stock Options',
-            'capacitación': 'Capacitación',
-            'training': 'Capacitación',
-            'desarrollo': 'Desarrollo',
-            'development': 'Desarrollo',
-            'equipo joven': 'Equipo Joven',
-            'young team': 'Equipo Joven',
-            'startup': 'Startup',
-            'crecimiento': 'Crecimiento',
-            'growth': 'Crecimiento',
-            'flexibilidad': 'Flexibilidad',
-            'flexible': 'Flexibilidad'
-        }
-        
-        for benefit in benefit_keywords:
-            if benefit in description_lower:
-                mapped_benefit = benefit_mapping.get(benefit, benefit.title())
-                if mapped_benefit not in benefits:  # Evitar duplicados
-                    benefits.append(mapped_benefit)
-        
-        return benefits[:5]  # Máximo 5 beneficios
-    
-    @staticmethod
-    def _determine_company_type(description: str) -> str:
-        """Determina el tipo de empresa basado en la descripción."""
-        if not description:
-            return 'unknown'
-        
-        description_lower = description.lower()
-        
-        # Patrones para diferentes tipos de empresa
-        if any(keyword in description_lower for keyword in ['startup', 'innovación', 'innovación', 'disruptivo']):
-            return 'startup'
-        elif any(keyword in description_lower for keyword in ['corporativo', 'corporation', 'multinacional', 'enterprise']):
-            return 'corporate'
-        elif any(keyword in description_lower for keyword in ['consultora', 'consulting', 'cliente', 'client']):
-            return 'consulting'
-        elif any(keyword in description_lower for keyword in ['fintech', 'financiero', 'bancario']):
-            return 'fintech'
-        elif any(keyword in description_lower for keyword in ['ecommerce', 'e-commerce', 'retail']):
-            return 'ecommerce'
-        else:
-            return 'tech'
 
 
 class CVPersonalizationService:
     """Servicio principal de personalización de CV."""
     
     def __init__(self):
-        self.analyzer = JobRequirementsAnalyzer()
+        self.ai_email_service = ai_email_service
     
     def personalize_cv_for_job(
         self, 
@@ -297,155 +41,143 @@ class CVPersonalizationService:
         Returns:
             Dict con información de personalización
         """
+        process_logs = []
+        
         try:
-            # Analizar requisitos del puesto
-            job_requirements = self.analyzer.analyze_job_requirements(job_posting)
+            logger.info("🔧 Iniciando personalización de CV")
+            process_logs.append("🔍 Preparando datos para IA...")
             
-            # Extraer datos del CV
-            cv_data = self._extract_cv_data(user_cv)
+            # Validar que el CV tenga texto parseado
+            if not user_cv.parsed_text:
+                error_msg = "❌ El CV no tiene texto parseado. Por favor, vuelve a subir el CV."
+                logger.error(error_msg)
+                process_logs.append(error_msg)
+                return self._error_response(error_msg, process_logs)
             
-            # Generar CV personalizado usando IA
+            # Preparar datos
+            job_data = {
+                'title': job_posting.title,
+                'description': job_posting.description,
+                'mail': getattr(job_posting, 'contact_email', 'N/A')
+            }
+            cv_data = {'parsed_text': user_cv.parsed_text}
+            
+            process_logs.append(f"📋 Puesto: {job_data['title']}")
+            process_logs.append(f"📊 CV preparado: {len(cv_data['parsed_text'])} caracteres")
+            
+            # Generar CV personalizado
+            process_logs.append("🤖 Generando CV personalizado con IA...")
             personalized_cv = self._generate_personalized_cv(
-                cv_data, job_requirements, user_profile
+                cv_data, job_data, user_profile, process_logs
             )
             
             # Crear archivo personalizado
+            process_logs.append("📁 Creando archivo personalizado...")
             personalized_file = self._create_personalized_file(
                 user_cv, personalized_cv, job_posting
             )
+            
+            # Calcular scores (original y personalizado)
+            process_logs.append("📊 Calculando scores ATS...")
+            original_score_data = self._calculate_ats_score(
+                cv_data, job_data, self._create_minimal_cv_structure_from_text(cv_data)
+            )
+            personalized_score_data = self._calculate_ats_score(
+                cv_data, job_data, personalized_cv
+            )
+            
+            original_score = original_score_data['total']
+            match_score = personalized_score_data['total']
+            improvement = match_score - original_score
+            
+            process_logs.append(f"📊 Score Original: {original_score}%")
+            process_logs.append(f"📊 Score Personalizado: {match_score}%")
+            process_logs.append(f"📈 Mejora: +{improvement}%")
             
             return {
                 'success': True,
                 'personalized_cv': personalized_cv,
                 'personalized_file': personalized_file,
-                'job_requirements': job_requirements,
+                'job_requirements': job_data,
                 'cv_data': cv_data,
-                'match_score': self._calculate_match_score(cv_data, job_requirements)
+                'match_score': match_score,
+                'match_score_breakdown': personalized_score_data['breakdown'],
+                'missing_keywords': personalized_score_data['missing_keywords'],
+                'job_keywords': personalized_score_data['job_keywords'],
+                'original_score': original_score,
+                'improvement': improvement,
+                'process_logs': process_logs
             }
             
         except Exception as e:
             logger.error(f"Error personalizando CV {user_cv.id} para puesto {job_posting.id}: {e}")
-            return {
-                'success': False,
-                'error': str(e),
-                'personalized_cv': None,
-                'personalized_file': None,
-                'job_requirements': {},
-                'cv_data': {},
-                'match_score': 0
-            }
-    
-    def _extract_cv_data(self, user_cv: UserCV) -> Dict:
-        """Extrae datos estructurados del CV."""
-        try:
-            return {
-                'skills': user_cv.skills_list,
-                'skills_categories': user_cv.skills_categories,
-                'parsed_text': user_cv.parsed_text,
-                'experience_years': self._extract_experience_years(user_cv.parsed_text),
-                'education': self._extract_education(user_cv.parsed_text),
-                'projects': self._extract_projects(user_cv.parsed_text),
-                'cv_id': user_cv.id,
-                'filename': user_cv.original_file.name.split('/')[-1] if user_cv.original_file else 'CV'
-            }
-        except Exception as e:
-            logger.error(f"Error extrayendo datos del CV {user_cv.id}: {e}")
-            return {
-                'skills': user_cv.skills_list,
-                'skills_categories': user_cv.skills_categories,
-                'parsed_text': user_cv.parsed_text or '',
-                'experience_years': 0,
-                'education': '',
-                'projects': [],
-                'cv_id': user_cv.id,
-                'filename': 'CV'
-            }
-    
-    def _extract_experience_years(self, parsed_text: str) -> int:
-        """Extrae años de experiencia del texto parseado."""
-        if not parsed_text:
-            return 0
-        
-        # Buscar patrones de años de experiencia
-        years_match = re.search(r'(\d+)\+?\s*(?:años?|years?)\s*(?:de\s*)?experiencia', parsed_text.lower())
-        if years_match:
-            return int(years_match.group(1))
-        
-        return 0
-    
-    def _extract_education(self, parsed_text: str) -> str:
-        """Extrae información de educación."""
-        if not parsed_text:
-            return ''
-        
-        education_keywords = ['universidad', 'university', 'ingeniería', 'engineering', 'licenciatura', 'degree']
-        
-        lines = parsed_text.split('\n')
-        for line in lines:
-            if any(keyword in line.lower() for keyword in education_keywords):
-                return line.strip()
-        
-        return ''
-    
-    def _extract_projects(self, parsed_text: str) -> List[str]:
-        """Extrae proyectos del CV."""
-        if not parsed_text:
-            return []
-        
-        projects = []
-        project_keywords = ['proyecto', 'project', 'aplicación', 'application', 'sistema', 'system']
-        
-        lines = parsed_text.split('\n')
-        for line in lines:
-            line_lower = line.lower()
-            line_stripped = line.strip()
-            
-            # Filtrar líneas de educación y experiencia general
-            education_keywords = ['universidad', 'university', 'ingeniería', 'engineering']
-            experience_keywords = ['desarrollador', 'developer', 'analista', 'ingeniero', 'programador', 'años', 'experiencia']
-            
-            if any(keyword in line_lower for keyword in education_keywords):
-                continue
-            if any(keyword in line_lower for keyword in experience_keywords) and not any(proj_keyword in line_lower for proj_keyword in ['proyecto', 'project']):
-                continue
-            
-            if any(keyword in line_lower for keyword in project_keywords):
-                if len(line_stripped) > 10 and not line_stripped.endswith(':'):
-                    projects.append(line_stripped)
-        
-        return projects[:3]  # Máximo 3 proyectos
+            return self._error_response(str(e), process_logs)
     
     def _generate_personalized_cv(
         self, 
         cv_data: Dict, 
-        job_requirements: Dict, 
-        user_profile: Optional[Dict] = None
+        job_data: Dict, 
+        user_profile: Optional[Dict] = None,
+        process_logs: Optional[List] = None
     ) -> Dict:
         """Genera CV personalizado usando IA."""
         try:
-            # Crear prompt para personalización de CV
-            prompt = self._create_cv_personalization_prompt(cv_data, job_requirements, user_profile)
+            logger.info("🔧 Iniciando generación de CV personalizado")
             
-            # Usar IA para generar CV personalizado
-            result = ai_email_service.generate_email_content(
-                job_description=job_requirements['description'],
-                cv_skills=cv_data,
-                user_profile=user_profile or {},
-                custom_prompt=prompt
-            )
+            # Normalizar cv_data
+            cv_data = self._normalize_cv_data(cv_data)
             
-            if result.error:
-                raise Exception(f"Error de IA: {result.error}")
+            # Validar que tenga parsed_text
+            if not cv_data.get('parsed_text') or len(cv_data['parsed_text'].strip()) < 100:
+                raise ValueError(
+                    "❌ ERROR: El texto del CV original está vacío o es muy corto.\n"
+                    "Por favor, recarga el CV o sube uno nuevo."
+                )
             
-            # Parsear respuesta de IA
-            personalized_content = self._parse_ai_cv_response(result.body)
+            # Crear prompt
+            prompt = self._create_cv_personalization_prompt(cv_data, job_data, user_profile)
+            logger.info(f"🔧 Prompt creado: {len(prompt)} caracteres")
             
-            return personalized_content
+            if process_logs:
+                process_logs.append(f"🔧 Prompt creado ({len(prompt)} caracteres)")
+            
+            # Llamar a IA
+            ai_response = self._call_ai_for_cv(prompt, process_logs)
+            
+            if process_logs:
+                process_logs.append(f"🤖 Respuesta recibida ({len(ai_response)} caracteres)")
+            
+            # Parsear respuesta
+            if process_logs:
+                process_logs.append("🔍 Parseando respuesta JSON de IA...")
+            personalized_cv = self._parse_ai_cv_response(ai_response)
+            
+            if process_logs:
+                process_logs.append("✅ JSON parseado correctamente")
+            
+            # Validar que tenga datos reales
+            if process_logs:
+                process_logs.append("🔍 Validando datos del CV...")
+            self._validate_cv_has_real_data(personalized_cv)
+            
+            if process_logs:
+                process_logs.append("✅ Validación exitosa")
+            
+            # Optimizar para ATS
+            if process_logs:
+                process_logs.append("🔧 Optimizando CV para ATS...")
+            job_keywords = KeywordExtractor.extract_keywords(job_data['description'])
+            personalized_cv = self._optimize_cv_for_ats(personalized_cv, job_keywords, cv_data)
+            
+            if process_logs:
+                process_logs.append("✅ Optimización ATS completada")
+                process_logs.append("✅ CV personalizado generado exitosamente")
+            
+            return personalized_cv
             
         except Exception as e:
             logger.error(f"Error generando CV personalizado: {e}")
-            # Fallback: usar datos originales con mejoras básicas
-            return self._create_fallback_personalized_cv(cv_data, job_requirements)
+            raise e
     
     def _create_cv_personalization_prompt(
         self, 
@@ -453,96 +185,514 @@ class CVPersonalizationService:
         job_requirements: Dict, 
         user_profile: Optional[Dict] = None
     ) -> str:
-        """Crea prompt específico para personalización de CV."""
+        """Crea prompt para personalización de CV."""
         
-        prompt = f"""
-Eres un experto en recursos humanos y redacción de CVs. Tu tarea es personalizar un CV para destacar las habilidades y experiencia más relevantes para un puesto específico.
+        parsed_text = cv_data.get('parsed_text', '')
+        
+        # Extraer keywords del puesto
+        keywords_list = KeywordExtractor.extract_keywords(job_requirements['description'])
+        keywords_str = ', '.join(keywords_list[:10])
+        
+        # Preparar datos para el prompt
+        job_json = {
+            "title": job_requirements['title'],
+            "description": job_requirements['description'],
+            "mail": job_requirements.get('mail', 'N/A')
+        }
+        
+        user_cv_data = {"parsed_text": parsed_text}
+        
+        prompt = f"""ROL: Eres un experto en Recursos Humanos y redacción de CVs ATS-friendly. Actúas como "composer" que adapta un CV existente al texto de un puesto específico SIN inventar datos.
 
-INFORMACIÓN DEL PUESTO:
-- Título: {job_requirements['title']}
-- Nivel: {job_requirements['experience_level']}
-- Habilidades requeridas: {', '.join(job_requirements['required_skills'])}
-- Tecnologías: {', '.join(job_requirements['technologies'])}
-- Tipo de empresa: {job_requirements['company_type']}
+OBJETIVO: Personalizar el CV para el puesto dado y devolver ÚNICAMENTE un JSON válido conforme al esquema indicado.
 
-INFORMACIÓN DEL CV ACTUAL:
-- Habilidades: {', '.join(cv_data['skills'])}
-- Años de experiencia: {cv_data['experience_years']}
-- Educación: {cv_data['education']}
-- Proyectos: {', '.join(cv_data['projects'])}
+⚠️ CRÍTICO: DEBES usar TODOS los datos reales del CV original (nombre, email, teléfono, experiencias, proyectos, etc.). NO uses placeholders como "NOMBRE APELLIDO" o "EMPRESA | Cargo". USA LOS DATOS REALES del parsed_text.
 
-TAREA:
-Personaliza el CV para este puesto específico. Responde en formato JSON con las siguientes secciones:
+DATOS DE ENTRADA:
+- JOB: {json.dumps(job_json, ensure_ascii=False)}
+- USER_CV: {json.dumps(user_cv_data, ensure_ascii=False)}
 
+⚠️ SI NO ENCUENTRAS UN DATO EN parsed_text, USA null. NUNCA uses placeholders genéricos.
+
+IDIOMA DE SALIDA:
+- Si JOB.description está mayormente en español → escribe en español.
+- Si está mayormente en otro idioma → escribe en ese idioma.
+
+REGLAS CRÍTICAS:
+1) NO INVENTES: Usa EXACTAMENTE la información presente en USER_CV.parsed_text
+2) ENLACES: INCLUYE TODOS los enlaces del CV original (LinkedIn, GitHub, Portfolio)
+3) FECHAS: Solo usa fechas explícitas del parsed_text
+4) EMAILS Y PAÍSES: USA EXACTAMENTE el email y país del CV original
+5) FORMATO: Bullets concisos (≤220 caracteres). Sin tablas, emojis ni markdown
+6) DEVOLUCIÓN: Responde ÚNICAMENTE con JSON válido
+
+ESTRATEGIA ATS (CRÍTICO - MAXIMIZAR SCORE):
+**KEYWORDS CRÍTICAS**: {keywords_str}
+
+⚠️ OBJETIVO: Incluir AL MENOS 80% de estas keywords en el CV (mínimo {int(len(keywords_list) * 0.8)} de {len(keywords_list)})
+
+INSTRUCCIONES PARA KEYWORDS (MÁS AGRESIVAS):
+1. REGLA DE ORO: Menciona TODAS las keywords posibles con conexión técnica
+2. RELACIONES VÁLIDAS Y SINÓNIMOS:
+   - Android/Kotlin → Java, Mobile, Desarrollo móvil, Material Design
+   - React → JavaScript, TypeScript, Frontend, Web Development
+   - Django/Flask → Python, Backend, APIs REST, Web Framework
+   - Git → Version Control, CI/CD, GitLab, GitHub, DevOps
+   - SQLite/Room → SQL, Bases de datos, MySQL, PostgreSQL
+   - Firebase → Cloud, Backend, AWS, Azure, GCP
+   - Jetpack Compose → UI, Frontend, HTML, CSS (conceptos UI)
+   
+3. DISTRIBUCIÓN AGRESIVA (MÍNIMOS):
+   - SUMMARY: AL MENOS 5 keywords principales
+   - SKILLS: AL MENOS 12 keywords (incluye sinónimos y expansiones)
+   - EXPERIENCE: AL MENOS 4 keywords por experiencia (en bullets)
+   - PROJECTS: AL MENOS 6 keywords por proyecto (máxima creatividad)
+   
+4. HONESTIDAD ESTRATÉGICA FLEXIBLE:
+   - Usa: "con conocimientos de", "experiencia en", "familiarizado con"
+   - Busca TRANSFERIBILIDAD AGRESIVA:
+     * SQLite → MySQL, PostgreSQL, SQL, Bases de datos relacionales
+     * Firebase → AWS, Cloud, Backend as a Service
+     * Kotlin → Java, JVM, Android Development
+     * APIs REST (consumo) → Backend, Node.js, Django, Express
+   - Menciona tecnologías relacionadas en PROYECTOS (más flexible)
+   
+5. TÉCNICAS PARA AUMENTAR SCORE:
+   - Repite keywords importantes 2-3 veces en diferentes secciones
+   - Usa verbos de acción con keywords: "Implementé Python", "Desarrollé con JavaScript"
+   - Agrega keywords en contexto técnico: "arquitectura cloud (AWS/Firebase)"
+   - En PROJECTS, menciona "prototipo con X", "evaluando Y", "migración a Z"
+
+FORMATO DE SALIDA:
+NOMBRE APELLIDO
+Ciudad, País | Teléfono | email@dominio.com | LinkedIn | GitHub | Portfolio
+
+TÍTULO / ROL OBJETIVO
+
+RESUMEN (⚠️ CRÍTICO - INCLUIR 5-7 KEYWORDS)
+Profesional con [X] años en [área con keyword]. Especializado en [keyword1, keyword2, keyword3]. Experiencia en [keyword4, keyword5, keyword6]. Logros: [métrica con keyword].
+
+Ejemplo para Desarrollo Web:
+"Desarrollador con 3 años en desarrollo web full-stack, especializado en Python, Django, JavaScript y APIs RESTful. Experiencia en bases de datos MySQL/PostgreSQL, frontend HTML5/CSS3 y metodologías ágiles. Desarrollé 10+ proyectos web optimizando rendimiento 40%."
+
+COMPETENCIAS (⚠️ MÍNIMO 12 KEYWORDS)
+[Keyword1] · [Keyword2] · [Keyword3] · [Sinónimo1] · [Sinónimo2] · [Expansión1] · [Expansión2] · [Relacionada1] · [Relacionada2] · [Relacionada3] · [Relacionada4] · [Relacionada5]
+
+EXPERIENCIA (⚠️ 4+ KEYWORDS POR BULLET)
+EMPRESA | Cargo — Ciudad, País | AAAA-MM – AAAA-MM
+• Implementé [keyword1] con [keyword2], logrando [métrica] en [keyword3] y [keyword4]
+• Desarrollé [keyword5] usando [keyword6] y [keyword7], reduciendo [X]% en [keyword8]
+
+PROYECTOS (⚠️ 6+ KEYWORDS POR PROYECTO - MÁXIMA CREATIVIDAD)
+Proyecto | [keyword1], [keyword2], [keyword3], [keyword4], [keyword5], [keyword6]
+• [Problema] → Implementé con [keywords] → [Resultado cuantificable]. Evaluando migración a [keyword relacionada]. URL: [link]
+
+EDUCACIÓN (⚠️ SOLO SI EXISTE EN CV ORIGINAL)
+Título — Institución | Ciudad | AAAA-MM – AAAA-MM
+
+⚠️ CRÍTICO: Si NO hay educación en el CV original, el array "education" debe estar VACÍO []. 
+NO uses placeholders como "Título — Institución | Ciudad".
+
+IDIOMAS (⚠️ CRÍTICO - NUNCA USAR "(nivel)" GENÉRICO)
+[Idioma] ([Nivel específico])
+
+**REGLAS PARA IDIOMAS**:
+1. NUNCA uses "(nivel)" genérico - SIEMPRE especifica el nivel real
+2. Si el CV tiene nivel explícito → úsalo tal cual (ej: "Nativo", "Avanzado", "B2", "C1")
+3. Si NO hay nivel explícito:
+   - Idioma del país de origen → "Nativo" (ej: Español para Argentina)
+   - Otros idiomas mencionados → "Intermedio" (default razonable)
+4. Niveles válidos: "Nativo", "Avanzado", "Intermedio", "Básico", "A1", "A2", "B1", "B2", "C1", "C2"
+
+Ejemplo CORRECTO:
+- Español (Nativo)
+- Inglés (Intermedio)
+- Ruso (Avanzado)
+
+Ejemplo INCORRECTO:
+- Español (nivel)  ❌
+- Inglés (nivel)   ❌
+
+ESQUEMA JSON:
 {{
-    "resumen_profesional": "Resumen de 2-3 líneas destacando experiencia relevante para el puesto",
-    "habilidades_destacadas": ["Lista de habilidades más relevantes para el puesto"],
-    "experiencia_relevante": "Descripción de experiencia enfocada en el puesto",
-    "proyectos_relevantes": ["Lista de proyectos más relevantes"],
-    "educacion_adaptada": "Información de educación adaptada al contexto",
-    "puntos_clave": ["3-4 puntos clave que lo hacen ideal para el puesto"]
+  "header": {{
+    "full_name": string | null,
+    "city": string | null,
+    "country": string | null,
+    "phone": string | null,
+    "email": string | null,
+    "links": {{
+      "linkedin": string | null,
+      "portfolio": string | null,
+      "github": string | null,
+      "other": [string]
+    }},
+    "target_title": string | null
+  }},
+  "summary": string,
+  "skills": [string],
+  "experience": [
+    {{
+      "company": string | null,
+      "role": string | null,
+      "city": string | null,
+      "country": string | null,
+      "start_date": string | null,
+      "end_date": string | null,
+      "context": string | null,
+      "bullets": [string]
+    }}
+  ],
+  "projects": [
+    {{
+      "name": string,
+      "role": string | null,
+      "tools": [string],
+      "date": string | null,
+      "bullet": string,
+      "url": string | null
+    }}
+  ],
+  "education": [
+    {{
+      "degree": string,
+      "institution": string,
+      "city": string | null,
+      "country": string | null,
+      "start_date": string | null,
+      "end_date": string | null,
+      "details": string | null
+    }}
+  ],  // ⚠️ Si NO hay educación en CV original, este array debe estar VACÍO: "education": []
+  "certifications": [
+    {{ "name": string, "issuer": string | null, "year": string | null, "id": string | null }}
+  ],
+  "languages": [
+    {{ "language": string, "level": string }}   // ⚠️ CRÍTICO: level NUNCA debe ser "(nivel)" genérico. Usa nivel REAL del CV (ej: "Nativo", "Avanzado", "Intermedio", "Básico", "B2", "C1"). Si no hay nivel explícito en CV: país de origen → "Nativo", otros → "Intermedio" (default razonable)
+  ],
+  "extras": {{
+    "awards": [string],
+    "volunteering": [string],
+    "availability": string | null,
+    "work_permit": [string]
+  }},
+  "tailoring_meta": {{
+    "job_title": string | null,
+    "job_description_excerpt": string | null,
+    "job_mail": string | null,
+    "keywords_matched": [string],
+    "alignment_score": integer,
+    "warnings": [string]
+  }}
 }}
 
-IMPORTANTE:
-- Destaca las habilidades que coinciden con los requisitos
-- Adapta el lenguaje al tipo de empresa y nivel del puesto
-- Mantén información veraz pero enfócate en lo más relevante
-- Usa un tono profesional apropiado para el nivel del puesto
-"""
+VALIDACIÓN:
+- JSON sintácticamente válido
+- Todas las keys presentes
+- summary ≤ 650 caracteres; bullets ≤ 220; skills ≤ 25
+- Skills SOLO basadas en CV original
+
+SALIDA:
+Devuelve únicamente el JSON final."""
 
         return prompt
+    
+    def _optimize_cv_for_ats(self, personalized_cv: Dict, job_keywords: List[str], cv_data: Dict) -> Dict:
+        """Valida y limpia el CV generado (MÁS FLEXIBLE)."""
+        try:
+            original_cv_text = self._extract_text_from_cv_data(cv_data).lower()
+            
+            # Diccionario de relaciones técnicas válidas (expandido)
+            valid_expansions = {
+                'javascript': ['kotlin', 'java', 'android', 'mobile', 'frontend', 'web'],
+                'html5': ['android', 'mobile', 'ui', 'frontend', 'jetpack compose'],
+                'css3': ['android', 'mobile', 'ui', 'frontend', 'material design'],
+                'python': ['backend', 'api', 'desarrollo', 'programación'],
+                'sql': ['sqlite', 'room', 'base de datos', 'database'],
+                'mysql': ['sqlite', 'room', 'sql', 'base de datos'],
+                'postgresql': ['sqlite', 'room', 'sql', 'base de datos'],
+                'node.js': ['backend', 'api', 'rest', 'servidor'],
+                'express': ['backend', 'api', 'rest', 'servidor'],
+                'django': ['backend', 'api', 'rest', 'python'],
+                'flask': ['backend', 'api', 'rest', 'python'],
+                'react': ['frontend', 'ui', 'javascript', 'web'],
+                'angular': ['frontend', 'ui', 'javascript', 'web'],
+                'vue': ['frontend', 'ui', 'javascript', 'web'],
+                'aws': ['cloud', 'firebase', 'backend', 'servidor'],
+                'azure': ['cloud', 'firebase', 'backend', 'servidor'],
+                'gcp': ['cloud', 'firebase', 'backend', 'servidor'],
+                'docker': ['devops', 'ci/cd', 'deployment'],
+                'kubernetes': ['devops', 'ci/cd', 'deployment', 'docker'],
+            }
+            
+            # 1. Validar skills (MÁS FLEXIBLE)
+            current_skills = personalized_cv.get('skills', [])
+            validated_skills = []
+            removed_count = 0
+            
+            for skill in current_skills:
+                skill_lower = skill.lower()
+                skill_words = skill_lower.split()
+                
+                # Buscar en CV original
+                found_in_original = any(
+                    word in original_cv_text 
+                    for word in skill_words 
+                    if len(word) > 3
+                )
+                
+                # Si no está en original, verificar si es una expansión válida
+                is_valid_expansion = False
+                if not found_in_original and skill_lower in valid_expansions:
+                    # Verificar si alguna de las tecnologías relacionadas está en el CV
+                    for related_tech in valid_expansions[skill_lower]:
+                        if related_tech in original_cv_text:
+                            is_valid_expansion = True
+                            logger.info(f"✅ Skill '{skill}' aceptada - expansión válida de '{related_tech}'")
+                            break
+                
+                # Si está en keywords del job, ser más flexible
+                is_job_keyword = skill_lower in [kw.lower() for kw in job_keywords]
+                
+                if found_in_original or is_valid_expansion or (is_job_keyword and len(validated_skills) < 15):
+                    validated_skills.append(skill)
+                else:
+                    logger.warning(f"⚠️ Skill '{skill}' removida - no aparece en CV ni es expansión válida")
+                    removed_count += 1
+            
+            personalized_cv['skills'] = validated_skills[:25]
+            
+            if removed_count > 0:
+                logger.info(f"✅ {removed_count} skills inventadas removidas. Skills validadas: {len(validated_skills)}")
+            
+            # 2. Limpiar ubicaciones duplicadas
+            for exp in personalized_cv.get('experience', []):
+                location = exp.get('location', '')
+                parts = [p.strip() for p in location.split(',')]
+                if len(parts) >= 2 and parts[-1] == parts[-2]:
+                    exp['location'] = ', '.join(parts[:-1])
+            
+            # 3. Truncar bullets largos
+            for exp in personalized_cv.get('experience', []):
+                exp['bullets'] = [
+                    bullet[:217] + '...' if len(bullet) > 220 else bullet
+                    for bullet in exp.get('bullets', [])
+                ]
+            
+            return personalized_cv
+            
+        except Exception as e:
+            logger.error(f"Error optimizando CV para ATS: {e}")
+            return personalized_cv
+    
+    def _validate_cv_has_real_data(self, personalized_cv: Dict) -> None:
+        """Valida que el CV tenga datos reales y no placeholders."""
+        errors = []
+        
+        # Validar header
+        header = personalized_cv.get('header', {})
+        full_name = header.get('full_name', '')
+        if not full_name or re.search(r'NOMBRE|APELLIDO|nombre apellido', full_name, re.IGNORECASE):
+            errors.append("❌ Nombre: placeholder detectado")
+        
+        email = header.get('email', '')
+        if not email or '@' not in email:
+            errors.append("❌ Email: no válido o vacío")
+        
+        # Validar summary
+        summary = personalized_cv.get('summary', '')
+        if not summary or len(summary.strip()) < 50:
+            errors.append("❌ Summary: vacío o muy corto")
+        elif re.search(r'Profesional con \[X\]|Foco en \[competencias|Logros: \[métrica', summary):
+            errors.append("❌ Summary: contiene placeholders sin reemplazar")
+        
+        # Validar experience
+        experiences = personalized_cv.get('experience', [])
+        if experiences:
+            for i, exp in enumerate(experiences[:3]):
+                company = exp.get('company', '')
+                role = exp.get('role', '')
+                
+                if not company or re.search(r'EMPRESA|empresa', company, re.IGNORECASE):
+                    errors.append(f"❌ Experiencia #{i+1}: empresa es placeholder")
+                
+                if not role or re.search(r'Cargo|cargo', role, re.IGNORECASE):
+                    errors.append(f"❌ Experiencia #{i+1}: cargo es placeholder")
+        
+        if errors:
+            error_msg = (
+                "❌ ERROR: La IA generó un CV con placeholders.\n\n"
+                "Problemas:\n" + "\n".join(errors) + "\n\n"
+                "Por favor, contacta al administrador."
+            )
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+        
+        logger.info("✅ Validación exitosa: CV contiene datos reales")
     
     def _parse_ai_cv_response(self, ai_response: str) -> Dict:
         """Parsea la respuesta de IA para extraer CV personalizado."""
         try:
-            import json
+            logger.info(f"🔍 Parseando respuesta de IA ({len(ai_response)} caracteres)")
             
-            # Intentar parsear como JSON
-            if ai_response.strip().startswith('{'):
-                return json.loads(ai_response)
+            cleaned_response = ai_response.strip()
             
-            # Si no es JSON, crear estructura básica
-            return {
-                'resumen_profesional': ai_response[:200] + '...' if len(ai_response) > 200 else ai_response,
-                'habilidades_destacadas': [],
-                'experiencia_relevante': ai_response,
-                'proyectos_relevantes': [],
-                'educacion_adaptada': '',
-                'puntos_clave': []
-            }
+            # Remover bloques markdown
+            if '```' in cleaned_response:
+                logger.info("🔍 Detectado bloque markdown, extrayendo JSON...")
+                code_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', cleaned_response, re.DOTALL)
+                if code_match:
+                    cleaned_response = code_match.group(1).strip()
+                else:
+                    cleaned_response = re.sub(r'```(?:json)?', '', cleaned_response)
+                    cleaned_response = re.sub(r'```', '', cleaned_response).strip()
+            
+            # Intentar parsear JSON directo
+            if cleaned_response.startswith('{'):
+                try:
+                    parsed = json.loads(cleaned_response)
+                    required_keys = ['header', 'summary', 'skills', 'experience']
+                    if all(key in parsed for key in required_keys):
+                        logger.info("✅ JSON válido parseado")
+                        return parsed
+                except json.JSONDecodeError as e:
+                    logger.warning(f"⚠️ Error parseando JSON: {e}")
+            
+            # Buscar JSON con balance de llaves
+            logger.info("🔍 Buscando JSON con balance de llaves...")
+            start_idx = cleaned_response.find('{')
+            if start_idx != -1:
+                brace_count = 0
+                in_string = False
+                escape_next = False
+                
+                for i in range(start_idx, len(cleaned_response)):
+                    char = cleaned_response[i]
+                    
+                    if char == '"' and not escape_next:
+                        in_string = not in_string
+                    elif char == '\\' and not escape_next:
+                        escape_next = True
+                        continue
+                    
+                    escape_next = False
+                    
+                    if not in_string:
+                        if char == '{':
+                            brace_count += 1
+                        elif char == '}':
+                            brace_count -= 1
+                            
+                            if brace_count == 0:
+                                json_str = cleaned_response[start_idx:i+1]
+                                try:
+                                    parsed = json.loads(json_str)
+                                    if all(key in parsed for key in ['header', 'summary', 'skills', 'experience']):
+                                        logger.info("✅ JSON balanceado válido")
+                                        return parsed
+                                except json.JSONDecodeError:
+                                    pass
+                                break
+            
+            # Si llegamos aquí, el JSON está malformado
+            raise ValueError(
+                "❌ La IA generó un JSON incompleto o malformado. "
+                "Por favor, intenta nuevamente."
+            )
             
         except Exception as e:
-            logger.error(f"Error parseando respuesta de IA: {e}")
-            return {
-                'resumen_profesional': ai_response[:200] + '...' if len(ai_response) > 200 else ai_response,
-                'habilidades_destacadas': [],
-                'experiencia_relevante': ai_response,
-                'proyectos_relevantes': [],
-                'educacion_adaptada': '',
-                'puntos_clave': []
-            }
+            logger.error(f"❌ Error parseando respuesta de IA: {e}")
+            raise e
     
-    def _create_fallback_personalized_cv(self, cv_data: Dict, job_requirements: Dict) -> Dict:
-        """Crea CV personalizado básico sin IA como fallback."""
-        
-        # Destacar habilidades que coinciden
-        matching_skills = []
-        for skill in cv_data['skills']:
-            if any(req_skill.lower() in skill.lower() for req_skill in job_requirements['required_skills']):
-                matching_skills.append(skill)
-        
-        return {
-            'resumen_profesional': f"Profesional con {cv_data['experience_years']} años de experiencia en desarrollo de software.",
-            'habilidades_destacadas': matching_skills[:5],
-            'experiencia_relevante': f"Experiencia sólida en desarrollo con tecnologías modernas.",
-            'proyectos_relevantes': cv_data['projects'][:2],
-            'educacion_adaptada': cv_data['education'],
-            'puntos_clave': [
-                f"{cv_data['experience_years']} años de experiencia",
-                f"Experto en {', '.join(matching_skills[:3])}" if matching_skills else "Habilidades técnicas sólidas",
-                "Experiencia en proyectos complejos"
-            ]
-        }
+    def _call_ai_for_cv(self, prompt: str, process_logs: Optional[List] = None) -> str:
+        """Llama a los proveedores de IA para generar CV."""
+        try:
+            from matching.models import AIConfiguration
+            config = AIConfiguration.objects.first()
+            
+            if not config:
+                raise Exception("No hay configuración de IA disponible")
+            
+            # Intentar OpenAI primero
+            if config.openai_enabled and config.openai_api_key:
+                try:
+                    if process_logs:
+                        process_logs.append("🤖 Llamando a OpenAI...")
+                    
+                    import openai
+                    decrypted_key = config._decrypt_key(config.openai_api_key)
+                    openai.api_key = decrypted_key
+                    
+                    response = openai.chat.completions.create(
+                        model=config.openai_model or "gpt-3.5-turbo",
+                        messages=[
+                            {"role": "system", "content": "Eres un experto en RR.HH. que genera CVs personalizados. Responde ÚNICAMENTE con JSON válido."},
+                            {"role": "user", "content": prompt}
+                        ],
+                        max_tokens=8000,
+                        temperature=0.7
+                    )
+                    
+                    response_text = response.choices[0].message.content
+                    logger.info(f"✅ CV generado con OpenAI: {len(response_text)} caracteres")
+                    if process_logs:
+                        process_logs.append(f"✅ OpenAI respondió exitosamente ({len(response_text)} caracteres)")
+                    return response_text
+                    
+                except Exception as e:
+                    error_msg = str(e)
+                    logger.warning(f"❌ Error con OpenAI: {error_msg}")
+                    
+                    if process_logs:
+                        if "429" in error_msg or "quota" in error_msg.lower():
+                            process_logs.append("⚠️ OpenAI: Cuota agotada")
+                        else:
+                            process_logs.append(f"⚠️ OpenAI: {error_msg[:100]}")
+                    
+                    if "429" in error_msg or "quota" in error_msg.lower():
+                        logger.info("🔄 Intentando con Anthropic...")
+                        if process_logs:
+                            process_logs.append("🔄 Intentando con Anthropic...")
+                    else:
+                        raise e
+            
+            # Fallback a Anthropic
+            if config.anthropic_enabled and config.anthropic_api_key:
+                try:
+                    logger.info("🔄 Usando Anthropic...")
+                    if process_logs:
+                        process_logs.append("🤖 Llamando a Anthropic...")
+                    
+                    import anthropic
+                    
+                    decrypted_key = config._decrypt_key(config.anthropic_api_key)
+                    client = anthropic.Anthropic(api_key=decrypted_key)
+                    
+                    response = client.messages.create(
+                        model=config.anthropic_model or "claude-3-haiku-20240307",
+                        max_tokens=8000,
+                        temperature=0.7,
+                        messages=[{"role": "user", "content": prompt}]
+                    )
+                    
+                    response_text = response.content[0].text
+                    logger.info(f"✅ CV generado con Anthropic: {len(response_text)} caracteres")
+                    if process_logs:
+                        process_logs.append(f"✅ Anthropic respondió exitosamente ({len(response_text)} caracteres)")
+                    return response_text
+                    
+                except Exception as e:
+                    error_msg = str(e)
+                    logger.error(f"❌ Error con Anthropic: {error_msg}")
+                    if process_logs:
+                        process_logs.append(f"❌ Anthropic: {error_msg[:100]}")
+                    raise e
+            
+            raise Exception("No hay proveedores de IA disponibles")
+            
+        except Exception as e:
+            logger.error(f"Error llamando a IA: {e}")
+            raise e
     
     def _create_personalized_file(
         self, 
@@ -552,58 +702,78 @@ IMPORTANTE:
     ) -> Optional[str]:
         """Crea archivo personalizado del CV."""
         try:
-            # Por ahora, retornamos el archivo original
-            # En el futuro se puede implementar generación de PDF personalizado
+            # Por ahora, retornar el archivo original
+            # TODO: Implementar generación de PDF personalizado
             if user_cv.original_file:
                 return user_cv.original_file.path
-            
             return None
-            
         except Exception as e:
             logger.error(f"Error creando archivo personalizado: {e}")
             return None
     
-    def _calculate_match_score(self, cv_data: Dict, job_requirements: Dict) -> int:
-        """Calcula score de coincidencia entre CV y puesto."""
+    def _calculate_ats_score(self, cv_data: Dict, job_data: Dict, personalized_cv: Dict) -> Dict:
+        """Calcula score ATS usando el módulo unificado."""
         try:
-            score = 0
+            cv_text = self._extract_text_from_cv_data(cv_data)
             
-            # Coincidencia de habilidades (40% del score)
-            matching_skills = 0
-            for skill in cv_data['skills']:
-                if any(req_skill.lower() in skill.lower() for req_skill in job_requirements['required_skills']):
-                    matching_skills += 1
-            
-            if job_requirements['required_skills']:
-                skill_score = (matching_skills / len(job_requirements['required_skills'])) * 40
-                score += min(skill_score, 40)
-            
-            # Coincidencia de nivel de experiencia (30% del score)
-            cv_years = cv_data['experience_years']
-            required_level = job_requirements['experience_level']
-            
-            if required_level == 'Junior' and cv_years <= 3:
-                score += 30
-            elif required_level == 'Mid-level' and 2 <= cv_years <= 5:
-                score += 30
-            elif required_level == 'Senior' and cv_years >= 4:
-                score += 30
-            
-            # Coincidencia de tecnologías (30% del score)
-            matching_techs = 0
-            for tech in job_requirements['technologies']:
-                if any(tech.lower() in skill.lower() for skill in cv_data['skills']):
-                    matching_techs += 1
-            
-            if job_requirements['technologies']:
-                tech_score = (matching_techs / len(job_requirements['technologies'])) * 30
-                score += min(tech_score, 30)
-            
-            return min(int(score), 100)
-            
+            return ats_matcher.calculate_score(
+                cv_text=cv_text,
+                job_description=job_data['description'],
+                cv_structured=personalized_cv
+            )
         except Exception as e:
-            logger.error(f"Error calculando match score: {e}")
-            return 0
+            logger.error(f"Error calculando score ATS: {e}")
+            return {
+                'total': 0,
+                'breakdown': {},
+                'keywords_found': 0,
+                'keywords_total': 0,
+                'missing_keywords': [],
+                'job_keywords': []
+            }
+    
+    # === MÉTODOS AUXILIARES ===
+    
+    def _normalize_cv_data(self, cv_data) -> Dict:
+        """Normaliza cv_data a Dict."""
+        if isinstance(cv_data, str):
+            logger.warning(f"⚠️ cv_data recibido como string, convirtiendo a dict")
+            return {'parsed_text': cv_data}
+        elif isinstance(cv_data, dict):
+            return cv_data
+        else:
+            raise ValueError(f"❌ cv_data tiene tipo inválido: {type(cv_data)}")
+    
+    def _extract_text_from_cv_data(self, cv_data) -> str:
+        """Extrae texto del CV de forma segura."""
+        if isinstance(cv_data, str):
+            return cv_data
+        elif isinstance(cv_data, dict):
+            return cv_data.get('parsed_text', '')
+        return ''
+    
+    def _create_minimal_cv_structure_from_text(self, cv_data: Dict) -> Dict:
+        """Crea estructura mínima del CV desde texto plano."""
+        cv_text = self._extract_text_from_cv_data(cv_data)
+        return {
+            'skills': [],
+            'summary': cv_text[:500],
+            'experience': [],
+            'projects': []
+        }
+    
+    def _error_response(self, error_msg: str, process_logs: List[str]) -> Dict:
+        """Genera respuesta de error estandarizada."""
+        return {
+            'success': False,
+            'error': error_msg,
+            'personalized_cv': None,
+            'personalized_file': None,
+            'job_requirements': {},
+            'cv_data': {},
+            'match_score': 0,
+            'process_logs': process_logs
+        }
 
 
 # Instancia global del servicio

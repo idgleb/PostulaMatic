@@ -303,8 +303,10 @@ class AIConfigurationForm(forms.ModelForm):
     )
     
     # Definir campos de selección explícitamente
-    openai_model = forms.ChoiceField(
-        choices=[],  # Se llena en __init__
+    # NOTA: Usamos CharField en lugar de ChoiceField para permitir modelos dinámicos
+    # Los modelos se cargan dinámicamente desde las APIs en el frontend
+    openai_model = forms.CharField(
+        max_length=100,
         required=False,
         widget=forms.Select(attrs={
             'class': 'modern-select',
@@ -314,8 +316,8 @@ class AIConfigurationForm(forms.ModelForm):
         help_text="Selecciona el modelo de OpenAI a utilizar"
     )
     
-    anthropic_model = forms.ChoiceField(
-        choices=[],  # Se llena en __init__
+    anthropic_model = forms.CharField(
+        max_length=100,
         required=False,
         widget=forms.Select(attrs={
             'class': 'modern-select',
@@ -354,23 +356,8 @@ class AIConfigurationForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        # Agregar opciones de modelos de OpenAI
-        self.fields['openai_model'].choices = [
-            ('', 'Selecciona un modelo...'),
-            ('gpt-3.5-turbo', 'GPT-3.5 Turbo (Recomendado)'),
-            ('gpt-4', 'GPT-4 (Mejor calidad, más caro)'),
-            ('gpt-4-turbo', 'GPT-4 Turbo'),
-            ('gpt-4o', 'GPT-4o (Más reciente)'),
-        ]
-        
-        # Agregar opciones de modelos de Anthropic
-        self.fields['anthropic_model'].choices = [
-            ('', 'Selecciona un modelo...'),
-            ('claude-3-haiku-20240307', 'Claude 3 Haiku (Rápido)'),
-            ('claude-3-sonnet-20240229', 'Claude 3 Sonnet (Balanceado)'),
-            ('claude-3-opus-20240229', 'Claude 3 Opus (Mejor calidad)'),
-            ('claude-3-5-sonnet-20241022', 'Claude 3.5 Sonnet (Más reciente)'),
-        ]
+        # NOTA: Los modelos de OpenAI y Anthropic se cargan dinámicamente desde el frontend
+        # No necesitamos llenar las opciones aquí porque usamos CharField
         
         # Agregar opciones de proveedor por defecto
         self.fields['default_provider'].choices = [
@@ -396,18 +383,20 @@ class AIConfigurationForm(forms.ModelForm):
         openai_enabled = cleaned_data.get('openai_enabled', False)
         anthropic_enabled = cleaned_data.get('anthropic_enabled', False)
         
-        # Si OpenAI está habilitado, validar que tenga modelo y API key
+        # Si OpenAI está habilitado, validar que tenga modelo
         if openai_enabled:
             if not cleaned_data.get('openai_model'):
                 self.add_error('openai_model', 'Debes seleccionar un modelo si habilitas OpenAI.')
-            if not cleaned_data.get('openai_api_key_input'):
+            # Solo validar API key si no hay una configurada previamente
+            if not cleaned_data.get('openai_api_key_input') and not self.instance.openai_api_key:
                 self.add_error('openai_api_key_input', 'Debes ingresar una API key si habilitas OpenAI.')
         
-        # Si Anthropic está habilitado, validar que tenga modelo y API key
+        # Si Anthropic está habilitado, validar que tenga modelo
         if anthropic_enabled:
             if not cleaned_data.get('anthropic_model'):
                 self.add_error('anthropic_model', 'Debes seleccionar un modelo si habilitas Anthropic.')
-            if not cleaned_data.get('anthropic_api_key_input'):
+            # Solo validar API key si no hay una configurada previamente
+            if not cleaned_data.get('anthropic_api_key_input') and not self.instance.anthropic_api_key:
                 self.add_error('anthropic_api_key_input', 'Debes ingresar una API key si habilitas Anthropic.')
         
         # Validar que al menos un proveedor esté habilitado
@@ -418,7 +407,28 @@ class AIConfigurationForm(forms.ModelForm):
     
     def save(self, commit=True):
         """Guarda la configuración y procesa las API keys."""
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        # Log datos antes de guardar
+        logger.info(f"🔍 Formulario - OpenAI model: {self.cleaned_data.get('openai_model')}, Enabled: {self.cleaned_data.get('openai_enabled')}")
+        
         instance = super().save(commit=False)
+        
+        # Log datos de la instancia antes de procesar
+        logger.info(f"🔍 Instancia antes - OpenAI model: {instance.openai_model}, Enabled: {instance.openai_enabled}")
+        
+        # ARREGLAR: Aplicar manualmente los datos del formulario a la instancia
+        if 'openai_model' in self.cleaned_data:
+            instance.openai_model = self.cleaned_data['openai_model']
+        if 'openai_enabled' in self.cleaned_data:
+            instance.openai_enabled = self.cleaned_data['openai_enabled']
+        if 'anthropic_model' in self.cleaned_data:
+            instance.anthropic_model = self.cleaned_data['anthropic_model']
+        if 'anthropic_enabled' in self.cleaned_data:
+            instance.anthropic_enabled = self.cleaned_data['anthropic_enabled']
+        if 'default_provider' in self.cleaned_data:
+            instance.default_provider = self.cleaned_data['default_provider']
         
         # Procesar API keys si se proporcionaron
         if self.cleaned_data.get('openai_api_key_input'):
@@ -429,5 +439,6 @@ class AIConfigurationForm(forms.ModelForm):
         
         if commit:
             instance.save()
+            logger.info(f"🔍 Instancia guardada - OpenAI model: {instance.openai_model}, Enabled: {instance.openai_enabled}")
         
         return instance

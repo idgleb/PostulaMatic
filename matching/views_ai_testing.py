@@ -17,39 +17,6 @@ logger = logging.getLogger(__name__)
 
 
 @login_required
-@require_http_methods(["GET"])
-def ai_providers_status_view(request):
-    """Vista para mostrar el estado de los proveedores de IA."""
-    
-    # Verificar configuración de proveedores
-    providers_status = {}
-    
-    # OpenAI
-    openai_key = os.getenv('OPENAI_API_KEY') or getattr(settings, 'OPENAI_API_KEY', '')
-    providers_status['openai'] = {
-        'configured': bool(openai_key and openai_key != 'your-openai-api-key-here'),
-        'model': os.getenv('OPENAI_MODEL', 'gpt-3.5-turbo'),
-        'key_preview': f"{openai_key[:8]}..." if openai_key else "No configurado"
-    }
-    
-    # Anthropic
-    anthropic_key = os.getenv('ANTHROPIC_API_KEY') or getattr(settings, 'ANTHROPIC_API_KEY', '')
-    providers_status['anthropic'] = {
-        'configured': bool(anthropic_key and anthropic_key != 'your-anthropic-api-key-here'),
-        'model': os.getenv('ANTHROPIC_MODEL', 'claude-3-haiku-20240307'),
-        'key_preview': f"{anthropic_key[:8]}..." if anthropic_key else "No configurado"
-    }
-    
-    # Proveedor por defecto
-    default_provider = os.getenv('AI_PROVIDER', 'openai')
-    
-    context = {
-        'providers_status': providers_status,
-        'default_provider': default_provider,
-        'available_providers': ai_email_service.get_available_providers()
-    }
-    
-    return render(request, 'matching/ai_providers_status.html', context)
 
 
 @login_required

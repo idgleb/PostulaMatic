@@ -13,6 +13,7 @@ app.autodiscover_tasks(['matching'], related_name='tasks')
 app.autodiscover_tasks(['matching'], related_name='tasks_dv')
 app.autodiscover_tasks(['matching'], related_name='tasks_email')
 app.autodiscover_tasks(['matching'], related_name='tasks_stealth')
+app.autodiscover_tasks(['matching'], related_name='tasks_bulk_email')
 
 # Configuración de tareas periódicas
 app.conf.beat_schedule = {

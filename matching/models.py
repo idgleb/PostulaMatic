@@ -363,10 +363,10 @@ class EmailSentLog(models.Model):
         User, on_delete=models.CASCADE, related_name="email_logs"
     )
     cv = models.ForeignKey(
-        UserCV, on_delete=models.CASCADE, related_name="email_logs"
+        UserCV, on_delete=models.SET_NULL, null=True, blank=True, related_name="email_logs"
     )
     job_posting = models.ForeignKey(
-        JobPosting, on_delete=models.CASCADE, related_name="email_logs"
+        JobPosting, on_delete=models.SET_NULL, null=True, blank=True, related_name="email_logs"
     )
     
     # Contenido del email
@@ -382,6 +382,14 @@ class EmailSentLog(models.Model):
         default='sent'
     )
     error_message = models.TextField(blank=True, null=True)
+    
+    # CV personalizado adjunto
+    personalized_cv_file = models.FileField(
+        upload_to='personalized_cvs/%Y/%m/%d/',
+        blank=True,
+        null=True,
+        help_text='CV personalizado que se adjuntó al email'
+    )
     
     # Metadatos
     task_id = models.CharField(max_length=255, blank=True, null=True)
@@ -404,7 +412,8 @@ class EmailSentLog(models.Model):
         ]
     
     def __str__(self):
-        return f"{self.user.username} -> {self.job_posting.title} ({self.status}) - {self.sent_at.strftime('%d/%m/%Y %H:%M')}"
+        job_title = self.job_posting.title if self.job_posting else "[Oferta eliminada]"
+        return f"{self.user.username} -> {job_title} ({self.status}) - {self.sent_at.strftime('%d/%m/%Y %H:%M')}"
     
     @property
     def is_successful(self):
@@ -533,10 +542,24 @@ class AIConfiguration(models.Model):
             if not encryption_key:
                 # Generar clave si no existe
                 encryption_key = Fernet.generate_key().decode()
-                logger.warning(f"Nueva clave de encriptación generada: {encryption_key}")
+                logger.warning(f"Nueva clave de encriptación generada y guardada en .env")
+                # Guardar en archivo .env
+                with open('.env', 'a') as f:
+                    f.write(f'\nENCRYPTION_KEY={encryption_key}\n')
             
-            f = Fernet(encryption_key.encode())
-            return f.encrypt(key.encode()).decode()
+            # Validar que la clave sea válida
+            try:
+                f = Fernet(encryption_key.encode())
+                return f.encrypt(key.encode()).decode()
+            except Exception as e:
+                logger.error(f"Clave de encriptación inválida: {e}")
+                # Generar nueva clave válida
+                new_key = Fernet.generate_key().decode()
+                logger.warning(f"Generando nueva clave de encriptación válida")
+                with open('.env', 'a') as f:
+                    f.write(f'\nENCRYPTION_KEY={new_key}\n')
+                f = Fernet(new_key.encode())
+                return f.encrypt(key.encode()).decode()
             
         except ImportError:
             logger.warning("No se pudo importar el módulo de encriptación. Las credenciales permanecen sin encriptar.")
@@ -578,3 +601,30 @@ class AIConfiguration(models.Model):
     def is_configured(self):
         """Verifica si al menos un proveedor está configurado."""
         return len(self.get_available_providers()) > 0
+
+
+class ScheduledScraping(models.Model):
+    """Configuración para scraping automático programado."""
+    
+    is_enabled = models.BooleanField(
+        default=False,
+        help_text="Activar/desactivar scraping automático"
+    )
+    scheduled_time = models.TimeField(
+        help_text="Hora del día para ejecutar el scraping (formato 24h)"
+    )
+    last_run = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Última vez que se ejecutó el scraping programado"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Scraping Programado"
+        verbose_name_plural = "Scrapings Programados"
+    
+    def __str__(self):
+        status = "Activo" if self.is_enabled else "Inactivo"
+        return f"Scraping programado a las {self.scheduled_time.strftime('%H:%M')} ({status})"

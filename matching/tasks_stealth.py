@@ -4,30 +4,121 @@ Tareas Celery para el scraper stealth de DV Carreras.
 
 import logging
 import asyncio
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from celery import shared_task
 from django.conf import settings
+from django.core.cache import cache
 from asgiref.sync import async_to_sync
 
 from matching.clients.dvcarreras_stealth import DVCarrerasStealth
-from matching.models import JobPosting, ScrapingLog
+from matching.models import JobPosting, ScrapingLog, UserProfile
 
 logger = logging.getLogger(__name__)
 
 
-async def _run_scraping_stealth(user_id: int, task_id: str = None) -> Dict[str, Any]:
+def get_next_user_for_scraping() -> Optional[int]:
+    """
+    Obtiene el siguiente usuario con credenciales válidas y verificadas en rotación (round-robin).
+    Solo usa usuarios con dv_connection_status = 'verified'.
+    
+    Returns:
+        ID del usuario o None si no hay usuarios con credenciales verificadas
+    """
+    # Obtener todos los usuarios con credenciales de DV configuradas Y VERIFICADAS
+    users_with_credentials = UserProfile.objects.filter(
+        dv_username__isnull=False,
+        dv_password__isnull=False,
+        dv_connection_status='verified'  # Solo usuarios verificados
+    ).exclude(
+        dv_username='',
+        dv_password=''
+    ).values_list('user_id', flat=True).order_by('user_id')
+    
+    if not users_with_credentials:
+        logger.warning("⚠️ No hay usuarios con credenciales VERIFICADAS de DV")
+        logger.warning("💡 Verifica las credenciales en el perfil de cada usuario")
+        return None
+    
+    users_list = list(users_with_credentials)
+    
+    # Obtener el último usuario usado desde cache
+    cache_key = 'scraper_last_user_id'
+    last_user_id = cache.get(cache_key)
+    
+    # Encontrar el siguiente usuario en la lista
+    if last_user_id and last_user_id in users_list:
+        current_index = users_list.index(last_user_id)
+        next_index = (current_index + 1) % len(users_list)
+        next_user_id = users_list[next_index]
+    else:
+        # Si no hay último usuario o no está en la lista, usar el primero
+        next_user_id = users_list[0]
+    
+    # Guardar el usuario usado en cache (expira en 1 día)
+    cache.set(cache_key, next_user_id, 86400)
+    
+    logger.info(f"🔄 Rotación de usuarios: Usando usuario {next_user_id} de {len(users_list)} verificados disponibles")
+    
+    return next_user_id
+
+
+async def _run_scraping_stealth(user_id: int, task_id: str = None, requesting_user_id: int = None) -> Dict[str, Any]:
     """
     Función asíncrona para ejecutar el scraping stealth.
     
     Args:
-        user_id: ID del usuario
+        user_id: ID del usuario cuyas credenciales se usarán
         task_id: ID de la tarea de Celery (para logging)
+        requesting_user_id: ID del usuario que inició el scraping (para logs duplicados)
         
     Returns:
         Diccionario con resultados del scraping
     """
-    logger.info(f"Iniciando scraping stealth para usuario {user_id}, task_id: {task_id}")
+    # Función helper para guardar logs globales (sin user_id específico)
+    async def save_log(message: str, log_type: str = 'info'):
+        """Guarda un log global para el task_id (visible para todos los admins)"""
+        from asgiref.sync import sync_to_async
+        
+        # Guardar log con user_id del usuario cuyas credenciales se usan
+        # (para mantener compatibilidad con el modelo, pero los admins verán todos los logs por task_id)
+        await sync_to_async(ScrapingLog.objects.create)(
+            user_id=user_id,
+            message=message,
+            log_type=log_type,
+            task_id=task_id
+        )
+    
+    # Separador visual
+    logger.info("=" * 80)
+    logger.info("🚀 NUEVA EJECUCIÓN DE SCRAPING")
+    logger.info("=" * 80)
+    
+    # Obtener información del usuario para logging (solo en consola por ahora)
+    from asgiref.sync import sync_to_async
+    from django.contrib.auth.models import User
+    
+    try:
+        user = await sync_to_async(User.objects.get)(id=user_id)
+        profile = await sync_to_async(UserProfile.objects.get)(user_id=user_id)
+        dv_username = profile.dv_username or "N/A"
+        
+        logger.info(f"👤 Usuario del Sistema: {user.get_full_name() or user.username} (ID: {user_id})")
+        logger.info(f"📧 Email: {user.email}")
+        logger.info(f"🎓 Login DAVINCI: {dv_username}")
+        logger.info(f"📋 Task ID: {task_id}")
+        
+        # Si hay un requesting_user diferente, mostrarlo
+        if requesting_user_id and requesting_user_id != user_id:
+            requesting_user = await sync_to_async(User.objects.get)(id=requesting_user_id)
+            requesting_name = requesting_user.get_full_name() or requesting_user.username
+            logger.info(f"🖥️  Solicitado por: {requesting_name} (ID: {requesting_user_id})")
+        
+        logger.info("-" * 80)
+    except Exception as e:
+        logger.error(f"⚠️ Error obteniendo información del usuario: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
     
     # VERIFICACIÓN DE CANCELACIÓN: Verificar si la tarea fue cancelada
     from celery import current_app
@@ -59,13 +150,64 @@ async def _run_scraping_stealth(user_id: int, task_id: str = None) -> Dict[str, 
                 'user_id': user_id
             }
         
+        # ⚡ GUARDAR LOG DE CREDENCIALES DESPUÉS de iniciar navegador
+        try:
+            user = await sync_to_async(User.objects.get)(id=user_id)
+            profile = await sync_to_async(UserProfile.objects.get)(user_id=user_id)
+            dv_username = profile.dv_username or "N/A"
+            user_full_name = user.get_full_name() or user.username
+            user_email = user.email or "N/A"
+            
+            info_message = f"🔐 Usando credenciales de: {user_full_name} (Email: {user_email}, Login DV: {dv_username})"
+            
+            # Si hay un requesting_user diferente, agregarlo al mensaje
+            if requesting_user_id and requesting_user_id != user_id:
+                requesting_user = await sync_to_async(User.objects.get)(id=requesting_user_id)
+                requesting_name = requesting_user.get_full_name() or requesting_user.username
+                info_message += f" | Solicitado por: {requesting_name}"
+            
+            await save_log(info_message, 'info')
+            logger.info(f"✅ Log de credenciales guardado en BD: {info_message}")
+        except Exception as e:
+            logger.error(f"⚠️ Error guardando log de credenciales: {e}")
+        
         # Realizar login
-        if not await client.login():
+        login_result = await client.login()
+        if not login_result:
+            # Login falló - marcar credenciales como no verificadas
+            from asgiref.sync import sync_to_async
+            
+            try:
+                profile = await sync_to_async(UserProfile.objects.get)(user_id=user_id)
+                await sync_to_async(profile.set_dv_connection_verified)(False)
+                await sync_to_async(profile.save)()
+                
+                logger.error(f"❌ Login fallido para usuario {user_id} - Credenciales marcadas como NO VERIFICADAS")
+                
+                await save_log(
+                    f"❌ Login fallido - Credenciales incorrectas. Usuario marcado como no verificado.",
+                    'error'
+                )
+            except Exception as e:
+                logger.error(f"Error actualizando estado de verificación: {e}")
+            
             return {
                 'success': False,
-                'error': 'Login fallido',
-                'user_id': user_id
+                'error': 'Login fallido - Credenciales incorrectas',
+                'user_id': user_id,
+                'credentials_marked_invalid': True
             }
+        
+        # Login exitoso - marcar credenciales como verificadas
+        from asgiref.sync import sync_to_async
+        try:
+            profile = await sync_to_async(UserProfile.objects.get)(user_id=user_id)
+            if profile.dv_connection_status != 'verified':
+                await sync_to_async(profile.set_dv_connection_verified)(True)
+                await sync_to_async(profile.save)()
+                logger.info(f"✅ Credenciales verificadas para usuario {user_id}")
+        except Exception as e:
+            logger.warning(f"⚠️ No se pudo actualizar estado de verificación: {e}")
         
         # Scrapear ofertas
         jobs = await client.scrape_job_board(max_pages=1)
@@ -125,14 +267,35 @@ async def _run_scraping_stealth(user_id: int, task_id: str = None) -> Dict[str, 
             else:
                 summary_msg = f"📊 Resumen: {len(jobs)} ofertas encontradas, {saved_jobs} nuevas guardadas"
             
-            await sync_to_async(ScrapingLog.objects.create)(
-                user_id=user_id,
-                message=summary_msg,
-                log_type='success',
-                task_id=task_id
-            )
+            await save_log(summary_msg, 'success')
         except Exception:
             pass  # No crítico si falla el log
+        
+        # ✅ NUEVO: Iniciar cálculo automático de matches para TODOS los usuarios
+        if saved_jobs > 0:  # Solo si se guardaron ofertas nuevas
+            try:
+                logger.info("🧮 Iniciando cálculo automático de matches para todos los usuarios...")
+                await save_log("🧮 Iniciando cálculo de matches para todos los usuarios...", 'info')
+                
+                # Importar la nueva tarea
+                from matching.tasks import recalculate_matches_for_all_users
+                
+                # Iniciar tarea en background (no esperar resultado)
+                match_task = await sync_to_async(recalculate_matches_for_all_users.delay)()
+                
+                logger.info(f"✅ Tarea de cálculo de matches iniciada: {match_task.id}")
+                await save_log(f"✅ Cálculo de matches iniciado en background (task: {match_task.id})", 'success')
+                
+            except Exception as e:
+                logger.error(f"⚠️ Error iniciando cálculo de matches: {e}")
+                await save_log(f"⚠️ No se pudo iniciar cálculo automático de matches: {str(e)}", 'warning')
+        else:
+            logger.info("ℹ️ No se guardaron ofertas nuevas, omitiendo cálculo de matches")
+        
+        # Separador final
+        logger.info("=" * 80)
+        logger.info("✅ SCRAPING COMPLETADO EXITOSAMENTE")
+        logger.info("=" * 80)
         
         return {
             'success': True,
@@ -148,23 +311,48 @@ async def _run_scraping_stealth(user_id: int, task_id: str = None) -> Dict[str, 
 
 
 @shared_task(bind=True, max_retries=3)
-def scrape_dvcarreras_jobs_stealth(self, user_id: int) -> Dict[str, Any]:
+def scrape_dvcarreras_jobs_stealth(self, user_id: int = None, requesting_user_id: int = None) -> Dict[str, Any]:
     """
-    Tarea Celery para scrapear DV Carreras usando el cliente stealth.
+    Tarea Celery para scrapear DV Carreras usando rotación automática de usuarios.
+    Esta tarea usa las credenciales de diferentes usuarios en cada ejecución
+    para distribuir la carga y evitar bloqueos.
     
     Args:
-        user_id: ID del usuario
+        user_id: ID del usuario cuyas credenciales se usarán (opcional, si no se proporciona usa rotación automática)
+        requesting_user_id: ID del usuario que inició el scraping desde la UI (para logs)
         
     Returns:
         Diccionario con resultados del scraping
     """
     try:
+        # Si no se proporciona user_id, usar rotación automática
+        if user_id is None:
+            user_id = get_next_user_for_scraping()
+            
+            if not user_id:
+                logger.error("No hay usuarios con credenciales disponibles para scraping")
+                return {
+                    'success': False,
+                    'error': 'No hay usuarios con credenciales configuradas',
+                    'user_id': None
+                }
+            
+            logger.info(f"🔄 Usando rotación automática: Usuario {user_id}")
+        else:
+            logger.info(f"📌 Usando usuario específico: {user_id}")
+        
         # Obtener el task_id de Celery
         task_id = self.request.id
-        logger.info(f"Tarea de scraping stealth iniciada: {task_id}")
+        logger.info(f"🌍 Scraping iniciado con usuario {user_id} (task: {task_id})")
         
-        # Ejecutar la función asíncrona con el task_id
-        return asyncio.run(_run_scraping_stealth(user_id, task_id=task_id))
+        # Ejecutar la función asíncrona con el task_id y requesting_user_id
+        result = asyncio.run(_run_scraping_stealth(user_id, task_id=task_id, requesting_user_id=requesting_user_id))
+        
+        # Agregar información de rotación al resultado
+        result['rotation_used'] = user_id is None
+        result['credentials_from_user'] = user_id
+        
+        return result
             
     except Exception as e:
         logger.error(f"Error en scraping stealth para usuario {user_id}: {e}")
@@ -232,4 +420,96 @@ def test_stealth_login(self, user_id: int) -> Dict[str, Any]:
             'success': False,
             'message': f'Error: {str(e)}',
             'user_id': user_id
+        }
+
+
+@shared_task(bind=True)
+def check_and_run_scheduled_scraping(self):
+    """
+    Tarea periódica que verifica si debe ejecutar el scraping programado.
+    Se ejecuta cada minuto y verifica si la hora actual coincide con la hora configurada.
+    """
+    from matching.models import ScheduledScraping
+    from django.utils import timezone
+    from datetime import datetime, timedelta
+    
+    try:
+        # Obtener configuración
+        config = ScheduledScraping.objects.first()
+        
+        if not config or not config.is_enabled:
+            logger.debug("Scraping programado desactivado o no configurado")
+            return {
+                'success': False,
+                'message': 'Scraping programado desactivado o no configurado'
+            }
+        
+        now = timezone.now()
+        # Usar hora local (Argentina) en lugar de UTC
+        local_now = timezone.localtime(now)
+        current_time = local_now.time()
+        scheduled_time = config.scheduled_time
+        
+        # Verificar si la hora actual está dentro de la ventana de 1 minuto
+        # (para evitar ejecutar múltiples veces)
+        current_hour = current_time.hour
+        current_minute = current_time.minute
+        scheduled_hour = scheduled_time.hour
+        scheduled_minute = scheduled_time.minute
+        
+        # Solo ejecutar si coincide la hora y el minuto
+        if current_hour != scheduled_hour or current_minute != scheduled_minute:
+            return {
+                'success': False,
+                'message': f'No es hora de ejecutar. Actual: {current_time.strftime("%H:%M")} (local), Programado: {scheduled_time.strftime("%H:%M")}'
+            }
+        
+        # Verificar si ya se ejecutó en esta hora programada hoy
+        # Solo bloquear si se ejecutó HOY a la MISMA HORA programada
+        if config.last_run:
+            last_run_local = timezone.localtime(config.last_run)
+            last_run_date = last_run_local.date()
+            last_run_time = last_run_local.time()
+            today = local_now.date()
+            
+            # Solo prevenir si:
+            # 1. Se ejecutó hoy (misma fecha)
+            # 2. Y fue a la misma hora programada (mismo hour:minute)
+            if (last_run_date == today and 
+                last_run_time.hour == scheduled_hour and 
+                last_run_time.minute == scheduled_minute):
+                logger.info(f"Scraping ya ejecutado hoy a las {last_run_local.strftime('%H:%M:%S')}")
+                return {
+                    'success': False,
+                    'message': f'Scraping ya ejecutado hoy a las {last_run_local.strftime("%H:%M:%S")}'
+                }
+        
+        # Ejecutar scraping
+        logger.info(f"🕒 Iniciando scraping programado a las {now.strftime('%H:%M:%S')}")
+        
+        # Llamar a la tarea de scraping global
+        task = scrape_dvcarreras_jobs_stealth.delay()
+        
+        # Guardar task_id en cache para que todos los admins lo vean
+        from django.core.cache import cache as django_cache
+        django_cache.set('current_scraping_task_id', task.id, timeout=3600)  # 1 hora
+        
+        # Actualizar última ejecución
+        config.last_run = now
+        config.save()
+        
+        logger.info(f"✅ Scraping programado iniciado exitosamente. Task ID: {task.id}")
+        
+        return {
+            'success': True,
+            'message': f'Scraping programado iniciado a las {now.strftime("%H:%M:%S")}',
+            'task_id': task.id,
+            'scheduled_time': scheduled_time.strftime('%H:%M')
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Error en scraping programado: {e}")
+        return {
+            'success': False,
+            'message': f'Error: {str(e)}'
         }

@@ -10,6 +10,13 @@ services:
       - .:/app
     depends_on:
       - redis
+    environment:
+      - OPENAI_API_KEY=your-openai-api-key-here
+      - ANTHROPIC_API_KEY=your-anthropic-api-key-here
+      - SECRET_KEY=your-secret-key-here
+      - DEBUG=True
+      - ALLOWED_HOSTS=localhost,127.0.0.1
+      - GUNICORN_CMD_ARGS=--timeout 180
   worker:
     build: .
     # env_file: .env
@@ -25,7 +32,7 @@ services:
   beat:
     build: .
     # env_file: .env
-    command: celery -A postulamatic beat -l info
+    command: celery -A postulamatic beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     restart: unless-stopped
     networks: [web]
     volumes:

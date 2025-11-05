@@ -1,12 +1,13 @@
 """
-Servicio para extraer habilidades de CVs usando técnicas básicas de procesamiento de texto.
-Esta es la versión inicial sin IA, preparada para futuras integraciones con LLMs.
+Servicio para extraer habilidades de CVs usando técnicas híbridas:
+- Coincidencia de keywords (base de datos predefinida)
+- Detección con IA (GPT/Claude) para habilidades no listadas
 """
 
 import logging
 import re
 from collections import Counter
-from typing import Any, Dict, List, Set
+from typing import Any, Dict, List, Set, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -18,13 +19,23 @@ class SkillsExtractorError(Exception):
 
 
 class SkillsExtractor:
-    """Extractor de habilidades usando técnicas básicas de NLP."""
+    """Extractor de habilidades usando técnicas híbridas (keywords + IA)."""
 
-    def __init__(self):
+    def __init__(self, use_ai: bool = True):
+        """
+        Inicializa el extractor de habilidades.
+        
+        Args:
+            use_ai: Si True, usa IA para detectar habilidades no listadas
+        """
         # Base de datos básica de habilidades comunes en español/inglés
         self.skills_database = self._load_skills_database()
         self.synonyms = self._load_synonyms()
         self.stop_words = self._load_stop_words()
+        self.use_ai = use_ai
+        
+        # Lazy loading del servicio de IA
+        self._ai_service = None
 
     def _load_skills_database(self) -> Dict[str, List[str]]:
         """Carga la base de datos básica de habilidades."""
@@ -761,15 +772,29 @@ class SkillsExtractor:
             "durante",
         }
 
+    @property
+    def ai_service(self):
+        """Lazy loading del servicio de IA."""
+        if self._ai_service is None and self.use_ai:
+            try:
+                from .ai_service import AIEmailService
+                self._ai_service = AIEmailService()
+                logger.info("✅ Servicio de IA inicializado para detección de habilidades")
+            except Exception as e:
+                logger.warning(f"⚠️ No se pudo inicializar el servicio de IA: {e}")
+                self.use_ai = False
+        return self._ai_service
+
     def extract_skills(
-        self, cv_text: str, min_confidence: float = 0.3
+        self, cv_text: str, min_confidence: float = 0.3, progress_tracker=None
     ) -> Dict[str, Any]:
         """
-        Extrae habilidades del texto del CV.
+        Extrae habilidades del texto del CV usando métodos híbridos.
 
         Args:
             cv_text: Texto del CV normalizado
             min_confidence: Umbral mínimo de confianza (0.0 - 1.0)
+            progress_tracker: Rastreador de progreso opcional
 
         Returns:
             Dict con skills encontradas, categorías y metadatos
@@ -780,21 +805,44 @@ class SkillsExtractor:
                 "categories": {},
                 "confidence_scores": {},
                 "total_skills": 0,
-                "extraction_method": "basic_keyword_matching",
+                "extraction_method": "none",
             }
 
         # Normalizar texto para búsqueda
         normalized_text = self._normalize_for_search(cv_text)
 
-        # Extraer habilidades por diferentes métodos
+        # Extraer habilidades por diferentes métodos tradicionales
         exact_matches = self._extract_exact_matches(normalized_text)
         keyword_matches = self._extract_keyword_matches(normalized_text)
         context_matches = self._extract_context_matches(normalized_text)
 
-        # Combinar y puntuar resultados
-        all_skills = self._combine_and_score_skills(
+        # Combinar resultados tradicionales
+        traditional_skills = self._combine_and_score_skills(
             exact_matches, keyword_matches, context_matches, min_confidence
         )
+        
+        logger.info(f"🔍 Habilidades detectadas con keywords: {len(traditional_skills)}")
+
+        # Extraer habilidades adicionales con IA
+        ai_skills = {}
+        extraction_method = "keyword_matching"
+        
+        if self.use_ai:
+            try:
+                logger.info("🤖 Iniciando detección de habilidades con IA...")
+                ai_skills = self._extract_skills_with_ai(
+                    cv_text, 
+                    traditional_skills, 
+                    progress_tracker
+                )
+                logger.info(f"✅ Habilidades adicionales detectadas con IA: {len(ai_skills)}")
+                extraction_method = "hybrid_keyword_and_ai"
+            except Exception as e:
+                logger.warning(f"⚠️ Error en detección con IA: {e}")
+                logger.warning("Continuando solo con detección por keywords")
+
+        # Combinar habilidades tradicionales y de IA
+        all_skills = {**traditional_skills, **ai_skills}
 
         # Organizar por categorías
         categorized_skills = self._categorize_skills(all_skills)
@@ -804,11 +852,13 @@ class SkillsExtractor:
             "categories": categorized_skills,
             "confidence_scores": all_skills,
             "total_skills": len(all_skills),
-            "extraction_method": "basic_keyword_matching",
+            "extraction_method": extraction_method,
             "details": {
                 "exact_matches": len(exact_matches),
                 "keyword_matches": len(keyword_matches),
                 "context_matches": len(context_matches),
+                "ai_detected": len(ai_skills),
+                "traditional_total": len(traditional_skills),
             },
         }
 
@@ -923,6 +973,166 @@ class SkillsExtractor:
                     combined_skills[normalized_skill] = confidence
 
         return combined_skills
+
+    def _extract_skills_with_ai(
+        self, 
+        cv_text: str, 
+        existing_skills: Dict[str, float],
+        progress_tracker=None
+    ) -> Dict[str, float]:
+        """
+        Extrae habilidades adicionales usando IA (GPT/Claude).
+        
+        Args:
+            cv_text: Texto completo del CV
+            existing_skills: Habilidades ya detectadas con keywords
+            progress_tracker: Rastreador de progreso opcional
+            
+        Returns:
+            Dict con habilidades adicionales y sus scores de confianza
+        """
+        if not self.ai_service:
+            logger.warning("Servicio de IA no disponible")
+            return {}
+        
+        try:
+            # Actualizar progreso
+            if progress_tracker:
+                progress_tracker.update_step(
+                    "skills_extraction", 
+                    "in_progress", 
+                    "Detectando habilidades adicionales con IA..."
+                )
+            
+            # Crear prompt para IA
+            prompt = self._create_ai_skills_prompt(cv_text, existing_skills)
+            
+            logger.info(f"🔍 Enviando prompt a IA ({len(prompt)} caracteres)")
+            
+            # Llamar a IA con fallback
+            response, used_fallback = self.ai_service.generate_text_and_track_fallback(prompt)
+            
+            provider = "Anthropic" if used_fallback else "OpenAI"
+            logger.info(f"✅ Respuesta recibida de {provider}: {len(response)} caracteres")
+            
+            # Parsear respuesta
+            ai_skills = self._parse_ai_skills_response(response, existing_skills)
+            
+            logger.info(f"✅ Habilidades parseadas de IA: {len(ai_skills)}")
+            
+            return ai_skills
+            
+        except Exception as e:
+            logger.error(f"❌ Error extrayendo habilidades con IA: {e}")
+            return {}
+    
+    def _create_ai_skills_prompt(
+        self, 
+        cv_text: str, 
+        existing_skills: Dict[str, float]
+    ) -> str:
+        """
+        Crea el prompt para que la IA detecte habilidades adicionales.
+        
+        Args:
+            cv_text: Texto del CV
+            existing_skills: Habilidades ya detectadas
+            
+        Returns:
+            Prompt optimizado para detección de habilidades
+        """
+        # Limitar texto del CV para no exceder límites de tokens
+        max_chars = 4000
+        truncated_text = cv_text[:max_chars] if len(cv_text) > max_chars else cv_text
+        
+        # Lista de habilidades ya detectadas
+        existing_list = ", ".join(list(existing_skills.keys())[:50])  # Limitar a 50
+        
+        prompt = f"""Eres un experto en análisis de CVs y detección de habilidades técnicas y profesionales.
+
+TAREA:
+Analiza el siguiente CV y extrae TODAS las habilidades, tecnologías, herramientas y competencias mencionadas que NO estén en la lista de habilidades ya detectadas.
+
+HABILIDADES YA DETECTADAS (NO incluir estas):
+{existing_list}
+
+CV A ANALIZAR:
+{truncated_text}
+
+INSTRUCCIONES:
+1. Busca habilidades técnicas (lenguajes, frameworks, herramientas, plataformas)
+2. Busca habilidades blandas mencionadas explícitamente
+3. Busca certificaciones, metodologías y estándares
+4. Busca tecnologías emergentes o específicas del dominio
+5. NO inventes habilidades que no estén mencionadas
+6. NO incluyas las habilidades ya detectadas
+7. Normaliza nombres (ej: "React.js" → "React", "JS" → "JavaScript")
+
+FORMATO DE RESPUESTA:
+Devuelve SOLO una lista de habilidades separadas por comas, sin explicaciones adicionales.
+Ejemplo: "TensorFlow, Kubernetes, Scrum Master, AWS Lambda, Figma Design"
+
+Si no encuentras habilidades adicionales, responde: "NINGUNA"
+
+HABILIDADES ADICIONALES:"""
+        
+        return prompt
+    
+    def _parse_ai_skills_response(
+        self, 
+        response: str, 
+        existing_skills: Dict[str, float]
+    ) -> Dict[str, float]:
+        """
+        Parsea la respuesta de la IA y extrae habilidades.
+        
+        Args:
+            response: Respuesta de la IA
+            existing_skills: Habilidades ya detectadas (para evitar duplicados)
+            
+        Returns:
+            Dict con nuevas habilidades y score de confianza 0.7 (IA)
+        """
+        if not response or response.strip().upper() == "NINGUNA":
+            return {}
+        
+        # Limpiar respuesta
+        response = response.strip()
+        
+        # Remover texto adicional si existe
+        if ":" in response:
+            response = response.split(":", 1)[-1].strip()
+        
+        # Dividir por comas
+        raw_skills = [s.strip() for s in response.split(",")]
+        
+        # Filtrar y normalizar
+        ai_skills = {}
+        existing_lower = {s.lower() for s in existing_skills.keys()}
+        
+        for skill in raw_skills:
+            # Limpiar
+            skill = skill.strip()
+            
+            # Validar
+            if not skill or len(skill) < 2 or len(skill) > 50:
+                continue
+            
+            # Evitar duplicados con habilidades existentes
+            if skill.lower() in existing_lower:
+                continue
+            
+            # Evitar stop words
+            if skill.lower() in self.stop_words:
+                continue
+            
+            # Aplicar sinónimos
+            normalized = self.synonyms.get(skill.lower(), skill)
+            
+            # Agregar con confianza 0.7 (detectado por IA)
+            ai_skills[normalized] = 0.7
+        
+        return ai_skills
 
     def _categorize_skills(self, skills: Dict[str, float]) -> Dict[str, List[str]]:
         """Categoriza las habilidades encontradas."""

@@ -1,0 +1,111 @@
+{% extends 'matching/base.html' %}
+
+{% block matching_content %}
+<div class="container-fluid">
+    <div class="row justify-content-center align-items-center" style="min-height: 80vh;">
+        <div class="col-lg-6 col-md-8 col-sm-10 text-center">
+            <!-- Icono de error -->
+            <div class="mb-4">
+                <i class="bi bi-exclamation-triangle text-warning" style="font-size: 5rem;"></i>
+            </div>
+            
+            <!-- Título principal -->
+            <h1 class="display-1 fw-bold mb-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                404
+            </h1>
+            
+            <!-- Subtítulo -->
+            <h2 class="h3 mb-4 text-muted">Página no encontrada</h2>
+            
+            <!-- Mensaje descriptivo -->
+            <p class="lead mb-4">
+                Lo sentimos, la página que buscas no existe o ha sido movida.
+            </p>
+            
+            <!-- Información adicional -->
+            <div class="alert alert-info mb-4">
+                <i class="bi bi-info-circle me-2"></i>
+                <strong>¿Qué puedes hacer?</strong>
+                <ul class="list-unstyled mt-2 mb-0">
+                    <li>• Verifica que la URL esté escrita correctamente</li>
+                    <li>• Usa el menú de navegación para encontrar lo que buscas</li>
+                    <li>• Regresa a la página principal</li>
+                </ul>
+            </div>
+            
+            <!-- Botones de acción -->
+            <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                <a href="{% url 'home' %}" class="btn btn-primary btn-lg">
+                    <i class="bi bi-house me-2"></i>Ir al Inicio
+                </a>
+                <a href="javascript:history.back()" class="btn btn-outline-secondary btn-lg">
+                    <i class="bi bi-arrow-left me-2"></i>Volver Atrás
+                </a>
+            </div>
+            
+            <!-- Enlaces útiles -->
+            <div class="mt-5">
+                <h5 class="text-muted mb-3">Enlaces útiles:</h5>
+                <div class="row">
+                    <div class="col-md-4 mb-2">
+                        <a href="{% url 'profile' %}" class="btn btn-outline-primary btn-sm w-100">
+                            <i class="bi bi-person-circle me-1"></i>Mi Perfil
+                        </a>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <a href="{% url 'test_scraper' %}" class="btn btn-outline-success btn-sm w-100">
+                            <i class="bi bi-robot me-1"></i>Scraper
+                        </a>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <a href="{% url 'cv_personalization_test' %}" class="btn btn-outline-info btn-sm w-100">
+                            <i class="bi bi-file-earmark-person me-1"></i>Personalizar CV
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Animación suave para el contenido */
+.container-fluid {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Efecto hover para los botones */
+.btn:hover {
+    transform: translateY(-2px);
+    transition: all 0.3s ease;
+}
+
+/* Estilo para el icono de error */
+.bi-exclamation-triangle {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+</style>
+{% endblock %}

@@ -1,6 +1,12 @@
 {% extends 'matching/base.html' %}
 
 {% block matching_content %}
+<!-- Header Section -->
+<div class="row mb-5">
+    <div class="col-12">
+    </div>
+</div>
+
 <style>
 /* Estilos para campos deshabilitados */
 .form-control:disabled {
@@ -232,18 +238,7 @@
             </div>
             {% endif %}
             
-            <!-- Mostrar mensajes de Django (solo para mensajes de éxito) -->
-            {% if messages %}
-                {% for message in messages %}
-                    {% if message.tags == 'success' %}
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        <i class="bi bi-check-circle me-2"></i>
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                    {% endif %}
-                {% endfor %}
-            {% endif %}
+            <!-- Mensajes se muestran en el template base -->
         </div>
     </div>
 </div>
@@ -285,7 +280,7 @@
                         </div>
                         
                         <div class="d-grid gap-2">
-                            <button class="btn btn-outline-primary" onclick="testProvider('openai')" 
+                            <button class="btn btn-outline-primary" onclick="testProviderIndividual('openai')" 
                                     {% if not providers_status.openai.configured %}disabled{% endif %}>
                                 <i class="bi bi-play-circle me-2"></i>Probar OpenAI
                             </button>
@@ -326,7 +321,7 @@
                         </div>
                         
                         <div class="d-grid gap-2">
-                            <button class="btn btn-outline-primary" onclick="testProvider('anthropic')"
+                            <button class="btn btn-outline-primary" onclick="testProviderIndividual('anthropic')"
                                     {% if not providers_status.anthropic.configured %}disabled{% endif %}>
                                 <i class="bi bi-play-circle me-2"></i>Probar Anthropic
                             </button>
@@ -582,26 +577,76 @@
     </div>
 </div>
 
-<!-- Loading Modal -->
-<div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog modal-sm modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-body text-center">
-                <div class="spinner-border text-primary mb-3" role="status">
-                    <span class="visually-hidden">Probando...</span>
-                </div>
-                <p id="loading-text">Probando proveedores...</p>
-            </div>
-        </div>
-    </div>
-</div>
 
 {% endblock %}
 
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+    // Función para mostrar progreso de pruebas (igual que en perfil)
+    function showTestProgress() {
+        console.log('Iniciando seguimiento de pruebas de IA...');
+        
+        // Crear modal de progreso
+        const progressModal = document.createElement('div');
+        progressModal.className = 'modal fade';
+        progressModal.id = 'testProgressModal';
+        progressModal.innerHTML = `
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="bi bi-gear-fill me-2"></i>Probando Proveedores de IA
+                        </h5>
+                    </div>
+                    <div class="modal-body">
+                        <div class="text-center">
+                            <div class="spinner-border text-primary mb-3" role="status">
+                                <span class="visually-hidden">Probando...</span>
+                            </div>
+                            <h6 id="test-status">Iniciando pruebas...</h6>
+                            <p id="test-info" class="text-muted">Verificando conectividad con los proveedores...</p>
+                            <div class="progress mb-3">
+                                <div id="test-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                                     role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <small class="text-muted">
+                                Esto puede tomar unos segundos...
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(progressModal);
+        
+        const modal = new bootstrap.Modal(progressModal);
+        modal.show();
+        
+        return {
+            modal: modal,
+            progressModal: progressModal,
+            updateStatus: function(status, info, progress) {
+                const statusEl = document.getElementById('test-status');
+                const infoEl = document.getElementById('test-info');
+                const progressBar = document.getElementById('test-progress-bar');
+                
+                if (statusEl) statusEl.textContent = status;
+                if (infoEl) infoEl.textContent = info;
+                if (progressBar) progressBar.style.width = progress + '%';
+            },
+            hide: function() {
+                modal.hide();
+                setTimeout(() => {
+                    if (progressModal && progressModal.parentNode) {
+                        progressModal.parentNode.removeChild(progressModal);
+                    }
+                }, 300);
+            }
+        };
+    }
+    
     const testResultCard = document.getElementById('test-result-card');
     const testResultContent = document.getElementById('test-result-content');
     
@@ -721,6 +766,118 @@ document.addEventListener('DOMContentLoaded', function() {
     // Agregar efectos modernos a los dropdowns
     addModernEffects();
     
+    // === CARGAR MODELOS DISPONIBLES DINÁMICAMENTE ===
+    function loadAvailableModels() {
+        console.log('🔄 Cargando modelos disponibles...');
+        
+        // Mostrar indicador de carga
+        const openaiModelSelect = document.getElementById('{{ form.openai_model.id_for_label }}');
+        const anthropicModelSelect = document.getElementById('{{ form.anthropic_model.id_for_label }}');
+        
+        if (openaiModelSelect) {
+            openaiModelSelect.innerHTML = '<option value="">Cargando modelos...</option>';
+            openaiModelSelect.disabled = true;
+        }
+        
+        if (anthropicModelSelect) {
+            anthropicModelSelect.innerHTML = '<option value="">Cargando modelos...</option>';
+            anthropicModelSelect.disabled = true;
+        }
+        
+        // Consultar modelos disponibles
+        fetch('/matching/admin/get-available-models/')
+            .then(response => response.json())
+            .then(data => {
+                console.log('✅ Modelos recibidos:', data);
+                
+                // Guardar modelo seleccionado actual
+                const currentOpenAIModel = '{{ config.openai_model }}';
+                const currentAnthropicModel = '{{ config.anthropic_model }}';
+                
+                // Poblar dropdown de OpenAI
+                if (openaiModelSelect) {
+                    openaiModelSelect.innerHTML = '<option value="">Selecciona un modelo...</option>';
+                    
+                    if (data.openai.error) {
+                        openaiModelSelect.innerHTML += `<option value="" disabled>❌ ${data.openai.error}</option>`;
+                        console.warn('⚠️ Error OpenAI:', data.openai.error);
+                    } else if (data.openai.models && data.openai.models.length > 0) {
+                        data.openai.models.forEach(model => {
+                            const option = document.createElement('option');
+                            option.value = model.id;
+                            option.textContent = model.name;
+                            if (model.id === currentOpenAIModel) {
+                                option.selected = true;
+                            }
+                            openaiModelSelect.appendChild(option);
+                        });
+                        console.log(`✅ ${data.openai.models.length} modelos OpenAI cargados`);
+                    } else {
+                        openaiModelSelect.innerHTML += '<option value="" disabled>⚠️ No hay modelos disponibles</option>';
+                    }
+                    
+                    // Restaurar estado habilitado/deshabilitado
+                    if (openaiEnabled) {
+                        openaiModelSelect.disabled = !openaiEnabled.checked;
+                    }
+                }
+                
+                // Poblar dropdown de Anthropic
+                if (anthropicModelSelect) {
+                    anthropicModelSelect.innerHTML = '<option value="">Selecciona un modelo...</option>';
+                    
+                    if (data.anthropic.error) {
+                        anthropicModelSelect.innerHTML += `<option value="" disabled>❌ ${data.anthropic.error}</option>`;
+                        console.warn('⚠️ Error Anthropic:', data.anthropic.error);
+                    } else if (data.anthropic.models && data.anthropic.models.length > 0) {
+                        data.anthropic.models.forEach(model => {
+                            const option = document.createElement('option');
+                            option.value = model.id;
+                            option.textContent = model.name;
+                            if (model.id === currentAnthropicModel) {
+                                option.selected = true;
+                            }
+                            anthropicModelSelect.appendChild(option);
+                        });
+                        console.log(`✅ ${data.anthropic.models.length} modelos Anthropic cargados`);
+                    } else {
+                        anthropicModelSelect.innerHTML += '<option value="" disabled>⚠️ No hay modelos disponibles</option>';
+                    }
+                    
+                    // Restaurar estado habilitado/deshabilitado
+                    if (anthropicEnabled) {
+                        anthropicModelSelect.disabled = !anthropicEnabled.checked;
+                    }
+                }
+                
+                // Mostrar notificación de éxito
+                if (data.openai.models.length > 0 || data.anthropic.models.length > 0) {
+                    console.log('✅ Modelos cargados exitosamente');
+                }
+            })
+            .catch(error => {
+                console.error('❌ Error cargando modelos:', error);
+                
+                // Restaurar opciones por defecto en caso de error
+                if (openaiModelSelect) {
+                    openaiModelSelect.innerHTML = '<option value="">❌ Error cargando modelos</option>';
+                    if (openaiEnabled) {
+                        openaiModelSelect.disabled = !openaiEnabled.checked;
+                    }
+                }
+                
+                if (anthropicModelSelect) {
+                    anthropicModelSelect.innerHTML = '<option value="">❌ Error cargando modelos</option>';
+                    if (anthropicEnabled) {
+                        anthropicModelSelect.disabled = !anthropicEnabled.checked;
+                    }
+                }
+            });
+    }
+    
+    // Cargar modelos al cargar la página
+    loadAvailableModels();
+    
     // Función para mostrar resultados
     window.showTestResult = function(html) {
         testResultContent.innerHTML = html;
@@ -730,9 +887,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Función para probar todos los proveedores
     window.testAllProviders = function() {
-        const loadingText = document.getElementById('loading-text');
-        loadingText.textContent = 'Probando proveedores de IA...';
-        loadingModal.show();
+        const progressTracker = showTestProgress();
+        
+        progressTracker.updateStatus('Iniciando pruebas...', 'Verificando conectividad con los proveedores...', 0);
         
         // Obtener configuración actual
         const form = document.getElementById('ai-config-form');
@@ -753,13 +910,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         if (tests.length === 0) {
-            loadingModal.hide();
+            progressTracker.hide();
             showTestResult('<div class="alert alert-warning">⚠️ No hay proveedores habilitados para probar</div>');
             return;
         }
         
         Promise.all(tests).then(results => {
-            loadingModal.hide();
+            progressTracker.updateStatus('Pruebas completadas', 'Procesando resultados...', 100);
+            
+            setTimeout(() => {
+                progressTracker.hide();
             
             let html = '<div class="row">';
             results.forEach(result => {
@@ -791,12 +951,13 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             html += '</div>';
             
-            showTestResult(html);
+                showTestResult(html);
+            }, 1000);
         });
     };
     
-    // Función para probar un proveedor específico
-    function testProvider(provider) {
+    // Función para probar un proveedor específico (global)
+    window.testProvider = function(provider) {
         return fetch('/matching/admin/test-ai-provider/', {
             method: 'POST',
             headers: {
@@ -830,6 +991,109 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         });
     }
+    
+    // Función para probar un proveedor individual (para botones)
+    window.testProviderIndividual = function(provider) {
+        const progressTracker = showTestProgress();
+        
+        progressTracker.updateStatus(`Probando ${provider.toUpperCase()}...`, 'Verificando conectividad...', 50);
+        
+        fetch('/matching/admin/test-ai-provider/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({ provider: provider })
+        })
+        .then(response => response.json())
+        .then(data => {
+            progressTracker.updateStatus('Prueba completada', 'Procesando resultado...', 100);
+            
+            setTimeout(() => {
+                progressTracker.hide();
+                
+                if (data.success) {
+                    showTestResult(`
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="card border-success">
+                                    <div class="card-header bg-success text-white">
+                                        <h6 class="mb-0"><i class="bi bi-check-circle me-2"></i>${provider.toUpperCase()} - Funcionando</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="alert alert-success mb-3">
+                                            <strong>✅ Conectividad exitosa</strong>
+                                            <p class="mb-0 mt-2">La API respondió correctamente y generó contenido válido.</p>
+                                        </div>
+                                        ${data.subject ? `<p><strong>Asunto generado:</strong> ${data.subject}</p>` : ''}
+                                        <p><strong>Vista previa del cuerpo:</strong></p>
+                                        <div class="bg-light p-3 rounded" style="max-height: 200px; overflow-y: auto;">
+                                            <pre class="mb-0" style="white-space: pre-wrap; font-size: 0.9em;">${data.response}</pre>
+                                        </div>
+                                        ${data.tokens_used ? `<p class="mt-3 mb-0"><strong>Tokens usados:</strong> <span class="badge bg-info">${data.tokens_used}</span></p>` : ''}
+                                        ${data.model ? `<p class="mb-0"><strong>Modelo:</strong> <code>${data.model}</code></p>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `);
+                } else {
+                    showTestResult(`
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="card border-danger">
+                                    <div class="card-header bg-danger text-white">
+                                        <h6 class="mb-0"><i class="bi bi-x-circle me-2"></i>${provider.toUpperCase()} - Error</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="alert alert-danger mb-3">
+                                            <strong>❌ Error de conectividad</strong>
+                                            <p class="mb-0 mt-2">La API no pudo responder correctamente.</p>
+                                        </div>
+                                        <div class="bg-light p-3 rounded">
+                                            <strong>Detalles del error:</strong>
+                                            <p class="mb-0 mt-2 text-danger">${data.error}</p>
+                                        </div>
+                                        <div class="mt-3">
+                                            <strong>Posibles soluciones:</strong>
+                                            <ul class="mb-0 mt-2">
+                                                ${data.error.includes('créditos') || data.error.includes('cuota') ? 
+                                                    '<li>Verifica tu plan de facturación en el dashboard del proveedor</li><li>Añade créditos o actualiza tu método de pago</li>' : 
+                                                    data.error.includes('API key') || data.error.includes('inválida') ?
+                                                    '<li>Verifica que la API key sea correcta</li><li>Regenera la API key en el dashboard del proveedor</li>' :
+                                                    '<li>Verifica tu conexión a internet</li><li>Intenta nuevamente en unos minutos</li>'}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `);
+                }
+            }, 1000);
+        })
+        .catch(error => {
+            progressTracker.hide();
+            showTestResult(`
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">${provider.toUpperCase()}</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-danger">
+                                    <i class="bi bi-x-circle me-2"></i><strong>❌ Error de conexión</strong>
+                                </div>
+                                <p><strong>Error:</strong> ${error.message}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `);
+        });
+    };
 });
 </script>
 {% endblock %}

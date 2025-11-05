@@ -7,8 +7,73 @@
   <meta name="description" content="{{ seo.description }}" />
   <link rel="canonical" href="{{ seo.canonical }}" />
   <link rel="stylesheet" href="/static/css/main.css" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
   <link rel="shortcut icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
+  <style>
+    .logo {
+      font-size: 2.5rem !important;
+      font-weight: 900 !important;
+      letter-spacing: 1px;
+      transition: all 0.3s ease;
+    }
+    .logo i {
+      font-size: 2.2rem !important;
+    }
+    .logo:hover {
+      transform: scale(1.05);
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+    
+    /* Estilos para el nav */
+    header nav {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    
+    header nav a {
+      padding: 0.5rem 1rem;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white !important;
+      text-decoration: none;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      transition: all 0.3s ease;
+      box-shadow: 0 3px 10px rgba(102, 126, 234, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    header nav a::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+      transition: left 0.3s ease;
+      z-index: -1;
+    }
+    
+    header nav a:hover::before {
+      left: 0;
+    }
+    
+    header nav a:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+      color: #ffd700 !important;
+    }
+    
+    header nav a:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+    }
+  </style>
   {% block extra_css %}{% endblock %}
   <meta property="og:type" content="website" />
   <meta property="og:title" content="{{ seo.title }}" />
@@ -32,11 +97,19 @@
 </head>
 <body>
   <header class="container">
-    <a href="/" class="logo">PostulaMatic</a>
+    <a href="{% url 'dashboard' %}" class="logo">
+      <i class="bi bi-briefcase-fill me-2"></i>PostulaMatic
+    </a>
     <nav>
-      <a href="/enviar-cv-automaticamente">Enviar CV automáticamente</a>
-      <a href="/postularse-automaticamente">Postularse automáticamente</a>
-      <a href="/bot-para-postular">Bot para postular</a>
+      <a href="/enviar-cv-automaticamente">
+        <i class="bi bi-send-fill me-2"></i>Enviar CV automáticamente
+      </a>
+      <a href="/postularse-automaticamente">
+        <i class="bi bi-lightning-fill me-2"></i>Postularse automáticamente
+      </a>
+      <a href="/bot-para-postular">
+        <i class="bi bi-robot me-2"></i>Bot para postular
+      </a>
     </nav>
   </header>
   <main class="container">{% block content %}{% endblock %}</main>

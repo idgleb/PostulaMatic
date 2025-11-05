@@ -215,10 +215,12 @@ def send_test_email(request):
 @require_http_methods(["POST"])
 def send_bulk_emails(request):
     """Envía emails masivos a múltiples puestos."""
+    from .tasks_bulk_email import send_bulk_emails_task
     
     try:
         data = json.loads(request.body)
         job_ids = data.get('job_ids', [])
+        cv_id = data.get('cv_id')  # Nuevo: ID del CV seleccionado
         email_template = data.get('email_template', 'base')
         ai_provider = data.get('ai_provider', 'openai')
         batch_size = data.get('batch_size', 5)
@@ -231,17 +233,29 @@ def send_bulk_emails(request):
             })
         
         # Verificar que el usuario tiene CV
-        user_cv = UserCV.objects.filter(user=request.user).first()
-        if not user_cv:
-            return JsonResponse({
-                'success': False,
-                'error': 'Usuario no tiene CV'
-            })
+        if cv_id:
+            # Verificar que el CV especificado existe y pertenece al usuario
+            try:
+                user_cv = UserCV.objects.get(id=cv_id, user=request.user)
+            except UserCV.DoesNotExist:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'CV seleccionado no encontrado'
+                })
+        else:
+            # Si no se especifica CV, verificar que el usuario tiene al menos uno
+            user_cv = UserCV.objects.filter(user=request.user).first()
+            if not user_cv:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Usuario no tiene CV'
+                })
         
         # Enviar tarea masiva
         task_result = send_bulk_emails_task.delay(
             user_id=request.user.id,
             job_ids=job_ids,
+            cv_id=cv_id,  # Nuevo: pasar el CV seleccionado
             email_template=email_template,
             ai_provider=ai_provider,
             batch_size=batch_size,
@@ -277,6 +291,30 @@ def process_auto_matching(request):
         email_template = data.get('email_template', 'base')
         ai_provider = data.get('ai_provider', 'openai')
         
+        # VALIDACIÓN 1: Verificar que existan puestos de trabajo
+        total_jobs = JobPosting.objects.count()
+        if total_jobs == 0:
+            return JsonResponse({
+                'success': False,
+                'error': 'No hay puestos de trabajo en la base de datos. Ejecuta el scraper primero para obtener ofertas.'
+            })
+        
+        # VALIDACIÓN 2: Verificar que el usuario tenga CV
+        user_cv = UserCV.objects.filter(user=request.user, parsed_text__isnull=False).exclude(parsed_text="").first()
+        if not user_cv:
+            return JsonResponse({
+                'success': False,
+                'error': 'No tienes CV procesado. Sube y procesa un CV primero.'
+            })
+        
+        # VALIDACIÓN 3: Verificar que existan matches
+        existing_matches = MatchScore.objects.filter(cv__user=request.user).count()
+        if existing_matches == 0:
+            return JsonResponse({
+                'success': False,
+                'error': 'No hay matches calculados. Ejecuta "Calcular Matches" primero.'
+            })
+        
         # Enviar tarea de matching automático
         task_result = process_matching_and_send_emails_task.delay(
             user_id=request.user.id,
@@ -287,7 +325,7 @@ def process_auto_matching(request):
         
         return JsonResponse({
             'success': True,
-            'message': f'Procesando matching automático con score >= {min_match_score}',
+            'message': f'Procesando matching automático con score >= {min_match_score}% ({total_jobs} puestos, {existing_matches} matches)',
             'task_id': task_result.id
         })
         
@@ -437,3 +475,175 @@ def email_settings(request):
     }
     
     return render(request, 'matching/email_settings.html', context)
+
+
+@login_required
+@require_http_methods(["GET"])
+def email_statistics_api(request):
+    """API para obtener estadísticas en tiempo real."""
+    today = timezone.now().date()
+    
+    # Estadísticas básicas
+    total_emails = EmailSentLog.objects.filter(user=request.user).count()
+    emails_today = EmailSentLog.objects.filter(user=request.user, sent_at__date=today).count()
+    successful = EmailSentLog.objects.filter(user=request.user, status='sent').count()
+    
+    success_rate = 0
+    if total_emails > 0:
+        success_rate = round((successful / total_emails) * 100, 1)
+    
+    # Emails recientes
+    recent_emails = EmailSentLog.objects.filter(
+        user=request.user
+    ).select_related('job_posting', 'cv').order_by('-sent_at')[:10]
+    
+    recent_emails_data = [{
+        'id': email.id,
+        'job_title': email.job_posting.title if email.job_posting else '[Oferta eliminada]',
+        'sent_to': email.sent_to,
+        'status': email.status,
+        'sent_at': email.sent_at.strftime('%d/%m/%Y %H:%M'),
+        'error_message': email.error_message or '',
+        'email_subject': email.email_subject or '',
+        'email_body': email.email_body or '',
+        'cv_filename': email.cv.original_file.name.split('/')[-1] if email.cv and email.cv.original_file else '[CV eliminado]'
+    } for email in recent_emails]
+    
+    # Configuración del usuario
+    try:
+        user_profile = request.user.profile
+        daily_limit = user_profile.daily_limit
+    except UserProfile.DoesNotExist:
+        daily_limit = 20
+    
+    return JsonResponse({
+        'success': True,
+        'stats': {
+            'total_emails': total_emails,
+            'emails_today': emails_today,
+            'success_rate': success_rate,
+            'daily_limit': daily_limit
+        },
+        'recent_emails': recent_emails_data
+    })
+
+
+@login_required
+@require_http_methods(["GET"])
+def get_user_cvs_api(request):
+    """API para obtener los CVs del usuario."""
+    cvs = UserCV.objects.filter(user=request.user).order_by('-created_at')
+    
+    first_cv = cvs.first()
+    
+    cvs_data = [{
+        'id': cv.id,
+        'filename': cv.original_file.name.split('/')[-1] if cv.original_file else f'CV #{cv.id}',
+        'uploaded_at': cv.created_at.strftime('%d/%m/%Y %H:%M'),
+        'skills_count': cv.skills_count if hasattr(cv, 'skills_count') else len(cv.skills_list),
+        'is_most_recent': cv.id == first_cv.id if first_cv else False
+    } for cv in cvs]
+    
+    return JsonResponse({
+        'success': True,
+        'cvs': cvs_data
+    })
+
+
+@login_required
+@require_http_methods(["GET"])
+def get_email_detail(request, email_id):
+    """API endpoint para obtener detalles completos de un email enviado."""
+    try:
+        email = get_object_or_404(
+            EmailSentLog.objects.select_related('job_posting', 'cv', 'user'),
+            id=email_id,
+            user=request.user
+        )
+        
+        # Preparar datos del email
+        email_data = {
+            'id': email.id,
+            'email_subject': email.email_subject,
+            'email_body': email.email_body,
+            'sent_to': email.sent_to,
+            'status': email.status,
+            'status_display': email.get_status_display(),
+            'sent_at': email.sent_at.strftime('%d/%m/%Y %H:%M:%S'),
+            'email_template': email.email_template,
+            'ai_provider': email.ai_provider,
+            'error_message': email.error_message,
+            'message_id': email.message_id,
+            
+            # Información del puesto (puede ser None si fue eliminado)
+            'job_title': email.job_posting.title if email.job_posting else None,
+            'job_company': 'N/A',  # JobPosting no tiene campo company
+            'job_location': 'N/A',  # JobPosting no tiene campo location
+            
+            # Información del CV (puede ser None si fue eliminado)
+            'cv_filename': email.cv.original_file.name.split('/')[-1] if email.cv and email.cv.original_file else None,
+            'cv_id': email.cv.id if email.cv else None,
+            
+            # CV personalizado adjunto (nombre completo para tooltip)
+            'personalized_cv_filename': email.personalized_cv_file.name.split('/')[-1] if email.personalized_cv_file else None,
+            'has_personalized_cv': bool(email.personalized_cv_file),
+        }
+        
+        return JsonResponse({
+            'success': True,
+            'email': email_data
+        })
+        
+    except EmailSentLog.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'message': 'Email no encontrado'
+        }, status=404)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error obteniendo detalles del email: {str(e)}'
+        }, status=500)
+
+
+@login_required
+@require_http_methods(["GET"])
+def download_personalized_cv(request, email_id):
+    """Descarga el CV personalizado adjunto a un email enviado."""
+    import os
+    from django.http import Http404, HttpResponse
+    
+    try:
+        email = get_object_or_404(
+            EmailSentLog,
+            id=email_id,
+            user=request.user
+        )
+        
+        if not email.personalized_cv_file:
+            raise Http404("CV personalizado no disponible para este email")
+        
+        # Obtener el path del archivo
+        file_path = email.personalized_cv_file.path
+        
+        if not os.path.exists(file_path):
+            raise Http404("Archivo CV personalizado no existe en el sistema")
+        
+        # Leer el archivo
+        with open(file_path, 'rb') as f:
+            file_data = f.read()
+        
+        # Obtener el nombre del archivo
+        filename = os.path.basename(email.personalized_cv_file.name)
+        
+        # Crear respuesta HTTP
+        response = HttpResponse(file_data, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        response['Content-Length'] = len(file_data)
+        
+        return response
+        
+    except EmailSentLog.DoesNotExist:
+        raise Http404("Email no encontrado")
+    except Exception as e:
+        raise Http404(f"Error descargando CV personalizado: {str(e)}")

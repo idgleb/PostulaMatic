@@ -1,0 +1,99 @@
+{% extends 'matching/base.html' %}
+
+{% block matching_content %}
+<div class="container-fluid">
+    <div class="row justify-content-center align-items-center" style="min-height: 80vh;">
+        <div class="col-lg-6 col-md-8 col-sm-10 text-center">
+            <!-- Icono de error -->
+            <div class="mb-4">
+                <i class="bi bi-shield-exclamation text-warning" style="font-size: 5rem;"></i>
+            </div>
+            
+            <!-- Título principal -->
+            <h1 class="display-1 fw-bold mb-3" style="background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                403
+            </h1>
+            
+            <!-- Subtítulo -->
+            <h2 class="h3 mb-4 text-muted">Acceso denegado</h2>
+            
+            <!-- Mensaje descriptivo -->
+            <p class="lead mb-4">
+                No tienes permisos para acceder a esta página.
+            </p>
+            
+            <!-- Información adicional -->
+            <div class="alert alert-warning mb-4">
+                <i class="bi bi-lock me-2"></i>
+                <strong>¿Qué puedes hacer?</strong>
+                <ul class="list-unstyled mt-2 mb-0">
+                    <li>• Inicia sesión con una cuenta que tenga permisos</li>
+                    <li>• Verifica que estés accediendo a la URL correcta</li>
+                    <li>• Contacta al administrador si crees que es un error</li>
+                </ul>
+            </div>
+            
+            <!-- Botones de acción -->
+            <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                <a href="{% url 'home' %}" class="btn btn-primary btn-lg">
+                    <i class="bi bi-house me-2"></i>Ir al Inicio
+                </a>
+                <a href="{% url 'login' %}" class="btn btn-outline-secondary btn-lg">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>Iniciar Sesión
+                </a>
+            </div>
+            
+            <!-- Información de contacto -->
+            <div class="mt-5">
+                <div class="alert alert-light">
+                    <h6 class="text-muted mb-2">¿Necesitas acceso?</h6>
+                    <p class="small mb-0">
+                        Si crees que deberías tener acceso a esta página, contacta al administrador del sistema.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Animación suave para el contenido */
+.container-fluid {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Efecto hover para los botones */
+.btn:hover {
+    transform: translateY(-2px);
+    transition: all 0.3s ease;
+}
+
+/* Estilo para el icono de error */
+.bi-shield-exclamation {
+    animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-10px);
+    }
+    60% {
+        transform: translateY(-5px);
+    }
+}
+</style>
+{% endblock %}

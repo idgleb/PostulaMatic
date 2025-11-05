@@ -134,9 +134,30 @@
         <!-- Credenciales INTRANET DAVINCI -->
         <div class="card mb-5">
             <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="bi bi-shield-lock me-2"></i>Credenciales INTRANET DAVINCI
-                </h5>
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-shield-lock me-2"></i>Credenciales INTRANET DAVINCI
+                    </h5>
+                    <span id="dv-status-badge">
+                        {% if profile.dv_connection_status == 'verified' %}
+                            <span class="badge bg-success">
+                                <i class="bi bi-check-circle-fill me-1"></i>Verificado
+                            </span>
+                        {% elif profile.dv_connection_status == 'not_verified' %}
+                            <span class="badge bg-danger">
+                                <i class="bi bi-x-circle-fill me-1"></i>No Verificado
+                            </span>
+                        {% elif profile.dv_connection_status == 'in_progress' %}
+                            <span class="badge bg-warning">
+                                <i class="bi bi-hourglass-split me-1"></i>En Proceso
+                            </span>
+                        {% else %}
+                            <span class="badge bg-secondary">
+                                <i class="bi bi-question-circle-fill me-1"></i>Sin Verificar
+                            </span>
+                        {% endif %}
+                    </span>
+                </div>
             </div>
             <div class="card-body">
                 <form method="post" action="{% url 'profile' %}" id="dv-form">
@@ -993,22 +1014,44 @@
         }
     }
 
+    // Función para actualizar el badge de estado
+    function updateStatusBadge(status) {
+        const badgeContainer = document.getElementById('dv-status-badge');
+        if (!badgeContainer) return;
+        
+        let badgeHTML = '';
+        if (status === 'verified') {
+            badgeHTML = '<span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>Verificado</span>';
+        } else if (status === 'not_verified') {
+            badgeHTML = '<span class="badge bg-danger"><i class="bi bi-x-circle-fill me-1"></i>No Verificado</span>';
+        } else if (status === 'in_progress') {
+            badgeHTML = '<span class="badge bg-warning"><i class="bi bi-hourglass-split me-1"></i>En Proceso</span>';
+        } else {
+            badgeHTML = '<span class="badge bg-secondary"><i class="bi bi-question-circle-fill me-1"></i>Sin Verificar</span>';
+        }
+        
+        badgeContainer.innerHTML = badgeHTML;
+    }
+
     // Función separada para establecer el estado persistente de verificación
     function setConnectionVerifiedState(verified) {
         if (verified === true) {
             isConnectionVerified = true;
             isConnectionInProgress = false;
             stopStatusMonitoring(); // Detener monitoreo cuando está verificado
+            updateStatusBadge('verified');
             console.log('Estado de verificación DV: VERIFICADO');
         } else if (verified === false) {
             isConnectionVerified = false;
             isConnectionInProgress = false;
             stopStatusMonitoring(); // Detener monitoreo cuando no está verificado
+            updateStatusBadge('not_verified');
             console.log('Estado de verificación DV: NO VERIFICADO');
         } else { // null, undefined, o 'in_progress'
             isConnectionVerified = false;
             isConnectionInProgress = true;
             startStatusMonitoring(); // Iniciar monitoreo cuando está en proceso
+            updateStatusBadge('in_progress');
             console.log('Estado de verificación DV: EN PROCESO');
         }
     }

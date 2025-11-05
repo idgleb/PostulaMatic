@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from ..models import JobPosting, MatchScore, UserCV, UserProfile
 from .skills_extractor import skills_extractor
+from .ats_matcher import ats_matcher
 
 logger = logging.getLogger(__name__)
 
@@ -168,6 +169,62 @@ class BasicSkillsMatchingStrategy(MatchingStrategy):
         return critical_skills
 
 
+class ATSMatchingStrategy(MatchingStrategy):
+    """
+    Estrategia de matching basada en el algoritmo ATS unificado.
+    
+    Esta es la estrategia RECOMENDADA y por defecto.
+    Usa el mismo algoritmo que la personalización de CV para consistencia.
+    """
+
+    def calculate_match(
+        self,
+        cv_skills: Dict[str, Any],
+        job_description: str,
+        required_skills: Optional[List[str]] = None,
+    ) -> MatchResult:
+        """
+        Calcula matching usando el algoritmo ATS avanzado.
+
+        Args:
+            cv_skills: Habilidades del CV (con 'parsed_text' o 'skills')
+            job_description: Descripción del trabajo
+            required_skills: No usado (el algoritmo ATS extrae keywords automáticamente)
+
+        Returns:
+            Resultado del matching con score ATS
+        """
+        # Preparar CV text
+        cv_text = cv_skills.get("parsed_text", "")
+        if not cv_text:
+            # Fallback: usar skills como texto
+            skills_list = cv_skills.get("skills", [])
+            cv_text = " ".join(skills_list)
+
+        # Calcular score ATS
+        ats_result = ats_matcher.calculate_score(
+            cv_text=cv_text,
+            job_description=job_description,
+            cv_structured=None  # No tenemos CV estructurado en este punto
+        )
+
+        # Convertir resultado ATS a MatchResult
+        return MatchResult(
+            score=float(ats_result["total"]),
+            details={
+                "strategy": "ats_advanced",
+                "breakdown": ats_result["breakdown"],
+                "keywords_found": ats_result["keywords_found"],
+                "keywords_total": ats_result["keywords_total"],
+                "job_keywords": ats_result["job_keywords"],
+            },
+            confidence=min(ats_result["keywords_found"] / max(ats_result["keywords_total"], 1), 1.0),
+            matched_skills=ats_result["job_keywords"][:ats_result["keywords_found"]],
+            missing_skills=ats_result["missing_keywords"],
+            extra_skills=[],  # El algoritmo ATS no calcula extra skills
+        )
+
+
 class MatchingService:
     """Servicio principal para cálculo de matching."""
 
@@ -176,9 +233,9 @@ class MatchingService:
         Inicializa el servicio de matching.
 
         Args:
-            strategy: Estrategia de matching a usar (por defecto: BasicSkillsMatchingStrategy)
+            strategy: Estrategia de matching a usar (por defecto: ATSMatchingStrategy)
         """
-        self.strategy = strategy or BasicSkillsMatchingStrategy()
+        self.strategy = strategy or ATSMatchingStrategy()
 
     def calculate_cv_job_match(self, cv: UserCV, job: JobPosting) -> MatchResult:
         """
@@ -191,11 +248,12 @@ class MatchingService:
         Returns:
             Resultado del matching
         """
-        if not cv.skills_list:
-            logger.warning(f"CV {cv.id} no tiene habilidades detectadas")
+        # Verificar que el CV tenga texto parseado
+        if not cv.parsed_text:
+            logger.warning(f"CV {cv.id} no tiene texto parseado")
             return MatchResult(
                 score=0.0,
-                details={"error": "CV sin habilidades detectadas"},
+                details={"error": "CV sin texto parseado"},
                 confidence=0.0,
                 matched_skills=[],
                 missing_skills=[],
@@ -205,10 +263,16 @@ class MatchingService:
         # Combinar descripción y título del trabajo
         job_text = f"{job.title} {job.description}".strip()
 
+        # Preparar datos del CV (incluir parsed_text para estrategia ATS)
+        cv_data = {
+            "parsed_text": cv.parsed_text,
+            "skills": cv.skills_list or [],
+        }
+
         return self.strategy.calculate_match(
-            cv_skills=cv.skills,
+            cv_skills=cv_data,
             job_description=job_text,
-            required_skills=None,  # Podríamos extraer esto del HTML en el futuro
+            required_skills=None,
         )
 
     def calculate_user_job_matches(

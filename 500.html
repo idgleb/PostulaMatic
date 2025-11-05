@@ -1,0 +1,100 @@
+{% extends 'matching/base.html' %}
+
+{% block matching_content %}
+<div class="container-fluid">
+    <div class="row justify-content-center align-items-center" style="min-height: 80vh;">
+        <div class="col-lg-6 col-md-8 col-sm-10 text-center">
+            <!-- Icono de error -->
+            <div class="mb-4">
+                <i class="bi bi-x-circle text-danger" style="font-size: 5rem;"></i>
+            </div>
+            
+            <!-- Título principal -->
+            <h1 class="display-1 fw-bold mb-3" style="background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                500
+            </h1>
+            
+            <!-- Subtítulo -->
+            <h2 class="h3 mb-4 text-muted">Error interno del servidor</h2>
+            
+            <!-- Mensaje descriptivo -->
+            <p class="lead mb-4">
+                Ha ocurrido un error interno en el servidor. Nuestro equipo técnico ha sido notificado.
+            </p>
+            
+            <!-- Información adicional -->
+            <div class="alert alert-warning mb-4">
+                <i class="bi bi-tools me-2"></i>
+                <strong>¿Qué puedes hacer?</strong>
+                <ul class="list-unstyled mt-2 mb-0">
+                    <li>• Intenta recargar la página en unos minutos</li>
+                    <li>• Verifica tu conexión a internet</li>
+                    <li>• Si el problema persiste, contacta al soporte técnico</li>
+                </ul>
+            </div>
+            
+            <!-- Botones de acción -->
+            <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                <a href="{% url 'home' %}" class="btn btn-primary btn-lg">
+                    <i class="bi bi-house me-2"></i>Ir al Inicio
+                </a>
+                <button onclick="location.reload()" class="btn btn-outline-secondary btn-lg">
+                    <i class="bi bi-arrow-clockwise me-2"></i>Recargar Página
+                </button>
+            </div>
+            
+            <!-- Información de contacto -->
+            <div class="mt-5">
+                <div class="alert alert-light">
+                    <h6 class="text-muted mb-2">¿Necesitas ayuda?</h6>
+                    <p class="small mb-0">
+                        Si este error persiste, por favor contacta al soporte técnico con la siguiente información:
+                    </p>
+                    <code class="small">Error 500 - {{ request.path }}</code>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Animación suave para el contenido */
+.container-fluid {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Efecto hover para los botones */
+.btn:hover {
+    transform: translateY(-2px);
+    transition: all 0.3s ease;
+}
+
+/* Estilo para el icono de error */
+.bi-x-circle {
+    animation: shake 1s infinite;
+}
+
+@keyframes shake {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    25% {
+        transform: translateX(-5px);
+    }
+    75% {
+        transform: translateX(5px);
+    }
+}
+</style>
+{% endblock %}

@@ -70,10 +70,19 @@
     </div>
 </div>
 
-<!-- Botón para calcular matches -->
+<!-- Botones de acción -->
 <div class="row mb-4">
     <div class="col-12 text-center">
-        <button type="button" class="btn btn-success btn-lg" id="calculateMatchesBtn">
+        <form method="post" action="{% url 'test_scraper' %}" id="scraperForm" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary btn-lg" id="scraperBtn">
+                <i class="bi bi-play-fill me-2"></i>Iniciar Scraping
+            </button>
+        </form>
+        <button type="button" class="btn btn-warning btn-lg ms-2" id="clearSessionBtn">
+            <i class="bi bi-trash me-2"></i>Limpiar Sesiones
+        </button>
+        <button type="button" class="btn btn-success btn-lg ms-2" id="calculateMatchesBtn">
             <i class="bi bi-calculator me-2"></i>Calcular Matches
         </button>
     </div>
@@ -95,7 +104,7 @@
 
 <!-- Scraper Test Section -->
 <div class="row">
-    <div class="col-lg-8">
+    <div class="col-12">
         <div class="card">
             <div class="card-header">
                 <h5 class="card-title mb-0">
@@ -103,54 +112,47 @@
                 </h5>
             </div>
             <div class="card-body">
-                {% if stats.has_credentials %}
-                    <div class="mb-4">
-                        <h6>Configuración actual:</h6>
-                        <ul class="list-unstyled">
-                            <li><strong>Usuario:</strong> {{ profile.dv_username }}</li>
-                            <li><strong>Estado conexión:</strong> 
-                                {% if stats.credentials_verified %}
-                                    <span class="badge bg-success" id="connection-status-badge">Verificado</span>
-                                {% elif stats.credentials_in_progress %}
-                                    <span class="badge bg-info" id="connection-status-badge">
-                                        <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>En proceso
-                                    </span>
-                                {% else %}
-                                    <span class="badge bg-warning" id="connection-status-badge">No verificado</span>
-                                {% endif %}
-                            </li>
-                            <li><strong>Umbral de matching:</strong> {{ profile.match_threshold }}%</li>
-                            <li><strong>Límite diario:</strong> {{ profile.daily_limit }} emails</li>
-                        </ul>
+                {% if rotation_info.total_verified > 0 %}
+                    <div class="mb-4" id="rotationInfoCard">
+                        <div class="alert alert-info mb-3">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-arrow-repeat fs-3 me-3"></i>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">🔄 Próximo en rotación:</h6>
+                                    <div class="mt-2">
+                                        <strong class="fs-5" id="nextUserName">{{ rotation_info.next_user.name }}</strong>
+                                        <br>
+                                        <small class="text-muted">
+                                            <span id="nextUserEmail">📧 {{ rotation_info.next_user.email }}</span> | 
+                                            <span id="nextUserDV">🎓 Login DV: {{ rotation_info.next_user.dv_username }}</span>
+                                        </small>
+                                    </div>
+                                    <small class="text-muted mt-2 d-block">
+                                        <i class="bi bi-people me-1"></i><span id="totalVerified">{{ rotation_info.total_verified }}</span> usuario(s) verificados en total
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle me-2"></i>
-                        <strong>¿Qué hace el scraper?</strong>
+                        <strong>¿Qué hace el scraper global?</strong>
                         <ul class="mb-0 mt-2">
-                            <li>Inicia sesión en dvcarreras con tus credenciales</li>
-                            <li>Extrae ofertas de trabajo del job board</li>
-                            <li>Calcula coincidencias con tus CVs</li>
-                            <li>Guarda matches que superen tu umbral</li>
+                            <li>🔄 <strong>Rotación automática:</strong> Usa credenciales de diferentes usuarios verificados</li>
+                            <li>🌍 <strong>Extrae ofertas:</strong> Scrapeando el job board de DV Carreras</li>
+                            <li>🧮 <strong>Calcula matches:</strong> Para TODOS los usuarios con CVs procesados</li>
+                            <li>💾 <strong>Guarda resultados:</strong> Matches que superen el umbral de cada usuario</li>
                         </ul>
                     </div>
                     
-                    <form method="post" action="{% url 'test_scraper' %}" id="scraperForm">
-                        {% csrf_token %}
-                    <button type="submit" class="btn btn-primary btn-lg" id="scraperBtn">
-                        <i class="bi bi-play-fill me-2"></i>Iniciar Scraping
-                    </button>
-                    <button type="button" class="btn btn-warning btn-lg ms-2" id="clearSessionBtn">
-                        <i class="bi bi-trash me-2"></i>Limpiar Sesión
-                    </button>
-                    </form>
                     
                     <!-- Área de screenshots en tiempo real -->
                     <div class="mt-3">
                         <h6 class="text-primary">
                             <i class="bi bi-camera-video me-2"></i>Vista en Vivo del Navegador
                         </h6>
-            <div id="liveScreenshots" class="bg-dark p-3 rounded text-center" style="height: 400px; overflow-y: auto;">
+            <div id="liveScreenshots" class="bg-dark p-3 rounded text-center" style="min-height: 200px; max-height: 800px; overflow-y: auto;">
                 <div class="text-light">
                     <i class="bi bi-camera-video fs-1"></i>
                     <p class="mt-2">Los screenshots aparecerán aquí durante el scraping</p>
@@ -183,7 +185,7 @@
                                     </div>
                                 </div>
                                 
-                                <div id="statusLog" class="bg-light p-3 rounded">
+                                <div id="statusLog" class="bg-light p-3 rounded" style="max-height: 500px; overflow-y: auto;">
                                     <div class="log-entry text-muted">
                                         <small>No hay proceso de scraping activo</small>
                                     </div>
@@ -193,6 +195,7 @@
                             </div>
                         </div>
                     </div>
+                    
                 {% else %}
                     <div class="text-center py-4">
                         <i class="bi bi-lock text-muted" style="font-size: 3rem;"></i>
@@ -208,73 +211,88 @@
             </div>
         </div>
     </div>
-    
-    <div class="col-lg-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i class="bi bi-info-circle me-2"></i>Información
-                </h5>
-            </div>
-            <div class="card-body">
-                <h6>Rate Limiting:</h6>
-                <ul class="small">
-                    <li>Delay entre requests: 2-5 segundos</li>
-                    <li>Máximo 3 páginas por scraping</li>
-                    <li>Respeto a robots.txt</li>
-                </ul>
-                
-                <h6 class="mt-3">Seguridad:</h6>
-                <ul class="small">
-                    <li>Credenciales almacenadas de forma segura</li>
-                    <li>User-Agent realista</li>
-                    <li>Manejo de errores robusto</li>
-                </ul>
-                
-                <h6 class="mt-3">Logs:</h6>
-                <p class="small text-muted">
-                    Los logs del scraping se pueden ver en la consola de Django o en los logs de Celery.
-                </p>
-            </div>
-        </div>
-        
-        {% if stats.has_credentials %}
-        <div class="card mt-3">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i class="bi bi-gear me-2"></i>Configuración
-                </h5>
-            </div>
-            <div class="card-body">
-                <a href="{% url 'profile' %}" class="btn btn-custom-404 btn-sm w-100">
-                    <i class="bi bi-pencil me-1"></i>Editar Perfil
-                </a>
-            </div>
-        </div>
-        {% endif %}
-    </div>
 </div>
 
-<!-- Recent Matches -->
-{% if stats.user_matches > 0 %}
+<!-- Scheduled Scraping Configuration -->
 <div class="row mt-4">
     <div class="col-12">
-        <div class="card">
+        <div class="card mb-5">
             <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i class="bi bi-star me-2"></i>Matches Recientes
+                <h5 class="mb-0">
+                    <i class="bi bi-clock-history me-2"></i>Scraping Automático Programado
                 </h5>
             </div>
             <div class="card-body">
-                <p class="text-muted">
-                    Tienes {{ stats.user_matches }} matches que superan tu umbral.
-                    <a href="{% url 'dashboard' %}" class="text-decoration-none">Ver en dashboard</a>
-                </p>
+                {% if scheduled_config and scheduled_config.last_run %}
+                <!-- Última ejecución programada -->
+                <div class="alert alert-success mb-4">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <h6 class="mb-1">
+                                <i class="bi bi-check-circle-fill me-2"></i>Última ejecución exitosa
+                            </h6>
+                            <p class="mb-0">
+                                <strong>{{ scheduled_config.last_run|date:"d/m/Y H:i:s" }}</strong>
+                            </p>
+                        </div>
+                        <div>
+                            <a href="{% url 'scraping_results' %}" class="btn btn-sm btn-success">
+                                <i class="bi bi-eye me-1"></i>Ver Resultados
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <form id="scheduled-scraping-form">
+                    <div class="row">
+                        <div class="col-md-5">
+                            <div class="mb-3">
+                                <label for="scheduledTime" class="form-label">
+                                    <i class="bi bi-alarm me-2"></i>Hora de Ejecución Diaria
+                                </label>
+                                <input type="time" class="form-control" id="scheduledTime" value="09:00">
+                                <div class="form-text">El scraper se ejecutará automáticamente a esta hora todos los días</div>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <i class="bi bi-power me-2"></i>Estado del Scraper
+                                </label>
+                                <div class="form-check form-switch d-flex align-items-center">
+                                    <input class="form-check-input me-3" type="checkbox" id="scheduledScrapingEnabled" style="cursor: pointer; width: 4rem; height: 2rem;">
+                                    <label class="form-check-label" for="scheduledScrapingEnabled" style="cursor: pointer;">
+                                        <span id="scheduledStatusText" class="badge bg-secondary px-3 py-2" style="font-size: 1rem;">Desactivado</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="mb-3">
+                                <label class="form-label d-block">&nbsp;</label>
+                                <button type="button" class="btn btn-success w-100" id="saveScheduledScrapingBtn" disabled>
+                                    <i class="bi bi-save me-2"></i>Guardar Configuración
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                
+                <!-- Información y Detalles -->
+                <div class="mt-4">
+                    <h6>Información:</h6>
+                    <ul class="small">
+                        <li>El scraper se ejecutará automáticamente todos los días a la hora configurada</li>
+                        <li>Usará rotación de credenciales verificadas</li>
+                        <li>Calculará matches para todos los usuarios con CVs</li>
+                        <li id="lastRunInfo" class="text-muted">Última ejecución: <span id="lastRunTime">Nunca</span></li>
+                    </ul>
+                </div>
             </div>
         </div>
     </div>
 </div>
-{% endif %}
 {% endblock %}
 
 {% block extra_js %}
@@ -296,20 +314,35 @@
         box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3) !important;
         color: white !important;
     }
+    
+    /* Animación de pulso para el botón de éxito */
+    @keyframes successPulse {
+        0% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.05);
+        }
+        100% {
+            transform: scale(1);
+        }
+    }
+    
+    .btn-success-pulse {
+        animation: successPulse 0.6s ease-in-out;
+    }
 </style>
 <script>
 // Versión: 2025-09-28-17:30
-(function() {
-    'use strict';
     
-let progressInterval = null;
-let currentTaskId = null;
-let isMonitoring = false;
-let lastStatus = null;
-let lastCurrentStep = null;
-let lastProgressInfo = null;
-let monitoringId = null; // Identificador único para el monitoreo
-let isRefreshMode = false; // Control para evitar duplicados en refresh
+var progressInterval = null;
+var currentTaskId = null;
+var isMonitoring = false;
+var lastStatus = null;
+var lastCurrentStep = null;
+var lastProgressInfo = null;
+var monitoringId = null; // Identificador único para el monitoreo
+var isRefreshMode = false; // Control para evitar duplicados en refresh
 
 // Función para desactivar botón durante scraping
 function disableScrapingButton() {
@@ -329,11 +362,38 @@ function enableScrapingButton() {
     }
 }
 
+// Función para actualizar el próximo usuario en rotación
+function updateNextUserInRotation() {
+    fetch('/matching/api/next-user-rotation/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.next_user) {
+                // Actualizar los elementos del DOM
+                const nameEl = document.getElementById('nextUserName');
+                const emailEl = document.getElementById('nextUserEmail');
+                const dvEl = document.getElementById('nextUserDV');
+                const totalEl = document.getElementById('totalVerified');
+                
+                if (nameEl) nameEl.textContent = data.next_user.name;
+                if (emailEl) emailEl.textContent = `📧 ${data.next_user.email}`;
+                if (dvEl) dvEl.textContent = `🎓 Login DV: ${data.next_user.dv_username}`;
+                if (totalEl) totalEl.textContent = data.total_verified;
+                
+                console.log('✅ Próximo usuario actualizado:', data.next_user.name);
+            }
+        })
+        .catch(error => {
+            console.error('❌ Error actualizando próximo usuario:', error);
+        });
+}
 
 
 // Función principal para iniciar monitoreo
 function startMonitoring() {
     console.log('Iniciando monitoreo de progreso...');
+    
+    // Resetear logs cargados al iniciar nuevo monitoreo
+    loadedLogIds.clear();
     
     // Intentar obtener Task ID desde localStorage si no hay uno actual
     if (!currentTaskId) {
@@ -675,7 +735,7 @@ function monitorProgress() {
 }
 
 // Alias para compatibilidad
-const startProgressMonitoring = startMonitoring;
+var startProgressMonitoring = startMonitoring;
 
 // Función para actualizar progress bar con color específico (ordenada y consistente)
 function updateProgressBar(percentage, text, colorType) {
@@ -736,8 +796,8 @@ function addLogEntry(message, type = 'info') {
     const logEntry = document.createElement('div');
     logEntry.className = 'log-entry mb-1';
     
-    let icon = 'bi-info-circle';
-    let color = 'text-info';
+    var icon = 'bi-info-circle';
+    var color = 'text-info';
     
     if (type === 'success') {
         icon = 'bi-check-circle';
@@ -788,6 +848,9 @@ function saveLogToDatabase(message, type) {
     });
 }
 
+// Variable para trackear los logs ya cargados
+let loadedLogIds = new Set();
+
 function loadAllLogsFromDatabase() {
     // Si hay task_id específico, cargar logs de esa tarea
     if (currentTaskId) {
@@ -795,14 +858,14 @@ function loadAllLogsFromDatabase() {
             .then(response => response.json())
             .then(data => {
                 if (data.success && data.logs) {
-                    // Reemplazar todos los logs en la interfaz
                     const statusLog = document.getElementById('statusLog');
                     if (statusLog) {
-                        statusLog.innerHTML = '';
-                        
-                        // Cargar todos los logs desde la base de datos
+                        // Solo agregar logs nuevos (no borrar los existentes)
                         data.logs.forEach(log => {
-                            addLogEntryFromDatabase(log.message, log.type, log.timestamp);
+                            if (!loadedLogIds.has(log.id)) {
+                                addLogEntryFromDatabase(log.message, log.type, log.timestamp);
+                                loadedLogIds.add(log.id);
+                            }
                         });
                     }
                 }
@@ -816,14 +879,14 @@ function loadAllLogsFromDatabase() {
             .then(response => response.json())
             .then(data => {
                 if (data.success && data.logs) {
-                    // Reemplazar todos los logs en la interfaz
                     const statusLog = document.getElementById('statusLog');
                     if (statusLog) {
-                        statusLog.innerHTML = '';
-                        
-                        // Cargar todos los logs desde la base de datos
+                        // Solo agregar logs nuevos (no borrar los existentes)
                         data.logs.forEach(log => {
-                            addLogEntryFromDatabase(log.message, log.type, log.timestamp);
+                            if (!loadedLogIds.has(log.id)) {
+                                addLogEntryFromDatabase(log.message, log.type, log.timestamp);
+                                loadedLogIds.add(log.id);
+                            }
                         });
                     }
                 }
@@ -848,8 +911,9 @@ function updateLiveScreenshots() {
                         <div class="text-center">
                             <img src="${data.screenshot_url}" 
                                  class="img-fluid rounded shadow" 
-                                 style="max-width: 100%; max-height: 400px; border: 2px solid #007bff;"
-                                 alt="Screenshot en vivo">
+                                 style="max-width: 100%; height: auto; border: 2px solid #007bff;"
+                                 alt="Screenshot en vivo"
+                                 onload="this.parentElement.parentElement.style.height = 'auto';">
                             <div class="mt-2">
                                 <small class="text-light">
                                     <i class="bi bi-camera me-1"></i>
@@ -944,27 +1008,43 @@ function addLogEntryFromDatabase(message, type, timestamp) {
     updateProgressFromLogMessage(message);
     
     const logEntry = document.createElement('div');
-    logEntry.className = 'log-entry mb-1';
     
-    let icon = 'bi-info-circle';
-    let color = 'text-info';
-    
-    if (type === 'success') {
-        icon = 'bi-check-circle';
-        color = 'text-success';
-    } else if (type === 'error') {
-        icon = 'bi-exclamation-triangle';
-        color = 'text-danger';
-    } else if (type === 'warning') {
-        icon = 'bi-exclamation-circle';
-        color = 'text-warning';
+    // 🔐 DESTACAR LOG DE CREDENCIALES con estilo especial
+    if (message.includes('🔐 Usando credenciales de:')) {
+        logEntry.className = 'log-entry mb-2 p-2 rounded';
+        logEntry.style.backgroundColor = '#d1ecf1';
+        logEntry.style.border = '2px solid #0dcaf0';
+        logEntry.style.fontWeight = 'bold';
+        
+        logEntry.innerHTML = `
+            <small class="text-muted">[${timestamp}]</small>
+            <i class="bi bi-key-fill text-info ms-2" style="font-size: 1.2em;"></i>
+            <span class="ms-1" style="font-size: 1.1em;">${message}</span>
+        `;
+    } else {
+        // Log normal
+        logEntry.className = 'log-entry mb-1';
+        
+        var icon = 'bi-info-circle';
+        var color = 'text-info';
+        
+        if (type === 'success') {
+            icon = 'bi-check-circle';
+            color = 'text-success';
+        } else if (type === 'error') {
+            icon = 'bi-exclamation-triangle';
+            color = 'text-danger';
+        } else if (type === 'warning') {
+            icon = 'bi-exclamation-circle';
+            color = 'text-warning';
+        }
+        
+        logEntry.innerHTML = `
+            <small class="text-muted">[${timestamp}]</small>
+            <i class="bi ${icon} ${color} ms-2"></i>
+            <span class="ms-1">${message}</span>
+        `;
     }
-    
-    logEntry.innerHTML = `
-        <small class="text-muted">[${timestamp}]</small>
-        <i class="bi ${icon} ${color} ms-2"></i>
-        <span class="ms-1">${message}</span>
-    `;
     
     statusLog.appendChild(logEntry);
     statusLog.scrollTop = statusLog.scrollHeight;
@@ -1041,6 +1121,41 @@ function cancelScraping() {
     updateProgress(0, 'Detenido');
 }
 
+// Función para verificar si hay un scraping activo
+function checkForActiveScraping() {
+    console.log('🔍 Verificando si hay scraping activo...');
+    
+    fetch('/matching/api/current-scraping-task/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.has_active_task && data.task_id) {
+                console.log('✅ Scraping activo encontrado:', data.task_id);
+                
+                // Establecer el task_id global
+                currentTaskId = data.task_id;
+                
+                // Guardar en localStorage
+                localStorage.setItem('currentScrapingTaskId', data.task_id);
+                
+                // Iniciar monitoreo automáticamente
+                addLogEntry('🔄 Conectando a scraping en progreso...', 'info');
+                disableScrapingButton();
+                startMonitoring();
+                
+                // Cargar logs existentes
+                loadAllLogsFromDatabase();
+            } else {
+                console.log('ℹ️ No hay scraping activo');
+            }
+        })
+        .catch(error => {
+            console.error('❌ Error verificando scraping activo:', error);
+        });
+}
+
+// Verificar scraping activo cada 30 segundos
+setInterval(checkForActiveScraping, 30000);
+
 // Manejar envío del formulario de scraping con AJAX
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Página del scraper cargada');
@@ -1050,22 +1165,47 @@ document.addEventListener('DOMContentLoaded', function() {
     const scraperResult = document.getElementById('scraperResult');
     const scraperMessage = document.getElementById('scraperMessage');
     
-    // Event listener para el botón de limpiar sesión
+    // Verificar si hay un scraping activo al cargar la página
+    checkForActiveScraping();
+    
+    // Event listener para el botón de limpiar sesión (evitar duplicados)
     const clearSessionBtn = document.getElementById('clearSessionBtn');
-    if (clearSessionBtn) {
+    if (clearSessionBtn && !clearSessionBtn.hasAttribute('data-listener-added')) {
+        clearSessionBtn.setAttribute('data-listener-added', 'true');
         clearSessionBtn.addEventListener('click', function() {
-            if (confirm('¿Estás seguro de que quieres limpiar la sesión guardada? Esto requerirá un nuevo login en el próximo scraping.')) {
-                clearSession();
-            }
+            showClearSessionModal();
+        });
+    }
+    
+    // Event listener para el botón de confirmar limpieza de sesión
+    const confirmClearSessionBtn = document.getElementById('confirmClearSession');
+    if (confirmClearSessionBtn && !confirmClearSessionBtn.hasAttribute('data-listener-added')) {
+        confirmClearSessionBtn.setAttribute('data-listener-added', 'true');
+        confirmClearSessionBtn.addEventListener('click', function() {
+            // Cerrar modal y ejecutar limpieza
+            const modal = bootstrap.Modal.getInstance(document.getElementById('clearSessionModal'));
+            modal.hide();
+            clearSession();
         });
     }
 
-    // Event listener para el botón de calcular matches
+    // Event listener para el botón de calcular matches (evitar duplicados)
     const calculateMatchesBtn = document.getElementById('calculateMatchesBtn');
-    if (calculateMatchesBtn) {
-        calculateMatchesBtn.addEventListener('click', function() {
+    console.log('🔍 DEBUG: calculateMatchesBtn encontrado:', calculateMatchesBtn);
+    console.log('🔍 DEBUG: data-listener-added:', calculateMatchesBtn?.getAttribute('data-listener-added'));
+    
+    if (calculateMatchesBtn && !calculateMatchesBtn.hasAttribute('data-listener-added')) {
+        console.log('✅ Agregando event listener a calculateMatchesBtn');
+        calculateMatchesBtn.setAttribute('data-listener-added', 'true');
+        calculateMatchesBtn.addEventListener('click', function(e) {
+            console.log('🎯 Click detectado en calculateMatchesBtn');
+            e.preventDefault();
             calculateMatches();
         });
+    } else if (calculateMatchesBtn) {
+        console.log('⚠️ Listener ya agregado a calculateMatchesBtn');
+    } else {
+        console.error('❌ calculateMatchesBtn NO encontrado en el DOM');
     }
 
     if (scraperForm) {
@@ -1251,6 +1391,9 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(error => {
             console.error('Error actualizando estadísticas:', error);
         });
+        
+        // Actualizar próximo usuario en rotación
+        updateNextUserInRotation();
     }
     
     // Actualizar estado cada 2 segundos para mayor responsividad
@@ -1258,6 +1401,303 @@ document.addEventListener('DOMContentLoaded', function() {
         updateDVConnectionStatus();
         updateStats();
     }, 2000);
+    
+    
+    // ========================================
+    // SCHEDULED SCRAPING CONFIGURATION
+    // ========================================
+    
+    // Variables para rastrear valores originales
+    let originalScheduledEnabled = false;
+    let originalScheduledTime = '09:00';
+    
+    // Cargar configuración al iniciar
+    function loadScheduledScrapingConfig() {
+        fetch('/matching/api/scheduled-scraping/')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.config) {
+                    const enabledCheckbox = document.getElementById('scheduledScrapingEnabled');
+                    const timeInput = document.getElementById('scheduledTime');
+                    const statusText = document.getElementById('scheduledStatusText');
+                    const lastRunTime = document.getElementById('lastRunTime');
+                    
+                    if (enabledCheckbox) {
+                        enabledCheckbox.checked = data.config.is_enabled;
+                        originalScheduledEnabled = data.config.is_enabled;
+                        
+                        if (data.config.is_enabled) {
+                            statusText.textContent = 'Activado';
+                            statusText.className = 'badge bg-success';
+                        } else {
+                            statusText.textContent = 'Desactivado';
+                            statusText.className = 'badge bg-secondary';
+                        }
+                    }
+                    
+                    if (timeInput && data.config.scheduled_time) {
+                        timeInput.value = data.config.scheduled_time;
+                        originalScheduledTime = data.config.scheduled_time;
+                    }
+                    
+                    if (lastRunTime && data.config.last_run) {
+                        const lastRun = new Date(data.config.last_run);
+                        lastRunTime.textContent = lastRun.toLocaleString('es-AR');
+                    }
+                    
+                    // Asegurar que el botón esté deshabilitado al cargar
+                    const saveBtn = document.getElementById('saveScheduledScrapingBtn');
+                    if (saveBtn) {
+                        saveBtn.disabled = true;
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error cargando configuración de scraping programado:', error);
+            });
+    }
+    
+    // Función para verificar si hay cambios
+    function checkScheduledScrapingChanges() {
+        const enabledCheckbox = document.getElementById('scheduledScrapingEnabled');
+        const timeInput = document.getElementById('scheduledTime');
+        const saveBtn = document.getElementById('saveScheduledScrapingBtn');
+        
+        if (enabledCheckbox && timeInput && saveBtn) {
+            const hasChanges = 
+                enabledCheckbox.checked !== originalScheduledEnabled ||
+                timeInput.value !== originalScheduledTime;
+            
+            saveBtn.disabled = !hasChanges;
+        }
+    }
+    
+    // Configurar event listeners para detectar cambios
+    function setupScheduledScrapingHandlers() {
+        const enabledCheckbox = document.getElementById('scheduledScrapingEnabled');
+        const timeInput = document.getElementById('scheduledTime');
+        
+        if (enabledCheckbox) {
+            enabledCheckbox.addEventListener('change', checkScheduledScrapingChanges);
+        }
+        
+        if (timeInput) {
+            timeInput.addEventListener('input', checkScheduledScrapingChanges);
+            timeInput.addEventListener('change', checkScheduledScrapingChanges);
+        }
+    }
+    
+    // Actualizar configuración cada 10 segundos (solo si no hay cambios pendientes)
+    setInterval(() => {
+        const saveBtn = document.getElementById('saveScheduledScrapingBtn');
+        if (saveBtn && saveBtn.disabled) {
+            loadScheduledScrapingConfig();
+        }
+    }, 10000);
+    
+    // Guardar configuración
+    document.getElementById('saveScheduledScrapingBtn')?.addEventListener('click', function() {
+        const enabledCheckbox = document.getElementById('scheduledScrapingEnabled');
+        const timeInput = document.getElementById('scheduledTime');
+        const saveBtn = this;
+        
+        const config = {
+            is_enabled: enabledCheckbox.checked,
+            scheduled_time: timeInput.value
+        };
+        
+        // Deshabilitar botón mientras guarda
+        saveBtn.disabled = true;
+        const originalBtnText = saveBtn.innerHTML;
+        saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
+        
+        fetch('/matching/api/scheduled-scraping/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify(config)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Actualizar valores originales
+                originalScheduledEnabled = config.is_enabled;
+                originalScheduledTime = config.scheduled_time;
+                
+                // Cambiar botón a estado de éxito con animación
+                saveBtn.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i>¡Guardado!';
+                saveBtn.classList.add('btn-success-pulse');
+                
+                // Actualizar texto de estado
+                const statusText = document.getElementById('scheduledStatusText');
+                if (config.is_enabled) {
+                    statusText.textContent = 'Activado';
+                    statusText.className = 'badge bg-success';
+                } else {
+                    statusText.textContent = 'Desactivado';
+                    statusText.className = 'badge bg-secondary';
+                }
+                
+                // Restaurar botón después de 2 segundos y mantenerlo deshabilitado
+                setTimeout(() => {
+                    saveBtn.innerHTML = originalBtnText;
+                    saveBtn.classList.remove('btn-success-pulse');
+                    saveBtn.disabled = true; // Mantener deshabilitado hasta que haya cambios
+                }, 2000);
+            } else {
+                // Mostrar error en el botón
+                saveBtn.innerHTML = '<i class="bi bi-x-circle-fill me-2"></i>Error';
+                
+                console.error('Error guardando configuración:', data.message);
+                
+                setTimeout(() => {
+                    saveBtn.innerHTML = originalBtnText;
+                    saveBtn.disabled = false; // Reactivar para permitir reintentar
+                }, 3000);
+            }
+        })
+        .catch(error => {
+            console.error('Error guardando configuración:', error);
+            
+            // Mostrar error en el botón
+            saveBtn.innerHTML = '<i class="bi bi-x-circle-fill me-2"></i>Error de conexión';
+            
+            setTimeout(() => {
+                saveBtn.innerHTML = originalBtnText;
+                saveBtn.disabled = false; // Reactivar para permitir reintentar
+            }, 3000);
+        });
+    });
+    
+    // Actualizar texto de estado cuando cambia el checkbox
+    document.getElementById('scheduledScrapingEnabled')?.addEventListener('change', function() {
+        const statusText = document.getElementById('scheduledStatusText');
+        if (this.checked) {
+            statusText.textContent = 'Activado';
+            statusText.className = 'badge bg-success';
+        } else {
+            statusText.textContent = 'Desactivado';
+            statusText.className = 'badge bg-secondary';
+        }
+    });
+    
+    // Cargar configuración al iniciar
+    loadScheduledScrapingConfig();
+    
+    // Configurar handlers para detectar cambios
+    setupScheduledScrapingHandlers();
+
+    
+    // Función para mostrar el modal de limpieza de sesión (versión dinámica)
+    function showClearSessionModal() {
+        console.log('🔍 Creando modal dinámico de limpieza de sesión...');
+        
+        // Crear modal dinámicamente (como los que funcionan)
+        const dynamicModal = document.createElement('div');
+        dynamicModal.className = 'modal fade';
+        dynamicModal.id = 'dynamicClearSessionModal';
+        dynamicModal.innerHTML = `
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-warning">
+                        <h5 class="modal-title">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            Confirmar Limpieza de TODAS las Sesiones
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-danger">
+                            <strong>⚠️ ¡ATENCIÓN!</strong> Esta acción eliminará las sesiones de <strong>TODOS los usuarios</strong>.
+                        </div>
+                        
+                        <div class="mb-3">
+                            <h6 class="text-danger mb-2">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>¿Qué se eliminará?
+                            </h6>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i class="bi bi-people-fill text-danger me-2"></i>
+                                    <strong>Sesiones de TODOS los usuarios:</strong> admin, Glebaty, Gleb Ursol, etc.
+                                </li>
+                                <li class="mb-2">
+                                    <i class="bi bi-shield-lock text-warning me-2"></i>
+                                    <strong>Cookies de autenticación:</strong> Se perderá el acceso automático al portal
+                                </li>
+                                <li class="mb-2">
+                                    <i class="bi bi-person-check text-warning me-2"></i>
+                                    <strong>Sesión activa:</strong> El navegador no recordará que ya estás logueado
+                                </li>
+                                <li class="mb-2">
+                                    <i class="bi bi-key text-warning me-2"></i>
+                                    <strong>Datos de login:</strong> Se borrarán las credenciales almacenadas temporalmente
+                                </li>
+                            </ul>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <h6 class="text-info mb-2">
+                                <i class="bi bi-info-circle-fill me-2"></i>¿Qué pasará después?
+                            </h6>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i class="bi bi-arrow-clockwise text-info me-2"></i>
+                                    <strong>Próximo scraping:</strong> Requerirá un nuevo login completo
+                                </li>
+                                <li class="mb-2">
+                                    <i class="bi bi-clock text-info me-2"></i>
+                                    <strong>Tiempo adicional:</strong> El proceso será más lento (login + scraping)
+                                </li>
+                                <li class="mb-2">
+                                    <i class="bi bi-shield-check text-info me-2"></i>
+                                    <strong>Seguridad:</strong> Se forzará una nueva autenticación
+                                </li>
+                            </ul>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="bi bi-lightbulb me-2"></i>
+                            <strong>Recomendación:</strong> Solo limpia la sesión si tienes problemas de acceso o quieres forzar un nuevo login.
+                        </div>
+                        
+                        <p class="mb-0">
+                            <strong>¿Estás seguro de que quieres continuar?</strong>
+                        </p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-danger" id="confirmClearSessionDynamic">
+                            <i class="bi bi-trash-fill me-2"></i>Sí, Limpiar TODAS las Sesiones
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(dynamicModal);
+        
+        // Event listener para el botón de confirmar
+        const confirmBtn = document.getElementById('confirmClearSessionDynamic');
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', function() {
+                // Cerrar modal y ejecutar limpieza
+                const modal = bootstrap.Modal.getInstance(dynamicModal);
+                modal.hide();
+                clearSession();
+            });
+        }
+        
+        try {
+            const modal = new bootstrap.Modal(dynamicModal);
+            modal.show();
+            console.log('✅ Modal dinámico de limpieza de sesión mostrado correctamente');
+        } catch (error) {
+            console.error('❌ Error con modal dinámico:', error);
+            alert('Error: ' + error.message);
+        }
+    }
     
     // Función para limpiar la sesión
     function clearSession() {
@@ -1330,43 +1770,84 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Deshabilitar botón y mostrar spinner
         const calculateBtn = document.getElementById('calculateMatchesBtn');
+        console.log('🔍 DEBUG calculateMatches: Botón encontrado:', calculateBtn);
+        
         if (calculateBtn) {
             calculateBtn.disabled = true;
             calculateBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Calculando...';
+            console.log('✅ Botón deshabilitado y spinner activado');
         }
         
         // Mostrar mensaje en logs
         addLogEntry('🧮 Iniciando cálculo de matches...', 'info');
         updateProgressBar(10, 'Calculando matches...', 'info');
         
+        // Obtener CSRF token
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+        console.log('🔍 DEBUG: CSRF token encontrado:', csrfToken ? 'SÍ' : 'NO');
+        console.log('🔍 DEBUG: CSRF token value:', csrfToken?.value);
+        
+        if (!csrfToken) {
+            console.error('❌ CSRF token NO encontrado');
+            addLogEntry('❌ Error: CSRF token no encontrado', 'error');
+            if (calculateBtn) {
+                calculateBtn.disabled = false;
+                calculateBtn.innerHTML = '<i class="bi bi-calculator me-2"></i>Calcular Matches';
+            }
+            return;
+        }
+        
         // Llamar al backend para calcular matches
+        console.log('📡 Enviando request a /matching/calculate-matches/');
         fetch('/matching/calculate-matches/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                'X-CSRFToken': csrfToken.value
             }
         })
-        .then(response => response.json())
+        .then(response => {
+            console.log('📡 Response status:', response.status);
+            return response.json();
+        })
         .then(data => {
+            console.log('📊 Response data:', data);
+            
             if (data.success) {
-                addLogEntry('✅ Cálculo de matches completado exitosamente', 'success');
-                updateProgressBar(100, 'Matches calculados', 'success');
-                
-                // Mostrar resultados
-                if (data.matches_calculated !== undefined) {
-                    addLogEntry(`📊 Matches calculados: ${data.matches_calculated}`, 'success');
+                if (data.task_id) {
+                    // Proceso iniciado en background
+                    addLogEntry('✅ Cálculo de matches iniciado en background', 'success');
+                    addLogEntry(`📋 Task ID: ${data.task_id}`, 'info');
+                    addLogEntry(`📊 Procesando ${data.jobs_to_process} ofertas con ${data.cvs_to_process} CVs`, 'info');
+                    updateProgressBar(20, 'Procesando en background...', 'info');
+                    
+                    // Iniciar polling del progreso
+                    pollMatchCalculationProgress(data.task_id);
+                } else {
+                    // Proceso completado (respuesta antigua)
+                    addLogEntry('✅ Cálculo de matches completado exitosamente', 'success');
+                    updateProgressBar(100, 'Matches calculados', 'success');
+                    
+                    // Mostrar resultados
+                    if (data.matches_calculated !== undefined) {
+                        addLogEntry(`📊 Matches calculados: ${data.matches_calculated}`, 'success');
+                    }
+                    if (data.new_matches !== undefined) {
+                        addLogEntry(`🆕 Nuevos matches: ${data.new_matches}`, 'success');
+                    }
+                    if (data.total_matches !== undefined) {
+                        addLogEntry(`📈 Total matches: ${data.total_matches}`, 'success');
+                    }
+                    
+                    // Actualizar estadísticas
+                    updateStats();
+                    
+                    // Reactivar botón
+                    if (calculateBtn) {
+                        calculateBtn.disabled = false;
+                        calculateBtn.innerHTML = '<i class="bi bi-calculator me-2"></i>Calcular Matches';
+                    }
                 }
-                if (data.new_matches !== undefined) {
-                    addLogEntry(`🆕 Nuevos matches: ${data.new_matches}`, 'success');
-                }
-                if (data.total_matches !== undefined) {
-                    addLogEntry(`📈 Total matches: ${data.total_matches}`, 'success');
-                }
-                
-                // Actualizar estadísticas en la página
-                updateStats();
-                
             } else {
                 addLogEntry('❌ Error calculando matches: ' + (data.message || 'Error desconocido'), 'error');
                 updateProgressBar(0, 'Error en cálculo', 'danger');
@@ -1388,8 +1869,81 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('✅ Solicitud de cálculo de matches enviada');
     }
     
+    // Función para hacer polling del progreso de cálculo de matches
+    function pollMatchCalculationProgress(taskId) {
+        console.log(`🔄 Iniciando polling para task: ${taskId}`);
+        
+        const pollInterval = setInterval(() => {
+            fetch(`/matching/matching-recalculation-status/${taskId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log('📊 Progress data:', data);
+                    
+                    if (data.state === 'PENDING') {
+                        updateProgressBar(30, 'Esperando inicio...', 'info');
+                    } else if (data.state === 'PROGRESS') {
+                        const progress = data.progress || 0;
+                        updateProgressBar(30 + (progress * 0.6), `Procesando: ${progress}%`, 'info');
+                        
+                        if (data.current_step) {
+                            addLogEntry(`📊 ${data.current_step}`, 'info');
+                        }
+                    } else if (data.state === 'SUCCESS') {
+                        clearInterval(pollInterval);
+                        updateProgressBar(100, 'Matches calculados exitosamente', 'success');
+                        addLogEntry('✅ Cálculo de matches completado', 'success');
+                        
+                        // Mostrar resultados
+                        if (data.result) {
+                            if (data.result.matches_calculated !== undefined) {
+                                addLogEntry(`📊 Matches calculados: ${data.result.matches_calculated}`, 'success');
+                            }
+                            if (data.result.new_matches !== undefined) {
+                                addLogEntry(`🆕 Nuevos matches: ${data.result.new_matches}`, 'success');
+                            }
+                            if (data.result.total_matches !== undefined) {
+                                addLogEntry(`📈 Total matches: ${data.result.total_matches}`, 'success');
+                            }
+                        }
+                        
+                        // Actualizar estadísticas
+                        updateStats();
+                        
+                        // Reactivar botón
+                        const calculateBtn = document.getElementById('calculateMatchesBtn');
+                        if (calculateBtn) {
+                            calculateBtn.disabled = false;
+                            calculateBtn.innerHTML = '<i class="bi bi-calculator me-2"></i>Calcular Matches';
+                        }
+                    } else if (data.state === 'FAILURE') {
+                        clearInterval(pollInterval);
+                        updateProgressBar(0, 'Error en cálculo', 'danger');
+                        addLogEntry(`❌ Error: ${data.error || 'Error desconocido'}`, 'error');
+                        
+                        // Reactivar botón
+                        const calculateBtn = document.getElementById('calculateMatchesBtn');
+                        if (calculateBtn) {
+                            calculateBtn.disabled = false;
+                            calculateBtn.innerHTML = '<i class="bi bi-calculator me-2"></i>Calcular Matches';
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error polling progress:', error);
+                    clearInterval(pollInterval);
+                    addLogEntry('❌ Error consultando progreso', 'error');
+                    
+                    // Reactivar botón
+                    const calculateBtn = document.getElementById('calculateMatchesBtn');
+                    if (calculateBtn) {
+                        calculateBtn.disabled = false;
+                        calculateBtn.innerHTML = '<i class="bi bi-calculator me-2"></i>Calcular Matches';
+                    }
+                });
+        }, 2000); // Polling cada 2 segundos
+    }
+    
 });
-})();
 </script>
 {% endblock %}
 

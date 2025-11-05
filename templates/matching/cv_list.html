@@ -159,30 +159,30 @@
             
             <!-- Card Footer -->
             <div class="card-footer bg-white border-0 pt-0">
-                <div class="row g-3 justify-content-center">
+                <div class="action-buttons-container">
                     <div class="col-auto">
-                        <button type="button" class="btn btn-sm btn-custom-details" 
+                        <button type="button" class="btn-action btn-action-details" 
                                 onclick="showCVDetails({{ cv.id }}, '{{ cv.original_file.name }}', '{{ cv.created_at|date:"d/m/Y H:i" }}', {{ cv.skills_count }}, '{{ cv.is_processed }}')"
                                 title="Ver detalles">
                             <i class="bi bi-eye"></i>
                     </button>
                     </div>
                     <div class="col-auto">
-                        <a href="{% url 'download_cv' cv.id %}" class="btn btn-sm btn-custom-download"
+                        <a href="{% url 'download_cv' cv.id %}" class="btn-action btn-action-download"
                            title="Descargar CV" download>
                             <i class="bi bi-download"></i>
                         </a>
                     </div>
                     {% if not cv.is_processed %}
                     <div class="col-auto">
-                        <a href="{% url 'process_cv' cv.id %}" class="btn btn-sm btn-custom-process"
+                        <a href="{% url 'process_cv' cv.id %}" class="btn-action btn-action-process"
                            title="Procesar">
                             <i class="bi bi-gear"></i>
                         </a>
                     </div>
                     {% endif %}
                     <div class="col-auto">
-                        <button type="button" class="btn btn-sm btn-custom-delete" 
+                        <button type="button" class="btn-action btn-action-delete" 
                                 onclick="deleteCV({{ cv.id }}, '{{ cv.original_file.name }}')"
                                 title="Eliminar">
                             <i class="bi bi-trash"></i>
@@ -440,21 +440,53 @@
     .card-body {
         flex: none !important;
     }
+    
+    /* Animación de spin para iconos de progreso */
+    @keyframes spin {
+        from {
+            transform: rotate(0deg);
+        }
+        to {
+            transform: rotate(360deg);
+        }
+    }
+    
+    .spin {
+        animation: spin 1s linear infinite;
+        display: inline-block;
+    }
 </style>
 <script>
-// Global variables for upload process
-let uploadProgressInterval;
-let selectedFile = null;
+// Use IIFE to create isolated scope and prevent multiple execution
+(function() {
+    'use strict';
+    
+    // Prevent multiple script execution with more robust check
+    if (window.cvListScriptLoaded) {
+        console.warn('CV List script already loaded, skipping...');
+        return;
+    }
 
-// Trigger file selection
-function triggerFileUpload() {
+    // Mark as loaded immediately with timestamp
+    window.cvListScriptLoaded = Date.now();
+    console.log('CV List script loaded at:', new Date().toISOString());
+    
+    // Global variables for upload process - use unique names
+    window.cvUploadProgressInterval = window.cvUploadProgressInterval || null;
+    window.cvSelectedFile = window.cvSelectedFile || null;
+
+// Trigger file selection - expose to global scope
+window.triggerFileUpload = function() {
     document.getElementById('hiddenFileInput').click();
 }
 
-// Handle file selection
-function handleFileSelection(input) {
+// Handle file selection - expose to global scope
+window.handleFileSelection = function(input) {
     const file = input.files[0];
     if (!file) return;
+    
+    // Store file globally
+    window.cvSelectedFile = file;
     
     console.log('📁 Archivo seleccionado:', file.name, file.size);
     
@@ -474,14 +506,14 @@ function handleFileSelection(input) {
         return;
     }
     
-    selectedFile = file;
+    window.cvSelectedFile = file;
     showUploadModal();
     startUpload();
 }
 
 // Show upload modal
 function showUploadModal() {
-    if (!selectedFile) return;
+    if (!window.cvSelectedFile) return;
     
     // Crear modal de upload dinámicamente
     const modal = `
@@ -493,14 +525,14 @@ function showUploadModal() {
                             <i class="bi bi-upload me-2"></i>Subiendo CV
                     </h5>
                     </div>
-                    <div class="modal-body text-center py-4">
+                    <div class="modal-body py-4">
                         <!-- File Info -->
                         <div class="mb-4">
-                            <div class="d-flex align-items-center justify-content-center mb-3">
+                            <div class="d-flex align-items-center mb-3">
                                 <i class="bi bi-file-earmark-text text-primary fs-1 me-3"></i>
-                                <div class="text-start">
-                                    <h6 class="mb-1" id="fileName">${selectedFile.name}</h6>
-                                    <small class="text-muted" id="fileSize">${formatFileSize(selectedFile.size)}</small>
+                                <div>
+                                    <h6 class="mb-1" id="fileName">${window.cvSelectedFile.name}</h6>
+                                    <small class="text-muted" id="fileSize">${formatFileSize(window.cvSelectedFile.size)}</small>
                                 </div>
                             </div>
                         </div>
@@ -523,6 +555,20 @@ function showUploadModal() {
                             <span id="statusText">Iniciando upload...</span>
                         </div>
                         
+                        <!-- Processing Steps (Real-time) -->
+                        <div id="processingSteps" class="mt-4 d-none">
+                            <div class="card border-0 bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title mb-3">
+                                        <i class="bi bi-list-check me-2"></i>Progreso Detallado
+                                    </h6>
+                                    <div class="list-group list-group-flush" id="stepsList">
+                                        <!-- Steps will be dynamically added here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <!-- Success/Error Messages -->
                         <div id="resultMessage" class="d-none">
                             <div class="alert alert-success" id="successAlert">
@@ -536,10 +582,16 @@ function showUploadModal() {
                         </div>
                     </div>
                     <div class="modal-footer" id="modalFooter">
-                        <button type="button" class="btn btn-outline-secondary" id="cancelBtn" data-bs-dismiss="modal">
-                            <i class="bi bi-x-lg me-1"></i>Cancelar
+                        <!-- Botón para cancelar realmente la tarea (solo visible durante procesamiento) -->
+                        <button type="button" class="btn btn-danger" id="cancelTaskBtn" onclick="cancelCurrentTask()">
+                            <i class="bi bi-x-circle me-1"></i>Cancelar Procesamiento
                         </button>
-                        <button type="button" class="btn btn-custom-modal d-none" id="closeBtn" data-bs-dismiss="modal" onclick="location.reload()">
+                        <!-- Botón para continuar en segundo plano (solo visible durante procesamiento) -->
+                        <button type="button" class="btn btn-outline-secondary" id="backgroundBtn" data-bs-dismiss="modal">
+                            <i class="bi bi-arrow-down-circle me-1"></i>Continuar en Segundo Plano
+                        </button>
+                        <!-- Botón para cerrar cuando termine (oculto inicialmente) -->
+                        <button type="button" class="btn btn-custom-modal d-none" id="closeBtn" data-bs-dismiss="modal">
                             <i class="bi bi-check-lg me-1"></i>Cerrar
                         </button>
                     </div>
@@ -563,58 +615,227 @@ function showUploadModal() {
     
     // Limpiar modal cuando se cierre
     document.getElementById('uploadProgressModal').addEventListener('hidden.bs.modal', function() {
+        console.log('🚪 Modal cerrado - Recargando página...');
+        
         // Reset file input
         document.getElementById('hiddenFileInput').value = '';
-        selectedFile = null;
+        window.cvSelectedFile = null;
         
-        // Clear any running intervals
-        if (uploadProgressInterval) {
-            clearInterval(uploadProgressInterval);
+        // Clear progress polling interval
+        if (window.cvProgressPollingInterval) {
+            clearInterval(window.cvProgressPollingInterval);
         }
         
         // Remove modal
         this.remove();
+        
+        // Recargar la página para ver el CV nuevo en la lista
+        location.reload();
     });
+}
+
+// Poll progress from backend
+window.cvProgressPollingInterval = null;
+
+function startProgressPolling(progressId) {
+    console.log('🔄 Iniciando polling de progreso:', progressId);
+    
+    // Mostrar sección de pasos
+    document.getElementById('processingSteps').classList.remove('d-none');
+    
+    // Limpiar polling anterior si existe
+    if (window.cvProgressPollingInterval) {
+        clearInterval(window.cvProgressPollingInterval);
+    }
+    
+    // Iniciar polling cada 500ms
+    window.cvProgressPollingInterval = setInterval(() => {
+        fetch(`/matching/cv-progress/${progressId}/`)
+            .then(response => response.json())
+            .then(data => {
+                console.log('📊 Polling response:', data);
+                if (data.success && data.progress) {
+                    console.log('📊 Progress data:', data.progress);
+                    updateProgressSteps(data.progress);
+                    
+                    // Detener polling si el proceso terminó (usar 'completed' en lugar de 'is_complete')
+                    if (data.progress.completed || data.progress.error) {
+                        clearInterval(window.cvProgressPollingInterval);
+                        console.log('✅ Proceso completado, deteniendo polling');
+                    }
+                } else {
+                    console.warn('⚠️ Respuesta sin progress:', data);
+                }
+            })
+            .catch(error => {
+                console.error('❌ Error consultando progreso:', error);
+            });
+    }, 500);
+}
+
+function updateProgressSteps(progressData) {
+    const stepsList = document.getElementById('stepsList');
+    const steps = progressData.steps || [];
+    
+    console.log('🔍 Actualizando pasos:', steps);
+    
+    // Limpiar lista
+    stepsList.innerHTML = '';
+    
+    // Si no hay pasos, mostrar mensaje
+    if (steps.length === 0) {
+        stepsList.innerHTML = '<div class="text-muted text-center py-3">Esperando actualizaciones...</div>';
+        return;
+    }
+    
+    // Calcular progreso dinámico
+    let completedSteps = 0;
+    let totalSteps = steps.length;
+    
+    steps.forEach(step => {
+        // Contar como completado si: completed, skipped, o error (cuando hay fallback exitoso)
+        if (step.status === 'completed' || step.status === 'skipped' || step.status === 'error') {
+            completedSteps++;
+        }
+    });
+    
+    // Calcular porcentaje (0-100)
+    const progressPercentage = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
+    
+    // Actualizar barra de progreso
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+    if (progressBar && progressText) {
+        progressBar.style.width = progressPercentage + '%';
+        progressText.textContent = progressPercentage + '%';
+        console.log(`📊 Progreso actualizado: ${completedSteps}/${totalSteps} pasos = ${progressPercentage}%`);
+    }
+    
+    // Agregar cada paso desde el backend
+    steps.forEach(step => {
+        const status = step.status || 'pending';
+        const label = step.label || step.id;
+        const message = step.message || '';
+        
+        // Determinar clase y icono según estado
+        let statusClass = 'text-secondary';
+        let statusIcon = 'bi-circle';
+        
+        if (status === 'completed') {
+            statusClass = 'text-success';
+            statusIcon = 'bi-check-circle-fill';
+        } else if (status === 'in_progress') {
+            statusClass = 'text-primary';
+            statusIcon = 'bi-arrow-clockwise spin';
+        } else if (status === 'skipped') {
+            statusClass = 'text-warning';
+            statusIcon = 'bi-dash-circle';
+        } else if (status === 'error') {
+            statusClass = 'text-danger';
+            statusIcon = 'bi-x-circle-fill';
+        }
+        
+        const stepItem = document.createElement('div');
+        stepItem.className = `list-group-item border-0 bg-transparent py-2 ${statusClass}`;
+        stepItem.innerHTML = `
+            <div class="d-flex align-items-start">
+                <i class="${statusIcon} me-2 mt-1" style="min-width: 20px;"></i>
+                <div class="flex-grow-1">
+                    <div>${label}</div>
+                    ${message ? `<small class="text-muted d-block mt-1">${message}</small>` : ''}
+                </div>
+            </div>
+        `;
+        
+        stepsList.appendChild(stepItem);
+    });
+    
+    // Si el proceso está completo, mostrar resultado
+    if (progressData.completed) {
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        
+        if (progressData.error) {
+            // Error
+            progressBar.classList.remove('bg-primary');
+            progressBar.classList.add('bg-danger');
+            document.getElementById('statusMessage').classList.add('d-none');
+            document.getElementById('resultMessage').classList.remove('d-none');
+            document.getElementById('successAlert').classList.add('d-none');
+            document.getElementById('errorAlert').classList.remove('d-none');
+            document.getElementById('errorText').textContent = progressData.error;
+            // Ocultar botones de procesamiento, mostrar botón de cerrar
+            document.getElementById('cancelTaskBtn').classList.add('d-none');
+            document.getElementById('backgroundBtn').classList.add('d-none');
+            document.getElementById('closeBtn').classList.remove('d-none');
+        } else {
+            // Éxito
+            progressBar.classList.remove('bg-primary');
+            progressBar.classList.add('bg-success');
+            document.getElementById('statusMessage').classList.add('d-none');
+            document.getElementById('resultMessage').classList.remove('d-none');
+            document.getElementById('successAlert').classList.remove('d-none');
+            document.getElementById('errorAlert').classList.add('d-none');
+            document.getElementById('successText').textContent = 'CV procesado exitosamente';
+            
+            // Mostrar warning si existe
+            if (progressData.warning) {
+                const warningAlert = document.createElement('div');
+                warningAlert.className = 'alert alert-warning mt-3';
+                warningAlert.innerHTML = `
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>Información:</strong> ${progressData.warning}
+                `;
+                document.getElementById('resultMessage').appendChild(warningAlert);
+            }
+            
+            // Ocultar botones de procesamiento, mostrar botón de cerrar
+            document.getElementById('cancelTaskBtn').classList.add('d-none');
+            document.getElementById('backgroundBtn').classList.add('d-none');
+            document.getElementById('closeBtn').classList.remove('d-none');
+            
+            // Auto-close deshabilitado - el usuario debe cerrar manualmente
+            // setTimeout(() => {
+            //     const modal = bootstrap.Modal.getInstance(document.getElementById('uploadProgressModal'));
+            //     modal.hide();
+            //     location.reload();
+            // }, 3000);
+        }
+    }
 }
 
 // Start upload process
 function startUpload() {
-    if (!selectedFile) return;
+    if (!window.cvSelectedFile) return;
     
     console.log('🎯 Iniciando proceso de upload...');
-    console.log('📄 Archivo seleccionado:', selectedFile.name, selectedFile.size);
+    console.log('📄 Archivo seleccionado:', window.cvSelectedFile.name, window.cvSelectedFile.size);
     
     // Update status
     document.getElementById('statusText').textContent = 'Subiendo archivo...';
     
-    // Start progress simulation
-    let progress = 0;
-    uploadProgressInterval = setInterval(() => {
-        progress += Math.random() * 10;
-        if (progress > 85) progress = 85; // Stop at 85% until server responds
-        
-        const progressBar = document.getElementById('progressBar');
-        const progressText = document.getElementById('progressText');
-        progressBar.style.width = progress + '%';
-        progressText.textContent = Math.round(progress) + '%';
-    }, 200);
+    // Inicializar barra de progreso en 0% y mantenerla así hasta que el polling comience
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+    if (progressBar && progressText) {
+        progressBar.style.width = '0%';
+        progressText.textContent = '0%';
+        console.log('📊 Barra inicializada en 0%');
+    }
     
     // Set timeout to prevent hanging
     const uploadTimeout = setTimeout(() => {
-        if (uploadProgressInterval) {
-            clearInterval(uploadProgressInterval);
-        }
         showUploadError('Timeout: El upload está tardando demasiado. Inténtalo de nuevo.');
     }, 60000); // 60 seconds timeout
     
     // Create FormData
     const formData = new FormData();
-    formData.append('original_file', selectedFile);
+    formData.append('original_file', window.cvSelectedFile);
     formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
     
     // Upload file
     console.log('🚀 Iniciando upload...');
-    console.log('📁 Archivo:', selectedFile.name, selectedFile.size);
+    console.log('📁 Archivo:', window.cvSelectedFile.name, window.cvSelectedFile.size);
     
     // Simple XMLHttpRequest instead of fetch for better error handling
     const xhr = new XMLHttpRequest();
@@ -623,24 +844,69 @@ function startUpload() {
         console.log('📡 XHR State:', xhr.readyState, 'Status:', xhr.status);
         
         if (xhr.readyState === 4) {
-            clearInterval(uploadProgressInterval);
             clearTimeout(uploadTimeout);
-            
-            // Complete progress bar
-            const progressBar = document.getElementById('progressBar');
-            const progressText = document.getElementById('progressText');
-            progressBar.style.width = '100%';
-            progressText.textContent = '100%';
             
             if (xhr.status === 200) {
                 try {
                     const data = JSON.parse(xhr.responseText);
                     console.log('✅ JSON Response:', data);
                     
-                    if (data.success) {
+                    // Si recibimos progress_id, iniciar polling
+                    if (data.progress_id) {
+                        console.log('🔄 Progress ID recibido:', data.progress_id);
+                        
+                        // Guardar progress_id
+                        window.currentCVProgressId = data.progress_id;
+                        console.log('💾 Progress ID guardado:', data.progress_id);
+                        
+                        // Guardar task_id si está disponible
+                        if (data.task_id) {
+                            window.currentCVTaskId = data.task_id;
+                            console.log('💾 Task ID guardado:', data.task_id);
+                        }
+                        
+                        // Resetear barra de progreso a 0% antes de iniciar polling
+                        const progressBar = document.getElementById('progressBar');
+                        const progressText = document.getElementById('progressText');
+                        if (progressBar && progressText) {
+                            progressBar.style.width = '0%';
+                            progressText.textContent = '0%';
+                            console.log('📊 Barra reseteada a 0% antes de polling');
+                        }
+                        
+                        startProgressPolling(data.progress_id);
+                        
+                        // Si está procesando en background, NO cerrar el modal
+                        if (data.processing) {
+                            console.log('⏳ Procesamiento en background, esperando resultados...');
+                            document.getElementById('statusText').textContent = 'Procesando en background...';
+                            return; // Salir y dejar que el polling maneje el resto
+                        }
+                    }
+                    
+                    if (data.success && !data.processing) {
                         // Success
                         progressBar.classList.remove('bg-primary');
                         progressBar.classList.add('bg-success');
+                        
+                        // Detener polling si estaba activo
+                        if (window.cvProgressPollingInterval) {
+                            clearInterval(window.cvProgressPollingInterval);
+                        }
+                        
+                        // Mostrar logs en consola si están disponibles
+                        if (data.logs && data.logs.length > 0) {
+                            console.log('🔍 LOGS DETALLADOS DEL BACKEND:');
+                            console.log('=====================================');
+                            data.logs.forEach(log => {
+                                const timestamp = log.timestamp || '';
+                                const level = log.level || 'INFO';
+                                const step = log.step ? `[${log.step}] ` : '';
+                                const message = log.message || '';
+                                console.log(`${timestamp} ${level} ${step}${message}`);
+                            });
+                            console.log('=====================================');
+                        }
                         
                         document.getElementById('statusMessage').classList.add('d-none');
                         document.getElementById('resultMessage').classList.remove('d-none');
@@ -648,17 +914,79 @@ function startUpload() {
                         document.getElementById('errorAlert').classList.add('d-none');
                         document.getElementById('successText').textContent = data.message;
                         
+                        // Mostrar mensaje de fallback si existe
+                        if (data.warning_message) {
+                            const warningAlert = document.createElement('div');
+                            warningAlert.className = 'alert alert-warning mt-3';
+                            warningAlert.innerHTML = `
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                <strong>Información:</strong> ${data.warning_message}
+                            `;
+                            document.getElementById('resultMessage').appendChild(warningAlert);
+                        }
+                        
                         document.getElementById('cancelBtn').classList.add('d-none');
                         document.getElementById('closeBtn').classList.remove('d-none');
                         
-                        // Auto-close and reload after 2 seconds (recálculo se ejecuta en background)
-                        setTimeout(() => {
-                            const modal = bootstrap.Modal.getInstance(document.getElementById('uploadProgressModal'));
-                            modal.hide();
-                            location.reload();
-                        }, 2000);
+                        // Auto-close deshabilitado - el usuario debe cerrar manualmente
+                        // const closeDelay = data.warning_message ? 5000 : 2000; // 5 segundos si hay fallback, 2 si no
+                        // setTimeout(() => {
+                        //     const modal = bootstrap.Modal.getInstance(document.getElementById('uploadProgressModal'));
+                        //     modal.hide();
+                        //     location.reload();
+                        // }, closeDelay);
                     } else {
-                        throw new Error(data.message || 'Error al procesar el archivo');
+                        // Detener polling si estaba activo
+                        if (window.cvProgressPollingInterval) {
+                            clearInterval(window.cvProgressPollingInterval);
+                        }
+                        
+                        // Mostrar logs en consola si están disponibles (también para errores)
+                        if (data.logs && data.logs.length > 0) {
+                            console.log('🔍 LOGS DETALLADOS DEL BACKEND (ERROR):');
+                            console.log('=====================================');
+                            data.logs.forEach(log => {
+                                const timestamp = log.timestamp || '';
+                                const level = log.level || 'INFO';
+                                const step = log.step ? `[${log.step}] ` : '';
+                                const message = log.message || '';
+                                console.log(`${timestamp} ${level} ${step}${message}`);
+                            });
+                            console.log('=====================================');
+                        }
+                        
+                        // Handle specific error types
+                        if (data.error_type === 'ai_error') {
+                            // Debug: mostrar en consola el error completo recibido
+                            console.log('🔍 Error de IA recibido del backend:', data.error);
+                            console.log('🔍 Error type:', data.error_type);
+                            console.log('🔍 Response completa:', data);
+                            console.log('🔍 Longitud del error:', data.error.length);
+
+                            // Mostrar el error EXACTAMENTE como viene del backend
+                            let errorDetails = data.error;
+
+                            console.log('🔍 MOSTRANDO ERROR COMPLETO:', errorDetails);
+                            console.log('🔍 ERROR EMPIEZA CON "Error de IA":', errorDetails.startsWith('Error de IA:'));
+
+                            // Si el error ya viene con formato detallado, mostrarlo tal cual
+                            if (errorDetails.includes('OpenAI') || errorDetails.includes('Anthropic') ||
+                                errorDetails.includes('Cuota agotada') || errorDetails.includes('soporta')) {
+                                console.log('🔍 ERROR YA TIENE DETALLES DE IA');
+                                // Si ya viene con el prefijo "Error de IA:", mostrarlo tal cual
+                                if (errorDetails.startsWith('Error de IA:')) {
+                                    showUploadError(`❌ ${errorDetails}`);
+                                } else {
+                                    showUploadError(`❌ Error de IA:\n${errorDetails}`);
+                                }
+                            } else {
+                                console.log('🔍 ERROR NO TIENE DETALLES, AGREGANDO SOLUCIONES');
+                                let solutions = '\n\n💡 Soluciones:\n• Verifica que las API keys estén configuradas correctamente\n• Revisa que los modelos de IA estén disponibles\n• Ve a Configuración de IA para ajustar la configuración\n• Asegúrate de que OpenAI esté habilitado para procesamiento de PDFs';
+                                showUploadError(`❌ Error de IA:\n${errorDetails}${solutions}`);
+                            }
+                        } else {
+                            showUploadError(`❌ Error: ${data.error}`);
+                        }
                     }
                 } catch (e) {
                     console.error('❌ Error parsing JSON:', e);
@@ -675,14 +1003,19 @@ function startUpload() {
     
     xhr.onerror = function() {
         console.error('❌ Network Error');
-        clearInterval(uploadProgressInterval);
         clearTimeout(uploadTimeout);
         showUploadError('Error de conexión. Verifica tu internet.');
     };
     
     xhr.open('POST', '{% url "upload_cv" %}', true);
     xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    
+    // Iniciar el request
     xhr.send(formData);
+    
+    // NOTA: El polling se iniciará cuando recibamos el progress_id del backend
+    // Por ahora, el backend procesa todo síncronamente y devuelve el resultado completo
+    console.log('📤 Request enviado, esperando respuesta del servidor...');
 }
 
 // Show upload error
@@ -697,9 +1030,150 @@ function showUploadError(errorMessage) {
     document.getElementById('errorAlert').classList.remove('d-none');
     document.getElementById('errorText').textContent = errorMessage;
     
-    document.getElementById('cancelBtn').classList.add('d-none');
+    // Ocultar botones de procesamiento, mostrar botón de cerrar
+    document.getElementById('cancelTaskBtn').classList.add('d-none');
+    document.getElementById('backgroundBtn').classList.add('d-none');
     document.getElementById('closeBtn').classList.remove('d-none');
 }
+
+// Variables globales para almacenar task_id y progress_id
+window.currentCVTaskId = null;
+window.currentCVProgressId = null;
+
+// Función para cancelar la tarea actual (debe ser global)
+window.cancelCurrentTask = function() {
+    console.log('🔴 Función cancelCurrentTask llamada');
+    console.log('🔍 Task ID actual:', window.currentCVTaskId);
+    
+    if (!window.currentCVTaskId) {
+        console.warn('⚠️ No hay task_id para cancelar');
+        alert('No hay ninguna tarea en proceso para cancelar');
+        return;
+    }
+    
+    console.log('🛑 Cancelando tarea:', window.currentCVTaskId);
+    
+    // Eliminar modal anterior si existe
+    const existingConfirmModal = document.getElementById('cancelConfirmModal');
+    if (existingConfirmModal) {
+        console.log('🗑️ Eliminando modal de confirmación anterior');
+        existingConfirmModal.remove();
+    }
+    
+    // Crear modal de confirmación
+    const confirmModal = document.createElement('div');
+    confirmModal.className = 'modal fade';
+    confirmModal.id = 'cancelConfirmModal';
+    confirmModal.setAttribute('data-bs-backdrop', 'static');
+    confirmModal.setAttribute('data-bs-keyboard', 'false');
+    confirmModal.innerHTML = `
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-exclamation-triangle me-2"></i>Confirmar Cancelación
+                    </h5>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0">¿Estás seguro de que quieres cancelar el procesamiento del CV?</p>
+                    <p class="text-muted mb-0 mt-2"><small>Esta acción no se puede deshacer.</small></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="noContinueBtn">
+                        <i class="bi bi-x-lg me-1"></i>No, Continuar
+                    </button>
+                    <button type="button" class="btn btn-danger" id="confirmCancelBtn">
+                        <i class="bi bi-check-lg me-1"></i>Sí, Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(confirmModal);
+    
+    const modal = new bootstrap.Modal(confirmModal);
+    modal.show();
+    
+    // Manejar botón "No, Continuar"
+    document.getElementById('noContinueBtn').addEventListener('click', function() {
+        console.log('❌ Usuario canceló la cancelación');
+        modal.hide();
+        // Esperar a que la animación termine antes de eliminar
+        setTimeout(() => {
+            confirmModal.remove();
+        }, 300);
+    });
+    
+    // Manejar confirmación
+    document.getElementById('confirmCancelBtn').addEventListener('click', function() {
+        console.log('✅ Usuario confirmó la cancelación');
+        modal.hide();
+        // Esperar a que la animación termine antes de eliminar
+        setTimeout(() => {
+            confirmModal.remove();
+        }, 300);
+        
+        // Deshabilitar botón mientras se cancela
+        const cancelBtn = document.getElementById('cancelTaskBtn');
+        cancelBtn.disabled = true;
+        cancelBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Cancelando...';
+        
+        // Obtener CSRF token
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+        console.log('🔑 CSRF Token encontrado:', csrfToken ? 'Sí' : 'No');
+        
+        if (!csrfToken) {
+            alert('Error: No se encontró el token CSRF. Recarga la página.');
+            cancelBtn.disabled = false;
+            cancelBtn.innerHTML = '<i class="bi bi-x-circle me-1"></i>Cancelar Procesamiento';
+            return;
+        }
+        
+        // Llamar al endpoint para cancelar la tarea
+        console.log('📡 Enviando request a /matching/cancel-cv-task/');
+        fetch('/matching/cancel-cv-task/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({
+                task_id: window.currentCVTaskId,
+                progress_id: window.currentCVProgressId
+            })
+        })
+        .then(response => {
+            console.log('📡 Response status:', response.status);
+            console.log('📡 Response ok:', response.ok);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('📊 Respuesta de cancelación:', data);
+            
+            if (data.success) {
+                console.log('✅ Tarea cancelada exitosamente');
+                // NO detener polling - dejar que detecte el cambio y actualice la UI
+                // El polling detectará que progress.completed = true y progress.error está set
+                // y automáticamente mostrará el mensaje de error y ocultará los botones
+            } else {
+                alert('Error al cancelar: ' + (data.error || 'Error desconocido'));
+                cancelBtn.disabled = false;
+                cancelBtn.innerHTML = '<i class="bi bi-x-circle me-1"></i>Cancelar Procesamiento';
+            }
+        })
+        .catch(error => {
+            console.error('❌ Error cancelando tarea:', error);
+            console.error('❌ Error details:', error.message);
+            alert('Error al cancelar la tarea: ' + error.message);
+            cancelBtn.disabled = false;
+            cancelBtn.innerHTML = '<i class="bi bi-x-circle me-1"></i>Cancelar Procesamiento';
+        });
+    }); // Cierre del event listener de confirmCancelBtn
+};
 
 // Format file size
 function formatFileSize(bytes) {
@@ -716,7 +1190,7 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('CV List page loaded');
 });
 
-function showCVDetails(cvId, fileName, createdDate, skillsCount, isProcessed, skillsList = []) {
+window.showCVDetails = function(cvId, fileName, createdDate, skillsCount, isProcessed, skillsList = []) {
     // Crear modal de detalles dinámicamente
     const modal = `
         <div class="modal fade" id="cvDetailsModal" tabindex="-1">
@@ -970,7 +1444,7 @@ function updateSkillsBadges(skillsList) {
     }
 }
 
-function deleteCV(cvId, fileName) {
+window.deleteCV = function(cvId, fileName) {
     // Crear modal de confirmación personalizado
     const modal = `
         <div class="modal fade" id="deleteModal" tabindex="-1">
@@ -1037,7 +1511,7 @@ function deleteCV(cvId, fileName) {
     });
 }
 
-function confirmDelete(cvId) {
+window.confirmDelete = function(cvId) {
     fetch(`{% url 'delete_cv' 0 %}`.replace('0', cvId), {
         method: 'DELETE',
         headers: {
@@ -1069,7 +1543,7 @@ function confirmDelete(cvId) {
     });
 }
 
-function deleteAllCVs() {
+window.deleteAllCVs = function() {
     // Crear modal de confirmación para eliminar todos los CVs
     const modal = `
         <div class="modal fade" id="deleteAllModal" tabindex="-1">
@@ -1143,7 +1617,7 @@ function deleteAllCVs() {
     });
 }
 
-function confirmDeleteAll() {
+window.confirmDeleteAll = function() {
     fetch('{% url "delete_all_cvs" %}', {
         method: 'DELETE',
         headers: {
@@ -1210,5 +1684,8 @@ function showToast(message, type) {
         this.remove();
     });
 }
+
+})(); // End of IIFE
+
 </script>
 {% endblock %}

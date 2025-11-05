@@ -94,30 +94,76 @@
     
     .navbar-nav .nav-link {
         font-weight: 600 !important;
-        font-size: 1rem !important;
-        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
-        color: rgba(255, 255, 255, 0.95) !important;
+        font-size: 0.85rem !important;
+        color: white !important;
         transition: all 0.3s ease;
-        padding: 0.75rem 1.5rem !important;
-        border-radius: 50px;
+        padding: 0.5rem 1rem !important;
+        border-radius: 20px;
         margin: 0 0.25rem;
+        background: rgba(255, 255, 255, 0.1) !important;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .navbar-nav .nav-link::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.2);
+        transition: left 0.3s ease;
+        z-index: -1;
+    }
+    
+    .navbar-nav .nav-link:hover::before {
+        left: 0;
     }
     
     .navbar-nav .nav-link:hover {
-        background-color: rgba(255, 255, 255, 0.2) !important;
-        border-radius: 50px;
         transform: translateY(-2px);
-        color: white !important;
-        text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4) !important;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        color: #ffd700 !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        border-color: rgba(255, 255, 255, 0.4);
     }
     
     .navbar-nav .nav-link.active {
-        background-color: rgba(255, 255, 255, 0.25) !important;
-        border-radius: 50px;
+        background: rgba(255, 255, 255, 0.25) !important;
         font-weight: 700 !important;
+        color: #ffd700 !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        border-color: rgba(255, 255, 255, 0.4);
+    }
+    
+    /* Dropdown menu */
+    .dropdown-menu {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        border-radius: 15px !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+        padding: 0.5rem !important;
+    }
+    
+    .dropdown-item {
         color: white !important;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        border-radius: 10px !important;
+        padding: 0.5rem 1rem !important;
+        margin: 0.25rem 0 !important;
+        transition: all 0.3s ease;
+        font-size: 0.85rem !important;
+    }
+    
+    .dropdown-item:hover {
+        background: rgba(255, 255, 255, 0.2) !important;
+        color: #ffd700 !important;
+        transform: translateX(5px);
+    }
+    
+    .dropdown-divider {
+        border-color: rgba(255, 255, 255, 0.3) !important;
+        margin: 0.5rem 0 !important;
     }
     
     /* Contenido principal */
@@ -849,6 +895,114 @@
             display: none;
         }
     }
+    
+    /* ========================================
+       ESTILOS REUTILIZABLES PARA BOTONES DE ACCIONES
+       Consistente en todas las páginas de matching
+       ======================================== */
+    
+    /* Contenedor de botones con espaciado consistente */
+    .action-buttons-container {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    
+    /* Estilo base para todos los botones de acción */
+    .btn-action {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 50%;
+        padding: 0;
+        font-weight: 600;
+        color: white !important;
+        transition: all 0.3s ease;
+        width: 40px;
+        height: 40px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+        cursor: pointer;
+    }
+    
+    .btn-action:hover {
+        transform: translateY(-2px);
+        color: white !important;
+        text-decoration: none;
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+    }
+    
+    .btn-action:active {
+        transform: translateY(0);
+    }
+    
+    .btn-action i {
+        font-size: 16px;
+    }
+    
+    /* Variantes de colores */
+    .btn-action-details {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+    }
+    
+    .btn-action-details:hover {
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+    }
+    
+    .btn-action-contact {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.2);
+    }
+    
+    .btn-action-contact:hover {
+        box-shadow: 0 8px 20px rgba(40, 167, 69, 0.3);
+    }
+    
+    .btn-action-delete {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        box-shadow: 0 4px 15px rgba(220, 53, 69, 0.2);
+    }
+    
+    .btn-action-delete:hover {
+        box-shadow: 0 8px 20px rgba(220, 53, 69, 0.3);
+    }
+    
+    .btn-action-download {
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+        box-shadow: 0 4px 15px rgba(23, 162, 184, 0.2);
+    }
+    
+    .btn-action-download:hover {
+        box-shadow: 0 8px 20px rgba(23, 162, 184, 0.3);
+    }
+    
+    .btn-action-process {
+        background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+        box-shadow: 0 4px 15px rgba(255, 193, 7, 0.2);
+    }
+    
+    .btn-action-process:hover {
+        box-shadow: 0 8px 20px rgba(255, 193, 7, 0.3);
+    }
+    
+    /* Versión deshabilitada */
+    .btn-action:disabled,
+    .btn-action.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+    }
+    
+    .btn-action:disabled:hover,
+    .btn-action.disabled:hover {
+        transform: none;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+    }
 </style>
 {% endblock %}
 
@@ -860,9 +1014,6 @@
 <div class="main-container">
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container-fluid">
-        <a class="navbar-brand" href="{% url 'dashboard' %}">
-            <i class="bi bi-briefcase-fill me-2"></i>PostulaMatic
-        </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
         </button>
@@ -883,16 +1034,13 @@
                         <i class="bi bi-file-earmark-text me-1"></i>Mis CVs
                     </a>
                 </li>
+                {% if user.is_staff %}
                 <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'test_scraper' %}active{% endif %}" href="{% url 'test_scraper' %}">
                         <i class="bi bi-robot me-1"></i>Scraper
                     </a>
                 </li>
-                <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'ai_providers_status' %}active{% endif %}" href="{% url 'ai_providers_status' %}">
-                        <i class="bi bi-cpu me-1"></i>Estado IA
-                    </a>
-                </li>
+                {% endif %}
                 <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'cv_personalization_test' %}active{% endif %}" href="{% url 'cv_personalization_test' %}">
                         <i class="bi bi-file-earmark-person me-1"></i>Personalizar CV
@@ -905,7 +1053,7 @@
                 </li>
                 <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'scraping_results' %}active{% endif %}" href="{% url 'scraping_results' %}">
-                        <i class="bi bi-search me-1"></i>Resultados
+                        <i class="bi bi-briefcase-fill me-1"></i>Ofertas y Matches
                     </a>
                 </li>
             </ul>
@@ -915,12 +1063,21 @@
                             <i class="bi bi-person-circle me-1"></i>{{ user.get_full_name|default:user.username }}
                     </a>
                     <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{% url 'profile' %}">
-                                <i class="bi bi-gear me-1"></i>Configuración
+                        <li class="dropdown-item-text">
+                            <small class="text-muted">
+                                <i class="bi bi-envelope me-1"></i>{{ user.email }}
+                            </small>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{% url 'profile' %}">
+                            <i class="bi bi-gear me-1"></i>Configuración
                         </a></li>
                         {% if user.is_staff %}
                         <li><a class="dropdown-item" href="{% url 'ai_admin_config' %}">
                             <i class="bi bi-robot me-1"></i>Configurar IA
+                        </a></li>
+                        <li><a class="dropdown-item" href="{% url 'test_scraper' %}">
+                            <i class="bi bi-bug me-1"></i>Probar Scraper
                         </a></li>
                         {% endif %}
                         <li><hr class="dropdown-divider"></li>

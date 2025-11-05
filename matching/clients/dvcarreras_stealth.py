@@ -8,6 +8,8 @@ import time
 import json
 import logging
 import random
+import subprocess
+import re
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 from pathlib import Path
@@ -211,6 +213,35 @@ class DVCarrerasStealth:
         
         return options
     
+    def _get_chrome_version(self) -> Optional[int]:
+        """
+        Detecta la versión de Chrome instalada en el sistema.
+        
+        Returns:
+            Versión mayor de Chrome (ej: 141) o None si no se puede detectar
+        """
+        try:
+            result = subprocess.run(
+                ['google-chrome', '--version'],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            # Output esperado: "Google Chrome 141.0.7390.107"
+            match = re.search(r'Chrome (\d+)', result.stdout)
+            if match:
+                version = int(match.group(1))
+                logger.info(f"🔍 Chrome version detectada: {version}")
+                return version
+        except subprocess.TimeoutExpired:
+            logger.warning("⚠️ Timeout detectando versión de Chrome")
+        except FileNotFoundError:
+            logger.warning("⚠️ google-chrome no encontrado en PATH")
+        except Exception as e:
+            logger.warning(f"⚠️ Error detectando versión de Chrome: {e}")
+        
+        return None  # Fallback a auto-detección de undetected-chromedriver
+    
     async def start(self) -> bool:
         """
         Inicia el navegador stealth.
@@ -227,10 +258,18 @@ class DVCarrerasStealth:
             # Configurar opciones
             options = self._get_stealth_options()
             
-            # Inicializar undetected-chromedriver
+            # Detectar versión de Chrome instalada
+            chrome_version = self._get_chrome_version()
+            
+            if chrome_version:
+                await self._log(f"🎯 Usando Chrome version {chrome_version}", 'info')
+            else:
+                await self._log("⚠️ Auto-detectando versión de Chrome...", 'warning')
+            
+            # Inicializar undetected-chromedriver con versión detectada
             self.driver = uc.Chrome(
                 options=options,
-                version_main=None,  # Auto-detecta versión
+                version_main=chrome_version,  # Usa versión detectada (o None para auto-detectar)
                 driver_executable_path=None,  # Auto-detecta
             )
             
@@ -298,6 +337,43 @@ class DVCarrerasStealth:
             await self._log(f"Error obteniendo credenciales: {e}", 'error')
             raise
     
+    async def _handle_survey_popup(self):
+        """
+        Detecta y maneja la página de encuesta que puede aparecer después del login.
+        Si detecta la encuesta, hace clic en el botón "OMITIR".
+        """
+        try:
+            # Verificar si estamos en la página de encuesta
+            page_source = self.driver.page_source
+            
+            if "Encuesta" in self.driver.title or "Queremos conocer tu opinión" in page_source:
+                await self._log("🔔 Página de encuesta detectada", 'info')
+                await self._capture_screenshot("encuesta_detectada")
+                
+                # Buscar el botón "OMITIR"
+                try:
+                    # El botón tiene el texto "OMITIR" y href que contiene "set_survey_check.html?a=later"
+                    omit_button = WebDriverWait(self.driver, 5).until(
+                        EC.presence_of_element_located((By.XPATH, "//a[contains(@href, 'set_survey_check.html?a=later')]"))
+                    )
+                    
+                    await self._log("✅ Botón 'OMITIR' encontrado, haciendo clic...", 'info')
+                    await self._human_delay(1, 2)
+                    await self._human_click(omit_button)
+                    await self._human_delay(2, 4)
+                    await self._capture_screenshot("encuesta_omitida")
+                    await self._log("✅ Encuesta omitida exitosamente", 'success')
+                    
+                except TimeoutException:
+                    await self._log("⚠️ No se encontró el botón OMITIR en la encuesta", 'warning')
+                except Exception as e:
+                    await self._log(f"⚠️ Error al omitir encuesta: {e}", 'warning')
+            else:
+                await self._log("✓ No se detectó página de encuesta", 'info')
+                
+        except Exception as e:
+            await self._log(f"⚠️ Error verificando encuesta: {e}", 'warning')
+    
     async def login(self) -> bool:
         """
         Realiza login usando técnicas stealth.
@@ -318,6 +394,10 @@ class DVCarrerasStealth:
                     await self._log(f"Navegando a: {self.JOB_BOARD_URL}", 'info')
                     self.driver.get(self.JOB_BOARD_URL)
                     await self._human_delay(3, 5)
+                    
+                    # Verificar si aparece página de encuesta y omitirla
+                    await self._handle_survey_popup()
+                    
                     self._is_authenticated = True
                     return True
                 else:
@@ -380,6 +460,9 @@ class DVCarrerasStealth:
                     await self._log("Login exitoso detectado", 'success')
                     await self._capture_screenshot("login_exitoso")
                     self._is_authenticated = True
+                    
+                    # Verificar si aparece página de encuesta y omitirla
+                    await self._handle_survey_popup()
                     
                     # Guardar sesión
                     await self.save_session()
@@ -713,6 +796,10 @@ class DVCarrerasStealth:
             await self._log(f"Navegando a: {self.JOB_BOARD_URL}", 'info')
             self.driver.get(self.JOB_BOARD_URL)
             await self._human_delay(3, 5)
+            
+            # Verificar si aparece página de encuesta antes de scrapear
+            await self._handle_survey_popup()
+            
             # ÚNICA captura de ofertas al entrar al tablero
             await self._capture_screenshot("tablero_cargado")
             

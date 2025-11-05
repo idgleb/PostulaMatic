@@ -3,6 +3,7 @@ Tareas de Celery limpias - solo con FlareSolverr
 """
 import asyncio
 import logging
+import os
 from datetime import datetime
 from typing import Dict, Any
 
@@ -267,41 +268,62 @@ def process_pending_cvs():
         processed_count = 0
         errors = []
 
-        for cv in pending_cvs:
-            try:
-                # Procesar CV directamente (sin tarea separada)
-                from .services.cv_parser import cv_parser
-                from .services.skills_extractor import skills_extractor
-                
-                # Extraer texto del archivo
-                parse_result = cv_parser.parse_cv(cv.original_file.path)
-                parsed_text = parse_result["text"]
+        # COMENTADO: Procesamiento automático de CVs deshabilitado para evitar problemas de memoria
+        # Los CVs se procesan solo cuando se suben, no automáticamente
+        # for cv in pending_cvs:
+        #     try:
+        #         # Procesar CV directamente (sin tarea separada)
+        #         from .services.cv_parser import cv_parser
+        #         from .services.skills_extractor import skills_extractor
+        #         
+        #         # Extraer texto del archivo
+        #         parse_result = cv_parser.parse_cv(cv.original_file.path)
+        #         parsed_text = parse_result["text"]
 
-                # Detectar habilidades
-                skills_data = skills_extractor.extract_skills(parsed_text)
+        #         # Verificar si el texto está vacío (error de IA)
+        #         if not parsed_text or parsed_text.strip() == "":
+        #             error_msg = f"CV {cv.id}: Texto vacío - Error de IA no disponible"
+        #             logger.error(error_msg)
+        #             errors.append(error_msg)
+        #             continue
 
-                # Guardar resultados
-                cv.parsed_text = parsed_text
-                cv.skills = skills_data
-                cv.is_processed = True
-                cv.save()
+        #         # Detectar habilidades
+        #         skills_data = skills_extractor.extract_skills(parsed_text)
 
-                processed_count += 1
-                logger.info(f"CV {cv.id} procesado exitosamente")
+        #         # Guardar resultados
+        #         cv.parsed_text = parsed_text
+        #         cv.skills = skills_data
+        #         cv.is_processed = True
+        #         cv.save()
 
-            except Exception as e:
-                error_msg = f"Error procesando CV {cv.id}: {e}"
-                logger.error(error_msg)
-                errors.append(error_msg)
+        #         processed_count += 1
+        #         logger.info(f"CV {cv.id} procesado exitosamente")
 
+        #     except Exception as e:
+        #         error_msg = f"Error procesando CV {cv.id}: {e}"
+        #         logger.error(error_msg)
+        #         errors.append(error_msg)
+
+        # result = {
+        #     "success": True,
+        #     "processed_count": processed_count,
+        #     "errors": errors,
+        #     "total_pending": pending_cvs.count(),
+        # }
+
+        # logger.info(f"Procesamiento de CVs pendientes completado: {result}")
+        # return result
+
+        # Retornar resultado vacío ya que el procesamiento está deshabilitado
         result = {
             "success": True,
-            "processed_count": processed_count,
-            "errors": errors,
+            "processed_count": 0,
+            "errors": [],
             "total_pending": pending_cvs.count(),
+            "message": "Procesamiento automático deshabilitado"
         }
 
-        logger.info(f"Procesamiento de CVs pendientes completado: {result}")
+        logger.info("Procesamiento automático de CVs deshabilitado")
         return result
 
     except Exception as e:
@@ -428,6 +450,127 @@ def _recalculate_matches_for_user_core(user_id: int):
 
 
 @shared_task(bind=True)
+def recalculate_matches_for_all_users(self):
+    """
+    Tarea Celery para recalcular matches para TODOS los usuarios que tengan CVs.
+    Se ejecuta automáticamente después del scraping global.
+    
+    Returns:
+        Dict con estadísticas del recálculo global
+    """
+    try:
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        
+        logger.info("🌍 Iniciando recálculo de matches para TODOS los usuarios")
+        
+        # Actualizar progreso inicial
+        self.update_state(
+            state="PROGRESS",
+            meta={
+                "current_step": "Iniciando recálculo global",
+                "progress_info": "Obteniendo usuarios con CVs",
+                "progress_percentage": 5,
+            },
+        )
+        
+        # Obtener todos los usuarios que tengan al menos un CV procesado
+        users_with_cvs = User.objects.filter(
+            cvs__parsed_text__isnull=False
+        ).exclude(
+            cvs__parsed_text=""
+        ).distinct()
+        
+        total_users = users_with_cvs.count()
+        
+        if total_users == 0:
+            logger.warning("No hay usuarios con CVs procesados para calcular matches")
+            return {
+                "success": True,
+                "total_users": 0,
+                "users_processed": 0,
+                "total_matches_created": 0,
+                "message": "No hay usuarios con CVs procesados"
+            }
+        
+        logger.info(f"📊 Encontrados {total_users} usuarios con CVs procesados")
+        
+        # Contadores globales
+        users_processed = 0
+        total_matches_created = 0
+        users_with_errors = 0
+        
+        # Procesar cada usuario
+        for idx, user in enumerate(users_with_cvs, 1):
+            try:
+                # Actualizar progreso
+                progress_percentage = 5 + int((idx / total_users) * 90)
+                self.update_state(
+                    state="PROGRESS",
+                    meta={
+                        "current_step": f"Procesando usuario {idx}/{total_users}",
+                        "progress_info": f"Calculando matches para {user.username}",
+                        "progress_percentage": progress_percentage,
+                    },
+                )
+                
+                logger.info(f"🔄 [{idx}/{total_users}] Calculando matches para usuario {user.id} ({user.username})")
+                
+                # Llamar función core para este usuario
+                result = _recalculate_matches_for_user_core(user.id)
+                
+                if result.get("success"):
+                    users_processed += 1
+                    new_matches = result.get("new_matches_count", 0)
+                    total_matches_created += new_matches
+                    logger.info(f"✅ Usuario {user.username}: {new_matches} matches creados")
+                else:
+                    users_with_errors += 1
+                    logger.error(f"❌ Error calculando matches para usuario {user.username}: {result.get('error')}")
+                    
+            except Exception as e:
+                users_with_errors += 1
+                logger.error(f"❌ Error procesando usuario {user.id}: {e}")
+                continue
+        
+        # Resultado final
+        final_result = {
+            "success": True,
+            "total_users": total_users,
+            "users_processed": users_processed,
+            "users_with_errors": users_with_errors,
+            "total_matches_created": total_matches_created,
+            "message": f"Matches calculados para {users_processed}/{total_users} usuarios"
+        }
+        
+        logger.info(f"🎉 Recálculo global completado: {final_result}")
+        
+        # Actualizar progreso final
+        self.update_state(
+            state="SUCCESS",
+            meta={
+                "current_step": "Recálculo completado",
+                "progress_info": f"{total_matches_created} matches creados para {users_processed} usuarios",
+                "progress_percentage": 100,
+            },
+        )
+        
+        return final_result
+        
+    except Exception as e:
+        logger.error(f"❌ Error en recálculo global de matches: {e}")
+        self.update_state(
+            state="FAILURE",
+            meta={
+                "current_step": "Error en recálculo global",
+                "progress_info": str(e),
+                "progress_percentage": 0,
+            },
+        )
+        return {"success": False, "error": str(e)}
+
+
+@shared_task(bind=True)
 def recalculate_matches_for_user(self, user_id: int):
     """
     Tarea Celery para recalcular matches con progreso.
@@ -480,3 +623,127 @@ def recalculate_matches_for_user(self, user_id: int):
             },
         )
         return {"error": str(e)}
+
+
+@shared_task(bind=True)
+def process_cv_async(self, user_id: int, file_path: str, original_filename: str, progress_id: str):
+    """
+    Tarea Celery para procesar un CV de forma asíncrona con progreso en tiempo real.
+    
+    Args:
+        user_id: ID del usuario
+        file_path: Ruta al archivo temporal del CV
+        original_filename: Nombre original del archivo
+        progress_id: ID del tracker de progreso
+        
+    Returns:
+        Dict con el resultado del procesamiento
+    """
+    from matching.services.cv_parser import CVParser
+    from matching.services.skills_extractor import SkillsExtractor
+    from matching.utils.progress_tracker import ProgressTracker
+    from django.contrib.auth import get_user_model
+    
+    User = get_user_model()
+    tracker = ProgressTracker(progress_id)
+    
+    try:
+        logger.info(f"🚀 Iniciando procesamiento asíncrono de CV para usuario {user_id}")
+        tracker.update_step("pdf_to_images", "in_progress", "Convirtiendo PDF a imágenes")
+        
+        # Parsear CV
+        cv_parser = CVParser()
+        parse_result = cv_parser.parse_cv(file_path, progress_tracker=tracker)
+        parsed_text = parse_result["text"]
+        warning_message = parse_result.get("warning_message", "")
+        
+        # Verificar que el texto no esté vacío
+        if not parsed_text or parsed_text.strip() == "":
+            error_msg = "❌ Error de IA: No se pudo extraer texto del CV"
+            logger.error(error_msg)
+            tracker.set_error(error_msg)
+            # Limpiar archivo temporal
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            return {"success": False, "error": error_msg}
+        
+        # Extraer habilidades
+        tracker.update_step("skills_extraction", "in_progress", "Analizando texto del CV con keywords...")
+        extractor = SkillsExtractor(use_ai=True)  # Habilitar detección con IA
+        skills_data = extractor.extract_skills(parsed_text, progress_tracker=tracker)
+        skills_count = len(skills_data.get('skills', []))
+        extraction_method = skills_data.get('extraction_method', 'unknown')
+        ai_detected = skills_data.get('details', {}).get('ai_detected', 0)
+        
+        logger.info(f"✅ Habilidades extraídas: {skills_count} (método: {extraction_method})")
+        if ai_detected > 0:
+            logger.info(f"   └─ {ai_detected} habilidades adicionales detectadas con IA")
+        
+        tracker.update_step("skills_extraction", "completed", f"{skills_count} habilidades detectadas ({extraction_method})")
+        
+        # Crear registro en BD
+        tracker.update_step("db_save", "in_progress", "Creando registro en base de datos...")
+        user = User.objects.get(id=user_id)
+        
+        # Copiar archivo temporal a la ubicación final
+        from django.core.files import File
+        cv = UserCV(user=user)
+        logger.info(f"📝 Guardando archivo: {original_filename}")
+        with open(file_path, 'rb') as f:
+            cv.original_file.save(original_filename, File(f), save=False)
+        
+        cv.parsed_text = parsed_text
+        cv.skills = skills_data
+        cv.save()
+        
+        logger.info(f"✅ CV guardado en BD con ID: {cv.id}")
+        tracker.update_step("db_save", "completed", f"CV guardado exitosamente (ID: {cv.id})")
+        
+        # Calcular matches automáticamente usando la misma tarea que el botón
+        tracker.update_step("matching", "in_progress", "Iniciando cálculo de coincidencias...")
+        try:
+            logger.info(f"🔍 Iniciando recalculo de matches para usuario {user_id}")
+            
+            # Llamar a la misma tarea que usa el botón "Calcular Matches"
+            # Nota: No usamos .delay() porque ya estamos en un worker de Celery
+            # En su lugar, llamamos directamente a la función
+            result = recalculate_matches_for_user.apply_async(
+                args=[user_id],
+                countdown=2  # Esperar 2 segundos para que el CV esté completamente guardado
+            )
+            
+            logger.info(f"✅ Tarea de recalculo iniciada: {result.id}")
+            tracker.update_step("matching", "completed", "Cálculo de coincidencias iniciado en background")
+            
+        except Exception as e:
+            logger.error(f"⚠️ Error iniciando recalculo de matches: {e}")
+            tracker.update_step("matching", "warning", f"No se pudo iniciar el cálculo automático de matches")
+        
+        # Limpiar archivo temporal
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        
+        # Marcar como completado
+        if warning_message:
+            tracker.set_warning(warning_message)
+        tracker.set_complete("CV procesado exitosamente")
+        
+        logger.info(f"✅ CV procesado exitosamente: {cv.id}")
+        
+        return {
+            "success": True,
+            "cv_id": cv.id,
+            "skills_count": len(skills_data.get("skills", [])),
+            "matching_task_initiated": 'result' in locals(),
+            "warning_message": warning_message
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Error procesando CV: {e}")
+        tracker.set_error(str(e))
+        
+        # Limpiar archivo temporal
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        
+        return {"success": False, "error": str(e)}

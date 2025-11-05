@@ -7,6 +7,7 @@ from . import views_cv_personalization
 from . import views_email_monitoring
 from . import views_api
 from . import views_ai_admin
+from . import views_email_sending
 
 urlpatterns = [
     path("", views.dashboard_view, name="dashboard"),
@@ -14,12 +15,17 @@ urlpatterns = [
     path("registro/", views.register_view, name="register"),
     path("perfil/", views.profile_view, name="profile"),
     path("upload-cv-ajax/", views.upload_cv_view, name="upload_cv"),
+    path("cv-progress/<str:progress_id>/", views.get_cv_progress, name="cv_progress"),
+    path("cancel-cv-task/", views.cancel_cv_task, name="cancel_cv_task"),
     path("mis-cvs/", views.cv_list_view, name="cv_list"),
     path("descargar-cv/<int:cv_id>/", views.download_cv_view, name="download_cv"),
     path("eliminar-cv/<int:cv_id>/", views.delete_cv_view, name="delete_cv"),
     path("eliminar-todos-cvs/", views.delete_all_cvs_view, name="delete_all_cvs"),
     path("cv-parsed-text/<int:cv_id>/", views.cv_parsed_text_view, name="cv_parsed_text"),
     path("probar-scraper/", views.test_scraper_view, name="test_scraper"),
+    path("api/current-scraping-task/", views.get_current_scraping_task, name="current_scraping_task"),
+    path("api/next-user-rotation/", views.get_next_user_in_rotation, name="next_user_rotation"),
+    path("api/scheduled-scraping/", views.scheduled_scraping_config, name="scheduled_scraping_config"),
     path(
         "scraper-status/<str:task_id>/",
         views.scraper_status_view,
@@ -78,7 +84,6 @@ urlpatterns = [
     path("email-analytics/", views_email_generation.email_analytics_view, name="email_analytics"),
     
     # URLs para testing de IA
-    path("ai-providers-status/", views_ai_testing.ai_providers_status_view, name="ai_providers_status"),
     path("test-ai-provider/", views_ai_testing.test_ai_provider_view, name="test_ai_provider"),
     path("ai-integration-guide/", views_ai_testing.ai_integration_guide_view, name="ai_integration_guide"),
     path("update-ai-settings/", views_ai_testing.update_ai_settings_view, name="update_ai_settings"),
@@ -86,6 +91,7 @@ urlpatterns = [
     # URLs para personalización de CV
     path("cv-personalization-test/", views_cv_personalization.cv_personalization_test, name="cv_personalization_test"),
     path("generate-personalized-cv/", views_cv_personalization.generate_personalized_cv, name="generate_personalized_cv"),
+    path("send-cv-email/", views_email_sending.send_cv_email, name="send_cv_email"),
     path("cv-personalization-analytics/", views_cv_personalization.cv_personalization_analytics, name="cv_personalization_analytics"),
     path("cv-personalization-history/", views_cv_personalization.cv_personalization_history, name="cv_personalization_history"),
     path("download-personalized-cv/<int:cv_id>/<int:job_id>/", views_cv_personalization.download_personalized_cv, name="download_personalized_cv"),
@@ -95,10 +101,14 @@ urlpatterns = [
     path("email-monitoring/", views_email_monitoring.email_monitoring_dashboard, name="email_monitoring"),
     path("email-logs/", views_email_monitoring.email_logs_list, name="email_logs_list"),
     path("email-log-detail/<int:log_id>/", views_email_monitoring.email_log_detail, name="email_log_detail"),
+    path("api/email-detail/<int:email_id>/", views_email_monitoring.get_email_detail, name="email_detail_api"),
+    path("download-email-cv/<int:email_id>/", views_email_monitoring.download_personalized_cv, name="download_email_personalized_cv"),
     path("send-test-email/", views_email_monitoring.send_test_email, name="send_test_email"),
     path("send-bulk-emails/", views_email_monitoring.send_bulk_emails, name="send_bulk_emails"),
     path("process-auto-matching/", views_email_monitoring.process_auto_matching, name="process_auto_matching"),
     path("email-statistics/", views_email_monitoring.email_statistics, name="email_statistics"),
+    path("api/email-statistics/", views_email_monitoring.email_statistics_api, name="email_statistics_api"),
+    path("api/user-cvs/", views_email_monitoring.get_user_cvs_api, name="get_user_cvs_api"),
     path("task-status/<str:task_id>/", views_email_monitoring.task_status, name="task_status"),
     path("cleanup-email-logs/", views_email_monitoring.cleanup_email_logs, name="cleanup_email_logs"),
     path("email-settings/", views_email_monitoring.email_settings, name="email_settings"),
@@ -107,10 +117,11 @@ urlpatterns = [
     path("api/user-cvs/", views_api.user_cvs_api, name="user_cvs_api"),
     path("api/job-postings/", views_api.job_postings_api, name="job_postings_api"),
     path("api/email-logs/", views_api.email_logs_api, name="email_logs_api"),
-    path("api/email-statistics/", views_api.email_statistics_api, name="email_statistics_api"),
+    # path("api/email-statistics/", views_api.email_statistics_api, name="email_statistics_api"),  # Duplicado, se usa views_email_monitoring.email_statistics_api
     
     # URLs para administración de IA (solo staff)
     path("admin/ai-config/", views_ai_admin.ai_admin_config_view, name="ai_admin_config"),
     path("admin/ai-status/", views_ai_admin.ai_admin_status_view, name="ai_admin_status"),
     path("admin/test-ai-provider/", views_ai_admin.test_ai_provider_admin, name="test_ai_provider_admin"),
+    path("admin/get-available-models/", views_ai_admin.get_available_models, name="get_available_models"),
 ]

@@ -1,541 +1,587 @@
 {% extends 'matching/base.html' %}
-{% load static %}
 
-{% block title %}{{ page_title }} - PostulaMatic{% endblock %}
+{% block matching_content %}
+<!-- Header Section -->
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="text-center">
+            <h1 class="display-4 fw-bold mb-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                <i class="bi bi-envelope-check me-3"></i>Monitoreo de Emails
+            </h1>
+            <p class="lead text-muted">Gestiona y monitorea el envío automático de emails</p>
+        </div>
+    </div>
+</div>
 
-{% block extra_css %}
-<style>
-    .stats-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border: none;
-        border-radius: 15px;
-        color: white;
-        transition: transform 0.3s ease;
-    }
-    
-    .stats-card:hover {
-        transform: translateY(-5px);
-    }
-    
-    .stats-card .card-body {
-        padding: 1.5rem;
-    }
-    
-    .stats-number {
-        font-size: 2.5rem;
-        font-weight: bold;
-        margin-bottom: 0.5rem;
-    }
-    
-    .stats-label {
-        font-size: 0.9rem;
-        opacity: 0.9;
-    }
-    
-    .email-log-item {
-        border-left: 4px solid #28a745;
-        padding: 1rem;
-        margin-bottom: 1rem;
-        background: #f8f9fa;
-        border-radius: 0 8px 8px 0;
-    }
-    
-    .email-log-item.failed {
-        border-left-color: #dc3545;
-    }
-    
-    .email-log-item.retry {
-        border-left-color: #ffc107;
-    }
-    
-    .config-card {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        color: white;
-        border-radius: 15px;
-    }
-    
-    .status-badge {
-        padding: 0.25rem 0.75rem;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        font-weight: 500;
-    }
-    
-    .status-sent {
-        background-color: #d4edda;
-        color: #155724;
-    }
-    
-    .status-failed {
-        background-color: #f8d7da;
-        color: #721c24;
-    }
-    
-    .status-queued {
-        background-color: #fff3cd;
-        color: #856404;
-    }
-    
-    .status-retry {
-        background-color: #d1ecf1;
-        color: #0c5460;
-    }
-    
-    .action-buttons {
-        display: flex;
-        gap: 0.5rem;
-        flex-wrap: wrap;
-    }
-    
-    .btn-action {
-        padding: 0.5rem 1rem;
-        border-radius: 20px;
-        font-size: 0.9rem;
-        font-weight: 500;
-        transition: all 0.3s ease;
-    }
-    
-    .btn-send-test {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-    }
-    
-    .btn-send-bulk {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        color: white;
-        border: none;
-    }
-    
-    .btn-auto-matching {
-        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-        color: white;
-        border: none;
-    }
-    
-    .btn-action:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-    
-    .floating-action-btn {
-        position: fixed;
-        bottom: 30px;
-        right: 30px;
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        font-size: 1.5rem;
-        transition: all 0.3s ease;
-        z-index: 1000;
-    }
-    
-    .floating-action-btn:hover {
-        transform: scale(1.1);
-        box-shadow: 0 6px 20px rgba(0,0,0,0.2);
-    }
-</style>
-{% endblock %}
+<!-- Stats Section -->
+<div class="row mb-5">
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card stats-card h-100">
+            <div class="card-body text-center">
+                <div class="stats-icon mb-3">
+                    <i class="bi bi-envelope-send"></i>
+                </div>
+                <h6 class="card-title text-muted mb-2">Total Emails</h6>
+                <h2 class="fw-bold text-primary mb-0" id="totalEmailsStat">{{ stats.total_emails_sent }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card stats-card h-100">
+            <div class="card-body text-center">
+                <div class="stats-icon mb-3">
+                    <i class="bi bi-calendar-day"></i>
+                </div>
+                <h6 class="card-title text-muted mb-2">Emails Hoy</h6>
+                <h2 class="fw-bold text-success mb-0" id="emailsTodayStat">{{ stats.emails_today }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card stats-card h-100">
+            <div class="card-body text-center">
+                <div class="stats-icon mb-3">
+                    <i class="bi bi-graph-up"></i>
+                </div>
+                <h6 class="card-title text-muted mb-2">Tasa de Éxito</h6>
+                <h2 class="fw-bold text-info mb-0" id="successRateStat">{{ stats.success_rate }}%</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card stats-card h-100">
+            <div class="card-body text-center">
+                <div class="stats-icon mb-3">
+                    <i class="bi bi-gear"></i>
+                </div>
+                <h6 class="card-title text-muted mb-2">Configuración</h6>
+                <h2 class="fw-bold text-warning mb-0" id="dailyLimitStat">{{ user_config.daily_limit }}</h2>
+                <small class="text-muted">Límite diario</small>
+            </div>
+        </div>
+    </div>
+</div>
 
-{% block content %}
-<div class="container-fluid py-4">
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <h2 class="mb-0">
-                    <i class="bi bi-envelope-check me-2"></i>{{ page_title }}
-                </h2>
-                <div class="action-buttons">
-                    <button class="btn btn-action btn-send-test" onclick="showSendTestModal()">
-                        <i class="bi bi-send me-1"></i>Enviar Prueba
-                    </button>
-                    <button class="btn btn-action btn-send-bulk" onclick="showBulkSendModal()">
-                        <i class="bi bi-send-fill me-1"></i>Envío Masivo
-                    </button>
-                    <button class="btn btn-action btn-auto-matching" onclick="showAutoMatchingModal()">
-                        <i class="bi bi-robot me-1"></i>Matching Automático
-                    </button>
+<!-- Action Buttons -->
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-lightning me-2"></i>Acciones Rápidas
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <button class="btn btn-success btn-lg w-100" onclick="showBulkSendModal()">
+                            <i class="bi bi-send-fill me-2"></i>Envío Masivo
+                        </button>
+                        <small class="text-muted d-block mt-1">Enviar múltiples emails</small>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Estadísticas Generales -->
-    <div class="row mb-4">
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card stats-card">
-                <div class="card-body text-center">
-                    <div class="stats-number">{{ stats.total_emails_sent }}</div>
-                    <div class="stats-label">Total Emails Enviados</div>
-                </div>
+<!-- Configuration Section -->
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-gear me-2"></i>Configuración Actual
+                </h5>
             </div>
-        </div>
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card stats-card">
-                <div class="card-body text-center">
-                    <div class="stats-number">{{ stats.emails_today }}</div>
-                    <div class="stats-label">Emails Hoy</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card stats-card">
-                <div class="card-body text-center">
-                    <div class="stats-number">{{ stats.emails_this_week }}</div>
-                    <div class="stats-label">Esta Semana</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card stats-card">
-                <div class="card-body text-center">
-                    <div class="stats-number">{{ stats.success_rate }}%</div>
-                    <div class="stats-label">Tasa de Éxito</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Configuración del Usuario -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card config-card">
-                <div class="card-body">
-                    <h5 class="card-title mb-3">
-                        <i class="bi bi-gear me-2"></i>Configuración Actual
-                    </h5>
-                    <div class="row">
-                        <div class="col-md-3">
-                            <strong>Límite Diario:</strong> {{ user_config.daily_limit }}
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h6 class="text-muted mb-1">Límite Diario</h6>
+                            <h4 class="fw-bold text-primary">{{ user_config.daily_limit }}</h4>
                         </div>
-                        <div class="col-md-3">
-                            <strong>Umbral de Match:</strong> {{ user_config.match_threshold }}%
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h6 class="text-muted mb-1">Umbral de Match</h6>
+                            <h4 class="fw-bold text-success">{{ user_config.match_threshold }}%</h4>
                         </div>
-                        <div class="col-md-3">
-                            <strong>Estado:</strong> 
-                            <span class="badge {% if user_config.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h6 class="text-muted mb-1">Estado</h6>
+                            <span class="badge {% if user_config.is_active %}bg-success{% else %}bg-secondary{% endif %} fs-6">
                                 {% if user_config.is_active %}Activo{% else %}Inactivo{% endif %}
                             </span>
                         </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h6 class="text-muted mb-1">Pausa entre Envíos</h6>
+                            <h4 class="fw-bold text-info">{{ user_config.min_pause }}-{{ user_config.max_pause }}s</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Emails Section -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-clock-history me-2"></i>Emails Recientes
+                </h5>
+            </div>
+            <div class="card-body" id="recentEmailsContainer">
+                {% if recent_emails %}
+                    <div id="recentEmailsList">
+                    {% for email in recent_emails %}
+                    <div class="row align-items-center mb-3 p-3 border rounded email-item-clickable {% if email.status == 'failed' %}border-danger{% elif email.status == 'retry' %}border-warning{% else %}border-success{% endif %}" 
+                         style="cursor: pointer; transition: all 0.3s ease;"
+                         onclick="showEmailDetailModal({{ email.id }})"
+                         onmouseover="this.style.backgroundColor='#f8f9fa'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';"
+                         onmouseout="this.style.backgroundColor=''; this.style.transform=''; this.style.boxShadow='';">
                         <div class="col-md-3">
-                            <strong>Pausa:</strong> {{ user_config.min_pause }}-{{ user_config.max_pause }}s
+                            <h6 class="mb-1">
+                                <i class="bi bi-briefcase me-2"></i>
+                                {% if email.job_posting %}
+                                    {{ email.job_posting.title|truncatechars:30 }}
+                                {% else %}
+                                    <span class="text-muted">[Oferta eliminada]</span>
+                                {% endif %}
+                            </h6>
+                            <small class="text-muted">
+                                <i class="bi bi-envelope me-1"></i>{{ email.sent_to|truncatechars:25 }}
+                            </small>
+                        </div>
+                        <div class="col-md-3">
+                            <small class="text-muted d-block">
+                                <i class="bi bi-chat-left-text me-1"></i><strong>Asunto:</strong> {{ email.email_subject|truncatechars:30 }}
+                            </small>
+                            <small class="text-muted d-block">
+                                <i class="bi bi-file-text me-1"></i><strong>Carta:</strong> {{ email.email_body|truncatechars:30 }}
+                            </small>
+                        </div>
+                        <div class="col-md-2">
+                            <small class="text-muted d-block">
+                                <i class="bi bi-file-earmark-pdf me-1"></i>
+                                {% if email.cv %}
+                                    {{ email.cv.original_file.name|truncatechars:9 }}
+                                {% else %}
+                                    <span class="text-muted">[CV eliminado]</span>
+                                {% endif %}
+                            </small>
+                        </div>
+                        <div class="col-md-2">
+                            <span class="badge {% if email.status == 'sent' %}bg-success{% elif email.status == 'failed' %}bg-danger{% elif email.status == 'retry' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                {{ email.get_status_display }}
+                            </span>
+                        </div>
+                        <div class="col-md-2 text-end">
+                            <small class="text-muted d-block">
+                                <i class="bi bi-calendar me-1"></i>{{ email.sent_at|date:"d/m/Y" }}
+                            </small>
+                            <small class="text-muted d-block">
+                                <i class="bi bi-clock me-1"></i>{{ email.sent_at|date:"H:i" }}
+                            </small>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Emails Recientes -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">
-                        <i class="bi bi-clock-history me-2"></i>Emails Recientes
-                    </h5>
-                </div>
-                <div class="card-body">
-                    {% if recent_emails %}
-                        {% for email in recent_emails %}
-                        <div class="email-log-item {% if email.status == 'failed' %}failed{% elif email.status == 'retry' %}retry{% endif %}">
-                            <div class="row align-items-center">
-                                <div class="col-md-6">
-                                    <h6 class="mb-1">{{ email.job_posting.title }}</h6>
-                                    <p class="mb-0 text-muted">{{ email.job_posting.email }}</p>
-                                </div>
-                                <div class="col-md-3">
-                                    <span class="status-badge status-{{ email.status }}">
-                                        {{ email.get_status_display }}
-                                    </span>
-                                </div>
-                                <div class="col-md-3 text-end">
-                                    <small class="text-muted">{{ email.sent_at|date:"d/m/Y H:i" }}</small>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="text-center py-4">
-                            <i class="bi bi-inbox display-1 text-muted"></i>
-                            <p class="text-muted mt-2">No hay emails enviados aún</p>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal para Envío de Prueba -->
-<div class="modal fade" id="sendTestModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Enviar Email de Prueba</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="sendTestForm">
-                    <div class="mb-3">
-                        <label class="form-label">CV a Usar</label>
-                        <select class="form-select" name="cv_id" required>
-                            <option value="">Seleccionar CV...</option>
-                            <!-- Se llenará dinámicamente -->
-                        </select>
+                    {% endfor %}
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Puesto de Trabajo</label>
-                        <select class="form-select" name="job_id" required>
-                            <option value="">Seleccionar puesto...</option>
-                            <!-- Se llenará dinámicamente -->
-                        </select>
+                {% else %}
+                    <div class="text-center py-5" id="noEmailsMessage">
+                        <i class="bi bi-inbox display-1 text-muted"></i>
+                        <h5 class="text-muted mt-3">No hay emails enviados aún</h5>
+                        <p class="text-muted">Usa las acciones rápidas para enviar tu primer email</p>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Template de Email</label>
-                        <select class="form-select" name="email_template">
-                            <option value="base">Base</option>
-                            <option value="formal">Formal</option>
-                            <option value="creative">Creativo</option>
-                            <option value="technical">Técnico</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Proveedor de IA</label>
-                        <select class="form-select" name="ai_provider">
-                            <option value="openai">OpenAI</option>
-                            <option value="anthropic">Anthropic</option>
-                        </select>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" onclick="sendTestEmail()">Enviar Prueba</button>
+                {% endif %}
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modal para Envío Masivo -->
-<div class="modal fade" id="bulkSendModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Envío Masivo de Emails</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="bulkSendForm">
-                    <div class="mb-3">
-                        <label class="form-label">Puestos de Trabajo</label>
-                        <select class="form-select" name="job_ids" multiple required>
-                            <!-- Se llenará dinámicamente -->
-                        </select>
-                        <div class="form-text">Mantén presionado Ctrl para seleccionar múltiples puestos</div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Template de Email</label>
-                                <select class="form-select" name="email_template">
-                                    <option value="base">Base</option>
-                                    <option value="formal">Formal</option>
-                                    <option value="creative">Creativo</option>
-                                    <option value="technical">Técnico</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Proveedor de IA</label>
-                                <select class="form-select" name="ai_provider">
-                                    <option value="openai">OpenAI</option>
-                                    <option value="anthropic">Anthropic</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Tamaño del Lote</label>
-                                <input type="number" class="form-control" name="batch_size" value="5" min="1" max="20">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Delay entre Lotes (segundos)</label>
-                                <input type="number" class="form-control" name="delay_between_batches" value="300" min="60" max="3600">
-                            </div>
-                        </div>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" onclick="sendBulkEmails()">Iniciar Envío Masivo</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal para Matching Automático -->
-<div class="modal fade" id="autoMatchingModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Matching Automático</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="autoMatchingForm">
-                    <div class="mb-3">
-                        <label class="form-label">Score Mínimo de Coincidencia</label>
-                        <input type="number" class="form-control" name="min_match_score" value="70" min="0" max="100">
-                        <div class="form-text">Solo se enviarán emails a puestos con score igual o superior</div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Template de Email</label>
-                        <select class="form-select" name="email_template">
-                            <option value="base">Base</option>
-                            <option value="formal">Formal</option>
-                            <option value="creative">Creativo</option>
-                            <option value="technical">Técnico</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Proveedor de IA</label>
-                        <select class="form-select" name="ai_provider">
-                            <option value="openai">OpenAI</option>
-                            <option value="anthropic">Anthropic</option>
-                        </select>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" onclick="processAutoMatching()">Iniciar Matching Automático</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Botón Flotante -->
-<button class="floating-action-btn" onclick="window.location.href='{% url 'email_logs_list' %}'" title="Ver Historial Completo">
-    <i class="bi bi-list-ul"></i>
-</button>
+<!-- Los modales se crearán dinámicamente con JavaScript -->
 {% endblock %}
 
 {% block extra_js %}
 <script>
 // Variables globales
-let currentTaskId = null;
+var currentTaskId = null;
+var currentModal = null;
+
+// Función para mostrar modal con detalles completos del email
+function showEmailDetailModal(emailId) {
+    console.log('📧 Mostrando detalles del email:', emailId);
+    
+    // Fetch email details from API
+    fetch(`/matching/api/email-detail/${emailId}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                createEmailDetailModal(data.email);
+            } else {
+                alert('Error cargando detalles del email: ' + (data.message || 'Error desconocido'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error de conexión al cargar detalles del email');
+        });
+}
+
+// Crear modal dinámico con detalles del email
+function createEmailDetailModal(email) {
+    // Remover modal anterior si existe
+    const existingModal = document.getElementById('emailDetailModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.id = 'emailDetailModal';
+    modal.innerHTML = `
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-envelope-open me-2"></i>Detalles del Email Enviado
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6 class="text-primary"><i class="bi bi-briefcase me-2"></i>Información del Puesto</h6>
+                            <table class="table table-sm">
+                                <tr>
+                                    <td class="fw-bold" style="width: 30%;">Título:</td>
+                                    <td>${email.job_title || '<span class="text-muted">[Oferta eliminada]</span>'}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Empresa:</td>
+                                    <td>${email.job_company || 'N/A'}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Email destino:</td>
+                                    <td><a href="mailto:${email.sent_to}">${email.sent_to}</a></td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-primary"><i class="bi bi-info-circle me-2"></i>Información del Envío</h6>
+                            <table class="table table-sm">
+                                <tr>
+                                    <td class="fw-bold" style="width: 30%;">Estado:</td>
+                                    <td>
+                                        <span class="badge ${email.status === 'sent' ? 'bg-success' : email.status === 'failed' ? 'bg-danger' : 'bg-warning'}">
+                                            ${email.status_display}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Fecha:</td>
+                                    <td>${email.sent_at}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">CV adjunto:</td>
+                                    <td>
+                                        ${email.has_personalized_cv ? 
+                                            `<a href="/matching/download-email-cv/${email.id}/" class="text-primary" download title="${email.personalized_cv_filename}">
+                                                <i class="bi bi-download me-1"></i>${email.personalized_cv_filename.length > 9 ? email.personalized_cv_filename.substring(0, 6) + '...' : email.personalized_cv_filename}
+                                            </a>
+                                            <span class="badge bg-success ms-2">Personalizado</span>` 
+                                            : email.cv_filename ?
+                                            `<a href="/matching/descargar-cv/${email.cv_id}/" class="text-secondary" download title="${email.cv_filename}">
+                                                <i class="bi bi-download me-1"></i>${email.cv_filename.length > 9 ? email.cv_filename.substring(0, 6) + '...' : email.cv_filename}
+                                            </a>
+                                            <span class="badge bg-warning ms-2">Original</span>`
+                                            : '<span class="text-muted">[CV no disponible]</span>'}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Plantilla:</td>
+                                    <td><span class="badge bg-info">${email.email_template}</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">IA usada:</td>
+                                    <td><span class="badge bg-secondary">${email.ai_provider}</span></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h6 class="text-primary"><i class="bi bi-chat-left-text me-2"></i>Asunto del Email</h6>
+                        <div class="p-3 bg-light border rounded">
+                            <strong>${email.email_subject}</strong>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h6 class="text-primary"><i class="bi bi-file-text me-2"></i>Carta de Presentación</h6>
+                        <div class="p-3 bg-light border rounded" style="max-height: 400px; overflow-y: auto; white-space: pre-wrap; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6;">
+                            ${email.email_body}
+                        </div>
+                    </div>
+                    
+                    ${email.error_message ? `
+                    <div class="alert alert-danger">
+                        <h6 class="alert-heading"><i class="bi bi-exclamation-triangle me-2"></i>Error</h6>
+                        <p class="mb-0">${email.error_message}</p>
+                    </div>
+                    ` : ''}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-2"></i>Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+    
+    // Limpiar modal del DOM cuando se cierre
+    modal.addEventListener('hidden.bs.modal', function() {
+        modal.remove();
+    });
+}
 
 // Mostrar modal de envío de prueba
-function showSendTestModal() {
-    loadCVsAndJobs();
-    new bootstrap.Modal(document.getElementById('sendTestModal')).show();
-}
-
 // Mostrar modal de envío masivo
 function showBulkSendModal() {
-    loadJobs();
-    new bootstrap.Modal(document.getElementById('bulkSendModal')).show();
-}
-
-// Mostrar modal de matching automático
-function showAutoMatchingModal() {
-    new bootstrap.Modal(document.getElementById('autoMatchingModal')).show();
-}
-
-// Cargar CVs y puestos para el modal de prueba
-async function loadCVsAndJobs() {
+    console.log('🔍 Creando modal dinámico de envío masivo...');
+    
+    const dynamicModal = document.createElement('div');
+    dynamicModal.className = 'modal fade';
+    dynamicModal.id = 'dynamicBulkSendModal';
+    dynamicModal.innerHTML = `
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-send-fill me-2"></i>Envío Masivo de Emails
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-3">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                        <p class="mt-2">Cargando puestos...</p>
+                    </div>
+                    <form id="bulkSendForm" style="display: none;">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="bi bi-file-earmark-text me-1"></i>CV a Usar
+                            </label>
+                            <select class="form-select" name="cv_id" id="cvSelectBulk" required>
+                                <option value="">Cargando CVs...</option>
+                            </select>
+                            <div class="form-text">Selecciona el CV que se personalizará para cada puesto</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="bi bi-briefcase me-1"></i>Puestos de Trabajo
+                            </label>
+                            <select class="form-select" name="job_ids" multiple required size="8" id="jobSelectBulk">
+                            </select>
+                            <div class="form-text">Mantén presionado Ctrl para seleccionar múltiples puestos</div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Template de Email</label>
+                                    <select class="form-select" name="email_template">
+                                        <option value="base">Base</option>
+                                        <option value="formal">Formal</option>
+                                        <option value="creative">Creativo</option>
+                                        <option value="technical">Técnico</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Proveedor de IA</label>
+                                    <select class="form-select" name="ai_provider">
+                                        <option value="openai">OpenAI</option>
+                                        <option value="anthropic">Anthropic</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Tamaño del Lote</label>
+                                    <input type="number" class="form-control" name="batch_size" value="5" min="1" max="20">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Delay entre Lotes (segundos)</label>
+                                    <input type="number" class="form-control" name="delay_between_batches" value="300" min="60" max="3600">
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-success" id="confirmBulkSend" disabled>
+                        <i class="bi bi-send-fill me-1"></i>Iniciar Envío Masivo
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(dynamicModal);
+    
+    const confirmBtn = document.getElementById('confirmBulkSend');
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', function() {
+            sendBulkEmails();
+        });
+    }
+    
     try {
-        // Cargar CVs
-        const cvsResponse = await fetch('/matching/api/user-cvs/');
-        const cvs = await cvsResponse.json();
+        const modal = new bootstrap.Modal(dynamicModal);
+        currentModal = { modal: modal, element: dynamicModal };
+        modal.show();
         
-        const cvSelect = document.querySelector('#sendTestModal select[name="cv_id"]');
-        cvSelect.innerHTML = '<option value="">Seleccionar CV...</option>';
-        cvs.forEach(cv => {
-            cvSelect.innerHTML += `<option value="${cv.id}">CV - ${cv.created_at}</option>`;
+        // Cargar datos DESPUÉS de mostrar el modal
+        loadDataForBulkSendModal();
+        
+        dynamicModal.addEventListener('hidden.bs.modal', function() {
+            if (dynamicModal && dynamicModal.parentNode) {
+                dynamicModal.parentNode.removeChild(dynamicModal);
+            }
         });
         
-        // Cargar puestos
-        const jobsResponse = await fetch('/matching/api/job-postings/');
-        const jobs = await jobsResponse.json();
-        
-        const jobSelect = document.querySelector('#sendTestModal select[name="job_id"]');
-        jobSelect.innerHTML = '<option value="">Seleccionar puesto...</option>';
-        jobs.forEach(job => {
-            jobSelect.innerHTML += `<option value="${job.id}">${job.title}</option>`;
-        });
-        
+        console.log('✅ Modal dinámico de envío masivo mostrado correctamente');
     } catch (error) {
-        console.error('Error cargando datos:', error);
-        showAlert('Error cargando datos', 'error');
+        console.error('❌ Error con modal dinámico:', error);
+        showAlert('Error mostrando modal: ' + error.message, 'error');
     }
 }
 
-// Cargar puestos para el modal de envío masivo
-async function loadJobs() {
+// Cargar datos para el modal de envío masivo
+async function loadDataForBulkSendModal() {
+    const [cvs, jobs] = await Promise.all([loadCVsData(), loadJobsData()]);
+    
+    console.log('CVs cargados:', cvs.length);
+    console.log('Jobs cargados para envío masivo:', jobs.length);
+    
+    const form = document.getElementById('bulkSendForm');
+    const spinner = form.previousElementSibling;
+    const confirmBtn = document.getElementById('confirmBulkSend');
+    
+    // Verificar CVs
+    if (!Array.isArray(cvs) || cvs.length === 0) {
+        spinner.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                No tienes CVs cargados.
+                <br><small>Por favor sube un CV primero en "Mis CVs".</small>
+            </div>
+        `;
+        return;
+    }
+    
+    // Verificar Jobs
+    if (!Array.isArray(jobs) || jobs.length === 0) {
+        spinner.innerHTML = `
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                No hay puestos de trabajo disponibles.
+                <br><small>Por favor realiza un scraping primero en "Probar Scraper".</small>
+            </div>
+        `;
+        return;
+    }
+    
+    // Llenar select de CVs
+    const cvSelect = document.getElementById('cvSelectBulk');
+    cvSelect.innerHTML = cvs.map(cv => {
+        const mostRecentBadge = cv.is_most_recent ? ' <span class="badge bg-success">Más reciente</span>' : '';
+        const skillsInfo = cv.skills_count ? ` (${cv.skills_count} habilidades)` : '';
+        return `<option value="${cv.id}">${cv.filename}${skillsInfo} - ${cv.uploaded_at}${mostRecentBadge}</option>`;
+    }).join('');
+    
+    // Seleccionar el CV más reciente por defecto
+    const mostRecentCv = cvs.find(cv => cv.is_most_recent);
+    if (mostRecentCv) {
+        cvSelect.value = mostRecentCv.id;
+    }
+    
+    // Llenar select de Jobs
+    const jobSelect = document.getElementById('jobSelectBulk');
+    jobSelect.innerHTML = jobs.map(job => `<option value="${job.id}">${job.title || 'Sin título'}</option>`).join('');
+    
+    // Mostrar formulario
+    spinner.style.display = 'none';
+    form.style.display = 'block';
+    confirmBtn.disabled = false;
+}
+
+// Cargar datos de CVs
+async function loadCVsData() {
+    try {
+        const response = await fetch('/matching/api/user-cvs/');
+        const data = await response.json();
+        console.log('CVs data:', data);
+        
+        // Manejar diferentes formatos de respuesta
+        if (Array.isArray(data)) {
+            return data;
+        } else if (data && Array.isArray(data.cvs)) {
+            return data.cvs;
+        } else if (data && Array.isArray(data.results)) {
+            return data.results;
+        } else {
+            console.warn('Formato de CVs no reconocido:', data);
+            return [];
+        }
+    } catch (error) {
+        console.error('Error cargando CVs:', error);
+        return [];
+    }
+}
+
+// Cargar datos de puestos
+async function loadJobsData() {
     try {
         const response = await fetch('/matching/api/job-postings/');
-        const jobs = await response.json();
+        const data = await response.json();
+        console.log('Jobs data:', data);
         
-        const jobSelect = document.querySelector('#bulkSendModal select[name="job_ids"]');
-        jobSelect.innerHTML = '';
-        jobs.forEach(job => {
-            jobSelect.innerHTML += `<option value="${job.id}">${job.title}</option>`;
-        });
-        
+        // Manejar diferentes formatos de respuesta
+        if (Array.isArray(data)) {
+            return data;
+        } else if (data && Array.isArray(data.jobs)) {
+            return data.jobs;
+        } else if (data && Array.isArray(data.results)) {
+            return data.results;
+        } else {
+            console.warn('Formato de puestos no reconocido:', data);
+            return [];
+        }
     } catch (error) {
         console.error('Error cargando puestos:', error);
-        showAlert('Error cargando puestos', 'error');
-    }
-}
-
-// Enviar email de prueba
-async function sendTestEmail() {
-    const form = document.getElementById('sendTestForm');
-    const formData = new FormData(form);
-    
-    const data = {
-        cv_id: parseInt(formData.get('cv_id')),
-        job_id: parseInt(formData.get('job_id')),
-        email_template: formData.get('email_template'),
-        ai_provider: formData.get('ai_provider')
-    };
-    
-    try {
-        const response = await fetch('/matching/send-test-email/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCsrfToken()
-            },
-            body: JSON.stringify(data)
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            showAlert('Email de prueba enviado exitosamente', 'success');
-            bootstrap.Modal.getInstance(document.getElementById('sendTestModal')).hide();
-            currentTaskId = result.task_id;
-            monitorTask(result.task_id);
-        } else {
-            showAlert(`Error: ${result.error}`, 'error');
-        }
-        
-    } catch (error) {
-        console.error('Error enviando email:', error);
-        showAlert('Error enviando email de prueba', 'error');
+        return [];
     }
 }
 
@@ -545,9 +591,17 @@ async function sendBulkEmails() {
     const formData = new FormData(form);
     
     const jobIds = Array.from(formData.getAll('job_ids')).map(id => parseInt(id));
+    const cvId = formData.get('cv_id');
+    
+    // Validar que se haya seleccionado un CV
+    if (!cvId) {
+        showAlert('Por favor selecciona un CV', 'error');
+        return;
+    }
     
     const data = {
         job_ids: jobIds,
+        cv_id: parseInt(cvId),  // Nuevo: incluir CV seleccionado
         email_template: formData.get('email_template'),
         ai_provider: formData.get('ai_provider'),
         batch_size: parseInt(formData.get('batch_size')),
@@ -568,7 +622,10 @@ async function sendBulkEmails() {
         
         if (result.success) {
             showAlert(`Envío masivo iniciado: ${result.message}`, 'success');
-            bootstrap.Modal.getInstance(document.getElementById('bulkSendModal')).hide();
+            // Cerrar modal usando currentModal
+            if (currentModal && currentModal.modal) {
+                currentModal.modal.hide();
+            }
             currentTaskId = result.task_id;
             monitorTask(result.task_id);
         } else {
@@ -578,44 +635,6 @@ async function sendBulkEmails() {
     } catch (error) {
         console.error('Error enviando emails masivos:', error);
         showAlert('Error iniciando envío masivo', 'error');
-    }
-}
-
-// Procesar matching automático
-async function processAutoMatching() {
-    const form = document.getElementById('autoMatchingForm');
-    const formData = new FormData(form);
-    
-    const data = {
-        min_match_score: parseInt(formData.get('min_match_score')),
-        email_template: formData.get('email_template'),
-        ai_provider: formData.get('ai_provider')
-    };
-    
-    try {
-        const response = await fetch('/matching/process-auto-matching/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCsrfToken()
-            },
-            body: JSON.stringify(data)
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            showAlert(`Matching automático iniciado: ${result.message}`, 'success');
-            bootstrap.Modal.getInstance(document.getElementById('autoMatchingModal')).hide();
-            currentTaskId = result.task_id;
-            monitorTask(result.task_id);
-        } else {
-            showAlert(`Error: ${result.error}`, 'error');
-        }
-        
-    } catch (error) {
-        console.error('Error procesando matching automático:', error);
-        showAlert('Error iniciando matching automático', 'error');
     }
 }
 
@@ -650,32 +669,221 @@ function getCsrfToken() {
     return document.querySelector('[name=csrfmiddlewaretoken]').value;
 }
 
-// Función para mostrar alertas
+// Función para mostrar alertas (estilo con badge COMPLETADO/ERROR)
 function showAlert(message, type) {
-    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
-    const alertHtml = `
-        <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    // Crear contenedor de alertas si no existe
+    let alertContainer = document.getElementById('alertContainer');
+    if (!alertContainer) {
+        alertContainer = document.createElement('div');
+        alertContainer.id = 'alertContainer';
+        alertContainer.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            max-width: 400px;
+        `;
+        document.body.appendChild(alertContainer);
+    }
+    
+    // Mapear tipos simples a tipos de Bootstrap
+    const alertType = type === 'error' ? 'danger' : type;
+    
+    // Determinar icono y badge según tipo
+    let iconClass = 'bi-check-circle-fill';
+    let badgeText = 'COMPLETADO';
+    let badgeClass = 'bg-success';
+    
+    if (alertType === 'danger') {
+        iconClass = 'bi-exclamation-triangle-fill';
+        badgeText = 'ERROR';
+        badgeClass = 'bg-danger';
+    } else if (alertType === 'warning') {
+        iconClass = 'bi-exclamation-triangle-fill';
+        badgeText = 'ADVERTENCIA';
+        badgeClass = 'bg-warning';
+    } else if (alertType === 'info') {
+        iconClass = 'bi-info-circle-fill';
+        badgeText = 'INFO';
+        badgeClass = 'bg-info';
+    }
+    
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${alertType} alert-dismissible fade show mb-2`;
+    alertDiv.setAttribute('role', 'alert');
+    alertDiv.style.cssText = `
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        animation: slideInRight 0.3s ease-out;
+        padding: 1rem 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background-color: ${alertType === 'success' ? '#d4edda' : alertType === 'danger' ? '#f8d7da' : alertType === 'warning' ? '#fff3cd' : '#d1ecf1'} !important;
+        border: 1px solid ${alertType === 'success' ? '#c3e6cb' : alertType === 'danger' ? '#f5c6cb' : alertType === 'warning' ? '#ffeaa7' : '#bee5eb'} !important;
+    `;
+    alertDiv.innerHTML = `
+        <i class="bi ${iconClass}" style="font-size: 1.5rem;"></i>
+        <div style="flex: 1;">
+            <strong style="display: inline-block; margin-right: 8px;">${message}</strong>
+            <span class="badge ${badgeClass}" style="font-size: 0.7rem; padding: 0.25rem 0.5rem; vertical-align: middle;">${badgeText}</span>
         </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     `;
     
-    // Insertar al inicio del contenido
-    const container = document.querySelector('.container-fluid');
-    container.insertAdjacentHTML('afterbegin', alertHtml);
+    alertContainer.appendChild(alertDiv);
     
     // Auto-remover después de 5 segundos
     setTimeout(() => {
-        const alert = container.querySelector('.alert');
-        if (alert) {
-            bootstrap.Alert.getInstance(alert)?.close();
-        }
+        alertDiv.style.animation = 'slideOutRight 0.3s ease-out';
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.parentNode.removeChild(alertDiv);
+            }
+        }, 300);
     }, 5000);
+}
+
+// Agregar estilos de animación (solo una vez)
+if (!document.getElementById('alertAnimationStyles')) {
+    var alertStyles = document.createElement('style');
+    alertStyles.id = 'alertAnimationStyles';
+    alertStyles.textContent = `
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+    `;
+    document.head.appendChild(alertStyles);
+}
+
+// Actualizar estadísticas en tiempo real
+async function updateStatistics() {
+    try {
+        const response = await fetch('/matching/api/email-statistics/');
+        const data = await response.json();
+        
+        if (data.success) {
+            // Actualizar estadísticas
+            document.getElementById('totalEmailsStat').textContent = data.stats.total_emails;
+            document.getElementById('emailsTodayStat').textContent = data.stats.emails_today;
+            document.getElementById('successRateStat').textContent = data.stats.success_rate + '%';
+            document.getElementById('dailyLimitStat').textContent = data.stats.daily_limit;
+            
+            // Actualizar emails recientes
+            updateRecentEmails(data.recent_emails);
+        }
+    } catch (error) {
+        console.error('Error actualizando estadísticas:', error);
+    }
+}
+
+// Actualizar lista de emails recientes
+function updateRecentEmails(emails) {
+    const container = document.getElementById('recentEmailsContainer');
+    const noEmailsMessage = document.getElementById('noEmailsMessage');
+    const emailsList = document.getElementById('recentEmailsList');
+    
+    if (emails.length === 0) {
+        // Mostrar mensaje de "no hay emails"
+        if (emailsList) emailsList.remove();
+        if (!noEmailsMessage) {
+            container.innerHTML = `
+                <div class="text-center py-5" id="noEmailsMessage">
+                    <i class="bi bi-inbox display-1 text-muted"></i>
+                    <h5 class="text-muted mt-3">No hay emails enviados aún</h5>
+                    <p class="text-muted">Usa las acciones rápidas para enviar tu primer email</p>
+                </div>
+            `;
+        }
+    } else {
+        // Ocultar mensaje de "no hay emails"
+        if (noEmailsMessage) noEmailsMessage.remove();
+        
+        // Crear o actualizar lista de emails con formato detallado
+        let html = '<div id="recentEmailsList">';
+        emails.forEach(email => {
+            const borderClass = email.status === 'failed' ? 'border-danger' : 
+                              email.status === 'retry' ? 'border-warning' : 'border-success';
+            const badgeClass = email.status === 'sent' ? 'bg-success' : 
+                             email.status === 'failed' ? 'bg-danger' : 
+                             email.status === 'retry' ? 'bg-warning' : 'bg-secondary';
+            
+            // Truncar textos largos
+            const truncate = (str, maxLen) => str && str.length > maxLen ? str.substring(0, maxLen - 3) + '...' : str;
+            
+            html += `
+                <div class="row align-items-center mb-3 p-3 border rounded email-item-clickable ${borderClass}" 
+                     style="cursor: pointer; transition: all 0.3s ease;"
+                     onclick="showEmailDetailModal(${email.id})"
+                     onmouseover="this.style.backgroundColor='#f8f9fa'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';"
+                     onmouseout="this.style.backgroundColor=''; this.style.transform=''; this.style.boxShadow='';">
+                    <div class="col-md-3">
+                        <h6 class="mb-1">
+                            <i class="bi bi-briefcase me-2"></i>${truncate(email.job_title, 30)}
+                        </h6>
+                        <small class="text-muted">
+                            <i class="bi bi-envelope me-1"></i>${truncate(email.sent_to, 25)}
+                        </small>
+                    </div>
+                    <div class="col-md-3">
+                        <small class="text-muted d-block">
+                            <i class="bi bi-chat-left-text me-1"></i><strong>Asunto:</strong> ${truncate(email.email_subject || '', 30)}
+                        </small>
+                        <small class="text-muted d-block">
+                            <i class="bi bi-file-text me-1"></i><strong>Carta:</strong> ${truncate(email.email_body || '', 30)}
+                        </small>
+                    </div>
+                    <div class="col-md-2">
+                        <small class="text-muted d-block">
+                            <i class="bi bi-file-earmark-pdf me-1"></i>${truncate(email.cv_filename || '[CV eliminado]', 9)}
+                        </small>
+                    </div>
+                    <div class="col-md-2">
+                        <span class="badge ${badgeClass}">${email.status}</span>
+                    </div>
+                    <div class="col-md-2 text-end">
+                        <small class="text-muted d-block">
+                            <i class="bi bi-calendar me-1"></i>${email.sent_at.split(' ')[0]}
+                        </small>
+                        <small class="text-muted d-block">
+                            <i class="bi bi-clock me-1"></i>${email.sent_at.split(' ')[1] || ''}
+                        </small>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        
+        container.innerHTML = html;
+    }
 }
 
 // Cargar datos al cargar la página
 document.addEventListener('DOMContentLoaded', function() {
-    // Cargar datos iniciales si es necesario
+    // Actualizar estadísticas cada 5 segundos
+    setInterval(updateStatistics, 5000);
+    
+    console.log('✅ Actualización automática de estadísticas activada (cada 5 segundos)');
+    console.log('🔄 Versión: CV truncado a 6 chars');
 });
 </script>
+{% csrf_token %}
 {% endblock %}
