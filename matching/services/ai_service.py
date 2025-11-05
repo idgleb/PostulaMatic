@@ -57,31 +57,30 @@ class OpenAIProvider(AIProvider):
     """Proveedor OpenAI para generación de emails."""
     
     def __init__(self):
-        self._client = None
-        self._model = None
-        self._config = None
+        # No cachear nada para reflejar cambios en tiempo real
+        pass
     
     def _get_config(self):
-        """Obtiene la configuración de IA desde la base de datos."""
-        if self._config is None:
-            try:
-                from matching.models import AIConfiguration
-                self._config = AIConfiguration.get_config()
-            except Exception as e:
-                logger.error(f"Error obteniendo configuración IA: {e}")
-                self._config = None
-        return self._config
+        """Obtiene la configuración de IA desde la base de datos (sin caché)."""
+        # IMPORTANTE: NO cachear la configuración para que siempre use la versión más reciente
+        # Esto evita problemas cuando el usuario actualiza la API key en el admin
+        try:
+            from matching.models import AIConfiguration
+            return AIConfiguration.get_config()
+        except Exception as e:
+            logger.error(f"Error obteniendo configuración IA: {e}")
+            return None
     
     @property
     def client(self):
-        """Lazy initialization del cliente OpenAI."""
-        if self._client is None:
-            api_key = self._get_api_key()
-            if not api_key:
-                raise ValueError("OpenAI API key no está configurada")
-            # Timeouts cortos + pocos reintentos para evitar kills del worker
-            self._client = openai.OpenAI(api_key=api_key, timeout=20, max_retries=1)
-        return self._client
+        """Lazy initialization del cliente OpenAI (sin caché para reflejar cambios de API key)."""
+        # IMPORTANTE: Siempre crear un nuevo cliente para reflejar cambios en la API key
+        # Sin esto, si el usuario actualiza la API key, seguiría usando la antigua
+        api_key = self._get_api_key()
+        if not api_key:
+            raise ValueError("OpenAI API key no está configurada")
+        # Timeouts cortos + pocos reintentos para evitar kills del worker
+        return openai.OpenAI(api_key=api_key, timeout=20, max_retries=1)
     
     def _get_api_key(self):
         """Obtiene la API key de OpenAI desde la configuración."""
@@ -93,15 +92,14 @@ class OpenAIProvider(AIProvider):
     
     @property
     def model(self):
-        """Obtiene el modelo de OpenAI desde la configuración."""
-        if self._model is None:
-            config = self._get_config()
-            if config and config.openai_enabled:
-                self._model = config.openai_model
-            else:
-                # Fallback a variables de entorno
-                self._model = os.getenv('OPENAI_MODEL', 'gpt-3.5-turbo')
-        return self._model
+        """Obtiene el modelo de OpenAI desde la configuración (sin caché)."""
+        # IMPORTANTE: Siempre obtener el modelo actual para reflejar cambios
+        config = self._get_config()
+        if config and config.openai_enabled:
+            return config.openai_model
+        else:
+            # Fallback a variables de entorno
+            return os.getenv('OPENAI_MODEL', 'gpt-3.5-turbo')
     
     def generate_email_content(
         self, 
@@ -335,33 +333,31 @@ class AnthropicProvider(AIProvider):
     """Proveedor Anthropic para generación de emails."""
     
     def __init__(self):
-        self._client = None
-        self._model = None
-        self._config = None
-        self._model_finder = None
+        # No cachear nada para reflejar cambios en tiempo real
+        self._model_finder = None  # Este sí se cachea porque no cambia
     
     def _get_config(self):
-        """Obtiene la configuración de IA desde la base de datos."""
-        if self._config is None:
-            try:
-                from matching.models import AIConfiguration
-                self._config = AIConfiguration.get_config()
-            except Exception as e:
-                logger.error(f"Error obteniendo configuración IA: {e}")
-                self._config = None
-        return self._config
+        """Obtiene la configuración de IA desde la base de datos (sin caché)."""
+        # IMPORTANTE: NO cachear la configuración para que siempre use la versión más reciente
+        # Esto evita problemas cuando el usuario actualiza la API key en el admin
+        try:
+            from matching.models import AIConfiguration
+            return AIConfiguration.get_config()
+        except Exception as e:
+            logger.error(f"Error obteniendo configuración IA: {e}")
+            return None
     
     @property
     def client(self):
-        """Lazy initialization del cliente Anthropic."""
-        if self._client is None:
-            api_key = self._get_api_key()
-            if not api_key:
-                raise ValueError("Anthropic API key no está configurada")
-            # Reducimos el timeout estricto para visión a 8s usando el cliente por defecto
-            # (usaremos timeout por llamada en messages.create)
-            self._client = anthropic.Anthropic(api_key=api_key)
-        return self._client
+        """Lazy initialization del cliente Anthropic (sin caché para reflejar cambios de API key)."""
+        # IMPORTANTE: Siempre crear un nuevo cliente para reflejar cambios en la API key
+        # Sin esto, si el usuario actualiza la API key, seguiría usando la antigua
+        api_key = self._get_api_key()
+        if not api_key:
+            raise ValueError("Anthropic API key no está configurada")
+        # Reducimos el timeout estricto para visión a 8s usando el cliente por defecto
+        # (usaremos timeout por llamada en messages.create)
+        return anthropic.Anthropic(api_key=api_key)
     
     def _get_api_key(self):
         """Obtiene la API key de Anthropic desde la configuración."""
@@ -373,15 +369,14 @@ class AnthropicProvider(AIProvider):
     
     @property
     def model(self):
-        """Obtiene el modelo de Anthropic desde la configuración."""
-        if self._model is None:
-            config = self._get_config()
-            if config and config.anthropic_enabled:
-                self._model = config.anthropic_model
-            else:
-                # Fallback a variables de entorno
-                self._model = os.getenv('ANTHROPIC_MODEL', 'claude-3-haiku-20240307')
-        return self._model
+        """Obtiene el modelo de Anthropic desde la configuración (sin caché)."""
+        # IMPORTANTE: Siempre obtener el modelo actual para reflejar cambios
+        config = self._get_config()
+        if config and config.anthropic_enabled:
+            return config.anthropic_model
+        else:
+            # Fallback a variables de entorno
+            return os.getenv('ANTHROPIC_MODEL', 'claude-3-haiku-20240307')
     
     def generate_email_content(
         self, 
@@ -733,7 +728,7 @@ class AIEmailService:
             'openai': OpenAIProvider(),
             'anthropic': AnthropicProvider()
         }
-        self._config = None  # Cache de configuración
+        # No cachear configuración para reflejar cambios en tiempo real
         self.default_provider = self._get_default_provider()
 
     # Utilidad: ejecutar una llamada potencialmente lenta con timeout duro
@@ -762,15 +757,15 @@ class AIEmailService:
         return result_container["result"]
     
     def _get_config(self):
-        """Obtiene la configuración de IA desde la base de datos."""
-        if self._config is None:
-            try:
-                from matching.models import AIConfiguration
-                self._config = AIConfiguration.get_config()
-            except Exception as e:
-                logger.error(f"Error obteniendo configuración IA: {e}")
-                self._config = None
-        return self._config
+        """Obtiene la configuración de IA desde la base de datos (sin caché)."""
+        # IMPORTANTE: NO cachear la configuración para que siempre use la versión más reciente
+        # Esto evita problemas cuando el usuario actualiza la API key en el admin
+        try:
+            from matching.models import AIConfiguration
+            return AIConfiguration.get_config()
+        except Exception as e:
+            logger.error(f"Error obteniendo configuración IA: {e}")
+            return None
     
     def _get_default_provider(self):
         """Obtiene el proveedor por defecto desde la configuración."""
