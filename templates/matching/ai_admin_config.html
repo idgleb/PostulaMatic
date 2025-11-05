@@ -799,7 +799,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     openaiModelSelect.innerHTML = '<option value="">Selecciona un modelo...</option>';
                     
                     if (data.openai.error) {
-                        openaiModelSelect.innerHTML += `<option value="" disabled>❌ ${data.openai.error}</option>`;
+                        // Si hay error, agregar opción temporal que permite guardar
+                        openaiModelSelect.innerHTML += `<option value="_temp_no_model">⚠️ Guardar API Key primero</option>`;
+                        // Seleccionar automáticamente esta opción temporal
+                        openaiModelSelect.value = '_temp_no_model';
                         console.warn('⚠️ Error OpenAI:', data.openai.error);
                     } else if (data.openai.models && data.openai.models.length > 0) {
                         data.openai.models.forEach(model => {
@@ -827,7 +830,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     anthropicModelSelect.innerHTML = '<option value="">Selecciona un modelo...</option>';
                     
                     if (data.anthropic.error) {
-                        anthropicModelSelect.innerHTML += `<option value="" disabled>❌ ${data.anthropic.error}</option>`;
+                        // Si hay error, agregar opción temporal que permite guardar
+                        anthropicModelSelect.innerHTML += `<option value="_temp_no_model">⚠️ Guardar API Key primero</option>`;
+                        // Seleccionar automáticamente esta opción temporal
+                        anthropicModelSelect.value = '_temp_no_model';
                         console.warn('⚠️ Error Anthropic:', data.anthropic.error);
                     } else if (data.anthropic.models && data.anthropic.models.length > 0) {
                         data.anthropic.models.forEach(model => {

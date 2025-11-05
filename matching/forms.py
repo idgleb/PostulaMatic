@@ -383,18 +383,32 @@ class AIConfigurationForm(forms.ModelForm):
         openai_enabled = cleaned_data.get('openai_enabled', False)
         anthropic_enabled = cleaned_data.get('anthropic_enabled', False)
         
-        # Si OpenAI está habilitado, validar que tenga modelo
+        # Limpiar valores temporales (usados cuando no hay API key configurada aún)
+        openai_model = cleaned_data.get('openai_model', '')
+        if openai_model == '_temp_no_model':
+            cleaned_data['openai_model'] = ''
+        
+        # Si OpenAI está habilitado, validar que tenga modelo (excepto si es valor temporal)
         if openai_enabled:
-            if not cleaned_data.get('openai_model'):
-                self.add_error('openai_model', 'Debes seleccionar un modelo si habilitas OpenAI.')
+            if not cleaned_data.get('openai_model') or cleaned_data.get('openai_model') == '_temp_no_model':
+                # Solo dar error si ya hay una API key configurada
+                if self.instance.pk and self.instance.openai_api_key:
+                    self.add_error('openai_model', 'Debes seleccionar un modelo si habilitas OpenAI.')
             # Solo validar API key si no hay una configurada previamente
             if not cleaned_data.get('openai_api_key_input') and not self.instance.openai_api_key:
                 self.add_error('openai_api_key_input', 'Debes ingresar una API key si habilitas OpenAI.')
         
-        # Si Anthropic está habilitado, validar que tenga modelo
+        # Limpiar valores temporales de Anthropic
+        anthropic_model = cleaned_data.get('anthropic_model', '')
+        if anthropic_model == '_temp_no_model':
+            cleaned_data['anthropic_model'] = ''
+        
+        # Si Anthropic está habilitado, validar que tenga modelo (excepto si es valor temporal)
         if anthropic_enabled:
-            if not cleaned_data.get('anthropic_model'):
-                self.add_error('anthropic_model', 'Debes seleccionar un modelo si habilitas Anthropic.')
+            if not cleaned_data.get('anthropic_model') or cleaned_data.get('anthropic_model') == '_temp_no_model':
+                # Solo dar error si ya hay una API key configurada
+                if self.instance.pk and self.instance.anthropic_api_key:
+                    self.add_error('anthropic_model', 'Debes seleccionar un modelo si habilitas Anthropic.')
             # Solo validar API key si no hay una configurada previamente
             if not cleaned_data.get('anthropic_api_key_input') and not self.instance.anthropic_api_key:
                 self.add_error('anthropic_api_key_input', 'Debes ingresar una API key si habilitas Anthropic.')

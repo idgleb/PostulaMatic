@@ -4,46 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7490a3f1-aae8-4f43-b267-c57b29ad0677" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources/cd6c0785-6f72-4047-8184-556ade0c7786.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/cd6c0785-6f72-4047-8184-556ade0c7786.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/celery.py" beforeDir="false" afterPath="$PROJECT_DIR$/core/celery.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/matching/clients/dvcarreras_stealth.py" beforeDir="false" afterPath="$PROJECT_DIR$/matching/clients/dvcarreras_stealth.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/matching/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/matching/forms.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/matching/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/matching/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/matching/services/ai_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/matching/services/ai_service.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/matching/services/cv_parser.py" beforeDir="false" afterPath="$PROJECT_DIR$/matching/services/cv_parser.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/matching/services/cv_personalizer.py" beforeDir="false" afterPath="$PROJECT_DIR$/matching/services/cv_personalizer.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/matching/services/matching.py" beforeDir="false" afterPath="$PROJECT_DIR$/matching/services/matching.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/matching/services/pdf_parser.py" beforeDir="false" afterPath="$PROJECT_DIR$/matching/services/pdf_parser.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/matching/services/skills_extractor.py" beforeDir="false" afterPath="$PROJECT_DIR$/matching/services/skills_extractor.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/matching/services/test_cv_personalizer.py" beforeDir="false" afterPath="$PROJECT_DIR$/matching/services/test_cv_personalizer.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/matching/tasks.py" beforeDir="false" afterPath="$PROJECT_DIR$/matching/tasks.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/matching/tasks_stealth.py" beforeDir="false" afterPath="$PROJECT_DIR$/matching/tasks_stealth.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/matching/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/matching/urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/matching/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/matching/views.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/matching/views_ai_admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/matching/views_ai_admin.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/matching/views_ai_testing.py" beforeDir="false" afterPath="$PROJECT_DIR$/matching/views_ai_testing.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/matching/views_cv_personalization.py" beforeDir="false" afterPath="$PROJECT_DIR$/matching/views_cv_personalization.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/matching/views_email_monitoring.py" beforeDir="false" afterPath="$PROJECT_DIR$/matching/views_email_monitoring.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/postulamatic/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/postulamatic/settings.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/404.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/404.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/500.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/500.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/base.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/base.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/landing/gracias.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/landing/gracias.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/matching/ai_admin_config.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/matching/ai_admin_config.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/matching/ai_providers_status.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/matching/base.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/matching/base.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/matching/cv_list.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/matching/cv_list.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/matching/cv_personalization_test.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/matching/cv_personalization_test.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/matching/email_monitoring_dashboard.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/matching/email_monitoring_dashboard.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/matching/partials/matching_info_modal.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/matching/partials/matching_info_modal.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/matching/profile.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/matching/profile.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/matching/scraping_results.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/matching/scraping_results.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/matching/test_scraper.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/matching/test_scraper.html" afterDir="false" />
-    </list>
+    <list default="true" id="7490a3f1-aae8-4f43-b267-c57b29ad0677" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -157,7 +118,7 @@
       <workItem from="1760609408334" duration="34017000" />
       <workItem from="1761378963354" duration="10137000" />
       <workItem from="1761748866797" duration="4624000" />
-      <workItem from="1762322477972" duration="1650000" />
+      <workItem from="1762322477972" duration="2471000" />
     </task>
     <servers />
   </component>
