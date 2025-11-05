@@ -614,6 +614,7 @@ Devuelve únicamente el JSON final."""
                 raise Exception("No hay configuración de IA disponible")
             
             # Intentar OpenAI primero
+            openai_error = None
             if config.openai_enabled and config.openai_api_key:
                 try:
                     if process_logs:
@@ -640,21 +641,21 @@ Devuelve únicamente el JSON final."""
                     return response_text
                     
                 except Exception as e:
-                    error_msg = str(e)
-                    logger.warning(f"❌ Error con OpenAI: {error_msg}")
+                    openai_error = str(e)
+                    logger.warning(f"❌ Error con OpenAI: {openai_error}")
                     
                     if process_logs:
-                        if "429" in error_msg or "quota" in error_msg.lower():
+                        if "429" in openai_error or "quota" in openai_error.lower():
                             process_logs.append("⚠️ OpenAI: Cuota agotada")
+                        elif "401" in openai_error or "invalid" in openai_error.lower():
+                            process_logs.append("⚠️ OpenAI: API key inválida")
                         else:
-                            process_logs.append(f"⚠️ OpenAI: {error_msg[:100]}")
+                            process_logs.append(f"⚠️ OpenAI: {openai_error[:100]}")
                     
-                    if "429" in error_msg or "quota" in error_msg.lower():
-                        logger.info("🔄 Intentando con Anthropic...")
-                        if process_logs:
-                            process_logs.append("🔄 Intentando con Anthropic...")
-                    else:
-                        raise e
+                    # SIEMPRE intentar con Anthropic si OpenAI falla
+                    logger.info("🔄 OpenAI falló, intentando con Anthropic como fallback...")
+                    if process_logs:
+                        process_logs.append("🔄 Intentando con Anthropic...")
             
             # Fallback a Anthropic
             if config.anthropic_enabled and config.anthropic_api_key:
@@ -682,11 +683,21 @@ Devuelve únicamente el JSON final."""
                     return response_text
                     
                 except Exception as e:
-                    error_msg = str(e)
-                    logger.error(f"❌ Error con Anthropic: {error_msg}")
+                    anthropic_error = str(e)
+                    logger.error(f"❌ Error con Anthropic: {anthropic_error}")
                     if process_logs:
-                        process_logs.append(f"❌ Anthropic: {error_msg[:100]}")
-                    raise e
+                        process_logs.append(f"❌ Anthropic: {anthropic_error[:100]}")
+                    
+                    # Si ambos proveedores fallaron, lanzar error combinado
+                    if openai_error:
+                        combined_error = f"Error de IA: {openai_error}"
+                        raise Exception(combined_error)
+                    else:
+                        raise Exception(f"Error de IA: {anthropic_error}")
+            
+            # Si OpenAI falló y Anthropic no está configurado
+            if openai_error:
+                raise Exception(f"Error de IA: {openai_error}")
             
             raise Exception("No hay proveedores de IA disponibles")
             
