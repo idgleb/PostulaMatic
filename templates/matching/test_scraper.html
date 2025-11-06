@@ -389,8 +389,8 @@ function updateNextUserInRotation() {
 
 
 // Función principal para iniciar monitoreo
-function startMonitoring(clearLogs = false) {
-    console.log('Iniciando monitoreo de progreso...', clearLogs ? '(limpiando logs)' : '(manteniendo logs)');
+function startMonitoring() {
+    console.log('Iniciando monitoreo de progreso...');
     
     // Resetear logs cargados al iniciar nuevo monitoreo
     loadedLogIds.clear();
@@ -402,23 +402,14 @@ function startMonitoring(clearLogs = false) {
         return;
     }
     
-    // Solo limpiar logs si se solicita explícitamente (nuevo scraping manual)
-    if (clearLogs) {
-        console.log('🧹 Limpiando logs anteriores (nuevo scraping manual)...');
-        
-        // Limpiar logs del DOM
-        const statusLog = document.getElementById('statusLog');
-        if (statusLog) {
-            statusLog.innerHTML = '';
-        }
-        
-        // Limpiar logs de la base de datos
-        if (currentTaskId) {
-            clearLogsFromDatabase(currentTaskId);
-        }
-    } else {
-        console.log('📋 Manteniendo logs existentes (scraping programado o continuación)');
+    // NUNCA limpiar logs de la base de datos - mantener historial completo
+    // Solo limpiar el panel visual del DOM para mostrar el nuevo scraping
+    const statusLog = document.getElementById('statusLog');
+    if (statusLog) {
+        statusLog.innerHTML = '';
     }
+    
+    console.log('📋 Cargando logs del scraping actual (Task ID: ' + currentTaskId + ')');
     
     updateProgress(10, 'Conectando con dvcarreras...');
     
@@ -1116,7 +1107,7 @@ function stopMonitoring() {
 function refreshProgress() {
     if (currentTaskId && !isMonitoring) {
         addLogEntry('Verificando estado actual del scraping...', 'info');
-        startMonitoring(false);  // NO limpiar logs - solo refrescando
+        startMonitoring();
     } else if (!currentTaskId) {
         addLogEntry('No hay Task ID disponible. Ingresa un Task ID y haz clic en "Cargar".', 'error');
     }
@@ -1144,10 +1135,10 @@ function checkForActiveScraping() {
                 // Guardar en localStorage
                 localStorage.setItem('currentScrapingTaskId', data.task_id);
                 
-                // Iniciar monitoreo automáticamente (sin limpiar logs - scraping programado)
+                // Iniciar monitoreo automáticamente
                 addLogEntry('🔄 Conectando a scraping en progreso...', 'info');
                 disableScrapingButton();
-                startMonitoring(false);  // NO limpiar logs - scraping ya en curso
+                startMonitoring();
                 
                 // Cargar logs existentes
                 loadAllLogsFromDatabase();
@@ -1271,8 +1262,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         })
                         .catch(() => {})
                         .finally(() => {
-                            // Comenzar monitoreo limpiando logs (nuevo scraping manual)
-                            setTimeout(() => { startMonitoring(true); }, 300);
+                            // Comenzar monitoreo del nuevo scraping
+                            setTimeout(() => { startMonitoring(); }, 300);
                         });
                     }
                 } else {
