@@ -402,14 +402,30 @@ function startMonitoring() {
         return;
     }
     
-    // NUNCA limpiar logs de la base de datos - mantener historial completo
-    // Solo limpiar el panel visual del DOM para mostrar el nuevo scraping
+    // Limpiar panel visual del DOM
     const statusLog = document.getElementById('statusLog');
     if (statusLog) {
         statusLog.innerHTML = '';
     }
     
-    console.log('📋 Cargando logs del scraping actual (Task ID: ' + currentTaskId + ')');
+    // Limpiar TODOS los logs anteriores de la BD (mantener solo el último scraping)
+    fetch('/matching/clear-my-scraping-logs/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log('🧹 Logs anteriores limpiados:', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error limpiando logs anteriores:', error);
+    });
+    
+    console.log('📋 Iniciando nuevo scraping (Task ID: ' + currentTaskId + ')');
     
     updateProgress(10, 'Conectando con dvcarreras...');
     
