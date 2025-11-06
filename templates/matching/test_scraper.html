@@ -412,24 +412,10 @@ function startMonitoring() {
     // Limpiar el task_id completado anterior (ya que iniciamos uno nuevo)
     localStorage.removeItem('lastCompletedTaskId');
     
-    // Limpiar TODOS los logs anteriores de la BD (mantener solo el último scraping)
-    fetch('/matching/clear-my-scraping-logs/', {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            console.log('🧹 Logs anteriores limpiados:', data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error limpiando logs anteriores:', error);
-    });
+    // NOTA: Los logs ya se limpiaron ANTES de iniciar el scraping (en el form submit)
+    // No limpiar aquí porque el scraping ya está corriendo y estaríamos borrando logs nuevos
     
-    console.log('📋 Iniciando nuevo scraping (Task ID: ' + currentTaskId + ')');
+    console.log('📋 Monitoreando scraping (Task ID: ' + currentTaskId + ')');
     
     updateProgress(10, 'Conectando con dvcarreras...');
     
@@ -1297,7 +1283,22 @@ document.addEventListener('DOMContentLoaded', function() {
             // Obtener CSRF token
             const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
             
-            // Enviar petición AJAX
+            // 🧹 IMPORTANTE: Limpiar logs ANTES de iniciar el scraping
+            console.log('🧹 Limpiando logs anteriores ANTES de iniciar scraping...');
+            fetch('/matching/clear-my-scraping-logs/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken
+                }
+            })
+            .then(() => {
+                console.log('✅ Logs anteriores limpiados, iniciando scraping...');
+            })
+            .catch(error => {
+                console.error('⚠️ Error limpiando logs (continuando de todas formas):', error);
+            });
+            
+            // Enviar petición AJAX para iniciar scraping
             fetch(scraperForm.action, {
                 method: 'POST',
                 headers: {
