@@ -343,6 +343,7 @@ var lastCurrentStep = null;
 var lastProgressInfo = null;
 var monitoringId = null; // Identificador único para el monitoreo
 var isRefreshMode = false; // Control para evitar duplicados en refresh
+let loadedLogIds = new Set(); // Variable para trackear los logs ya cargados
 
 // Función para desactivar botón durante scraping
 function disableScrapingButton() {
@@ -883,9 +884,6 @@ function saveLogToDatabase(message, type) {
         console.error('Error guardando log:', error);
     });
 }
-
-// Variable para trackear los logs ya cargados
-let loadedLogIds = new Set();
 
 function loadAllLogsFromDatabase(forceReload = false) {
     // Si forceReload es true, limpiar el Set para recargar todos los logs
