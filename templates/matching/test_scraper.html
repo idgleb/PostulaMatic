@@ -1315,18 +1315,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         currentTaskId = data.task_id;
                         localStorage.setItem('lastTaskId', data.task_id);
                         
-                        // Limpiar logs del usuario en servidor antes de iniciar monitoreo
-                        fetch('/matching/clear-my-scraping-logs/', {
-                            method: 'POST',
-                            headers: {
-                                'X-CSRFToken': csrfToken
-                            }
-                        })
-                        .catch(() => {})
-                        .finally(() => {
-                            // Comenzar monitoreo del nuevo scraping
-                            setTimeout(() => { startMonitoring(); }, 300);
-                        });
+                        // Comenzar monitoreo del nuevo scraping
+                        // NOTA: Los logs ya se limpiaron en startMonitoring() antes de iniciar el scraping
+                        setTimeout(() => { startMonitoring(); }, 300);
                     }
                 } else {
                     // Mostrar resultado solo en caso de error
