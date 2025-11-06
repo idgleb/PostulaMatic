@@ -408,6 +408,9 @@ function startMonitoring() {
         statusLog.innerHTML = '';
     }
     
+    // Limpiar el task_id completado anterior (ya que iniciamos uno nuevo)
+    localStorage.removeItem('lastCompletedTaskId');
+    
     // Limpiar TODOS los logs anteriores de la BD (mantener solo el último scraping)
     fetch('/matching/clear-my-scraping-logs/', {
         method: 'POST',
@@ -496,20 +499,30 @@ function checkCurrentScrapingStatus() {
             });
         
     } else {
-        // No hay Task ID - cargar logs generales y mostrar estado inicial
-        console.log('No hay Task ID disponible, cargando logs generales...');
-        updateProgressBar(0, 'Inicia un scraping para comenzar', 'secondary');
+        // No hay tarea activa - verificar si hay un scraping completado previo
+        const lastCompletedTaskId = localStorage.getItem('lastCompletedTaskId');
         
-        // Cargar logs generales del usuario (forzar recarga completa)
-        loadAllLogsFromDatabase(true);
-        
-        // Si no hay logs, mostrar mensaje inicial
-        setTimeout(() => {
-            const statusLog = document.getElementById('statusLog');
-            if (statusLog && statusLog.children.length === 0) {
-                addLogEntry('No hay scraping previo. Haz clic en "Iniciar Scraping" para comenzar.', 'info');
-            }
-        }, 1000);
+        if (lastCompletedTaskId) {
+            console.log('📋 Cargando logs del último scraping completado:', lastCompletedTaskId);
+            currentTaskId = lastCompletedTaskId; // Temporalmente para cargar logs
+            loadAllLogsFromDatabase(true);
+            currentTaskId = null; // Limpiar porque no está activo
+            updateProgressBar(100, 'Último scraping completado', 'success');
+        } else {
+            console.log('No hay Task ID disponible, cargando logs generales...');
+            updateProgressBar(0, 'Inicia un scraping para comenzar', 'secondary');
+            
+            // Cargar logs generales del usuario (forzar recarga completa)
+            loadAllLogsFromDatabase(true);
+            
+            // Si no hay logs, mostrar mensaje inicial
+            setTimeout(() => {
+                const statusLog = document.getElementById('statusLog');
+                if (statusLog && statusLog.children.length === 0) {
+                    addLogEntry('No hay scraping previo. Haz clic en "Iniciar Scraping" para comenzar.', 'info');
+                }
+            }, 1000);
+        }
         
         enableScrapingButton();
     }
@@ -562,9 +575,10 @@ function checkScrapingStatus() {
                     }
                     // Cargar logs finales desde BD
                     loadAllLogsFromDatabase();
-                    // Limpiar task_id del localStorage al completar
-                    console.log('✅ Tarea completada exitosamente, limpiando localStorage');
-                    localStorage.removeItem('lastTaskId');
+                    // Guardar el task_id completado para poder mostrar logs después de recargar
+                    console.log('✅ Tarea completada exitosamente, guardando como último completado');
+                    localStorage.setItem('lastCompletedTaskId', currentTaskId);
+                    localStorage.removeItem('lastTaskId'); // Ya no está activo
                     currentTaskId = null;
                 } else if (data.status === 'FAILURE') {
                     updateProgressBar(0, 'Falló', 'danger');
