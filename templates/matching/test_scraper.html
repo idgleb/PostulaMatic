@@ -505,8 +505,14 @@ function checkCurrentScrapingStatus() {
         if (lastCompletedTaskId) {
             console.log('📋 Cargando logs del último scraping completado:', lastCompletedTaskId);
             currentTaskId = lastCompletedTaskId; // Temporalmente para cargar logs
+            console.log('🔍 currentTaskId establecido a:', currentTaskId);
             loadAllLogsFromDatabase(true);
-            currentTaskId = null; // Limpiar porque no está activo
+            console.log('⏳ Esperando respuesta de loadAllLogsFromDatabase...');
+            // Mantener currentTaskId para que los logs se carguen correctamente
+            setTimeout(() => {
+                currentTaskId = null; // Limpiar después de cargar
+                console.log('✅ currentTaskId limpiado después de cargar logs');
+            }, 2000);
             updateProgressBar(100, 'Último scraping completado', 'success');
         } else {
             console.log('No hay Task ID disponible, cargando logs generales...');
