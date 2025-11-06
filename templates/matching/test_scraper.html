@@ -171,10 +171,14 @@
                     <!-- Progress Section - Siempre visible -->
                     <div id="progressSection" class="mt-4">
                         <div class="card border-primary">
-                            <div class="card-header bg-primary text-white">
+                            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                                 <h6 class="mb-0">
                                     <i class="bi bi-hourglass-split me-2"></i>Progreso del Scraping
                                 </h6>
+                                <span id="scrapingSourceBadge" class="badge bg-light text-dark" style="display: none;">
+                                    <i class="bi bi-question-circle me-1"></i>
+                                    <span id="scrapingSourceText">-</span>
+                                </span>
                             </div>
                             <div class="card-body">
                                 
@@ -333,7 +337,7 @@
     }
 </style>
 <script>
-// Versión: 2025-11-06-02:15-FIX-LOGS
+// Versión: 2025-11-06-GLOBAL-SCRAPING-v1 (todos los admins ven el mismo scraping)
     
 var progressInterval = null;
 var currentTaskId = null;
@@ -446,79 +450,88 @@ function startMonitoringFromRefresh() {
 
 // Función simple para verificar si hay scraping activo
 function checkCurrentScrapingStatus() {
-    console.log('Verificando estado actual del scraping...');
+    console.log('🌍 Verificando estado GLOBAL del scraping...');
     
-    // Obtener el último Task ID del localStorage
-    const lastTaskId = localStorage.getItem('lastTaskId');
-    
-    if (lastTaskId) {
-        console.log('Task ID encontrado en localStorage:', lastTaskId);
-        
-        // Verificar si la tarea existe y está activa antes de usarla
-        fetch(`/matching/scraper-status/${lastTaskId}/`)
-            .then(response => response.json())
-            .then(data => {
-                // Solo usar el task_id si la tarea está realmente activa
-                if (data.status === 'PENDING' || data.status === 'STARTED' || data.status === 'PROGRESS') {
-                    console.log('✅ Tarea activa encontrada, continuando monitoreo');
-                    currentTaskId = lastTaskId;
-                    // Cargar todos los logs desde el inicio (forzar recarga completa)
+    // PRIMERO: Consultar el estado global del scraping (para todos los admins)
+    fetch('/matching/api/global-scraping-status/')
+        .then(response => response.json())
+        .then(globalData => {
+            console.log('📊 Estado global del scraping:', globalData);
+            
+            if (globalData.success && globalData.has_active_scraping) {
+                // ✅ HAY UN SCRAPING ACTIVO GLOBALMENTE
+                const globalTaskId = globalData.task_id;
+                console.log('🔒 Scraping global activo detectado:', globalTaskId);
+                console.log('   - Iniciado por usuario:', globalData.user_id);
+                console.log('   - Origen:', globalData.source);
+                console.log('   - Hora:', globalData.started_at);
+                
+                // Establecer como tarea actual y comenzar monitoreo
+                currentTaskId = globalTaskId;
+                localStorage.setItem('lastTaskId', globalTaskId);
+                
+                // Cargar logs y comenzar monitoreo
+                loadAllLogsFromDatabase(true);
+                startSimpleMonitoring();
+                
+                // Mostrar mensaje informativo con origen del scraping
+                const sourceText = globalData.source === 'scheduled' ? 'automáticamente (programado)' : 'manualmente';
+                const sourceIcon = globalData.source === 'scheduled' ? '🕒' : '👤';
+                addLogEntry(`${sourceIcon} Conectado al scraping global en curso (iniciado ${sourceText})`, 'info');
+                
+                // Actualizar badge de origen del scraping
+                updateScrapingSourceBadge(globalData.source);
+                
+            } else {
+                // ❌ NO HAY SCRAPING GLOBAL ACTIVO
+                console.log('⚪ No hay scraping global activo');
+                
+                // Verificar si hay un scraping completado previo en localStorage
+                const lastCompletedTaskId = localStorage.getItem('lastCompletedTaskId');
+                
+                if (lastCompletedTaskId) {
+                    console.log('📋 Cargando logs del último scraping completado:', lastCompletedTaskId);
+                    currentTaskId = lastCompletedTaskId;
                     loadAllLogsFromDatabase(true);
-                    startSimpleMonitoring();
+                    // No iniciar monitoreo porque ya terminó
+                    setTimeout(() => {
+                        currentTaskId = null; // Limpiar después de cargar
+                        console.log('✅ currentTaskId limpiado después de cargar logs');
+                    }, 2000);
+                    updateProgressBar(100, 'Último scraping completado', 'success');
                 } else {
-                    // La tarea ya terminó o no existe - limpiar localStorage
-                    console.log('⚠️ Tarea finalizada o inexistente, limpiando localStorage');
-                    localStorage.removeItem('lastTaskId');
-                    currentTaskId = null;
+                    console.log('No hay Task ID disponible, cargando logs generales...');
                     updateProgressBar(0, 'Inicia un scraping para comenzar', 'secondary');
-                    addLogEntry('No hay scraping activo. Haz clic en "Iniciar Scraping" para comenzar.', 'info');
-                    enableScrapingButton();
+                    
+                    // Cargar logs generales (forzar recarga completa)
+                    loadAllLogsFromDatabase(true);
+                    
+                    // Si no hay logs, mostrar mensaje inicial
+                    setTimeout(() => {
+                        const statusLog = document.getElementById('statusLog');
+                        if (statusLog && statusLog.children.length === 0) {
+                            addLogEntry('No hay scraping previo. Haz clic en "Iniciar Scraping" para comenzar.', 'info');
+                        }
+                    }, 1000);
                 }
-            })
-            .catch(error => {
-                // Si hay error al verificar (ej: tarea no existe), limpiar
-                console.error('❌ Error verificando tarea, limpiando localStorage:', error);
-                localStorage.removeItem('lastTaskId');
-                currentTaskId = null;
-                updateProgressBar(0, 'Inicia un scraping para comenzar', 'secondary');
-                addLogEntry('No hay scraping previo. Haz clic en "Iniciar Scraping" para comenzar.', 'info');
+                
                 enableScrapingButton();
-            });
-        
-    } else {
-        // No hay tarea activa - verificar si hay un scraping completado previo
-        const lastCompletedTaskId = localStorage.getItem('lastCompletedTaskId');
-        
-        if (lastCompletedTaskId) {
-            console.log('📋 Cargando logs del último scraping completado:', lastCompletedTaskId);
-            currentTaskId = lastCompletedTaskId; // Temporalmente para cargar logs
-            console.log('🔍 currentTaskId establecido a:', currentTaskId);
-            loadAllLogsFromDatabase(true);
-            console.log('⏳ Esperando respuesta de loadAllLogsFromDatabase...');
-            // Mantener currentTaskId para que los logs se carguen correctamente
-            setTimeout(() => {
-                currentTaskId = null; // Limpiar después de cargar
-                console.log('✅ currentTaskId limpiado después de cargar logs');
-            }, 2000);
-            updateProgressBar(100, 'Último scraping completado', 'success');
-        } else {
-            console.log('No hay Task ID disponible, cargando logs generales...');
-            updateProgressBar(0, 'Inicia un scraping para comenzar', 'secondary');
-            
-            // Cargar logs generales del usuario (forzar recarga completa)
-            loadAllLogsFromDatabase(true);
-            
-            // Si no hay logs, mostrar mensaje inicial
-            setTimeout(() => {
-                const statusLog = document.getElementById('statusLog');
-                if (statusLog && statusLog.children.length === 0) {
-                    addLogEntry('No hay scraping previo. Haz clic en "Iniciar Scraping" para comenzar.', 'info');
-                }
-            }, 1000);
-        }
-        
-        enableScrapingButton();
-    }
+            }
+        })
+        .catch(error => {
+            console.error('❌ Error verificando estado global:', error);
+            // Si falla la consulta global, intentar con localStorage como fallback
+            const lastTaskId = localStorage.getItem('lastTaskId');
+            if (lastTaskId) {
+                console.log('⚠️ Fallback: usando localStorage:', lastTaskId);
+                currentTaskId = lastTaskId;
+                loadAllLogsFromDatabase(true);
+                startSimpleMonitoring();
+            } else {
+                updateProgressBar(0, 'Inicia un scraping para comenzar', 'secondary');
+                enableScrapingButton();
+            }
+        });
 }
 
 // Función simple para monitorear logs desde la base de datos
@@ -759,6 +772,32 @@ function monitorProgress() {
 
 // Alias para compatibilidad
 var startProgressMonitoring = startMonitoring;
+
+// Función para actualizar el badge de origen del scraping
+function updateScrapingSourceBadge(source) {
+    const badge = document.getElementById('scrapingSourceBadge');
+    const badgeIcon = badge?.querySelector('i');
+    const badgeText = document.getElementById('scrapingSourceText');
+    
+    if (!badge || !badgeText) return;
+    
+    if (source === 'scheduled') {
+        // Scraping programado (automático)
+        badge.className = 'badge bg-warning text-dark';
+        if (badgeIcon) badgeIcon.className = 'bi bi-clock-fill me-1';
+        badgeText.textContent = 'Programado';
+        badge.style.display = 'inline-block';
+    } else if (source === 'manual') {
+        // Scraping manual
+        badge.className = 'badge bg-info text-white';
+        if (badgeIcon) badgeIcon.className = 'bi bi-person-fill me-1';
+        badgeText.textContent = 'Manual';
+        badge.style.display = 'inline-block';
+    } else {
+        // Ocultar badge si no hay scraping
+        badge.style.display = 'none';
+    }
+}
 
 // Función para actualizar progress bar con color específico (ordenada y consistente)
 function updateProgressBar(percentage, text, colorType) {
@@ -1149,6 +1188,8 @@ function stopMonitoring() {
     monitoringId = null;
     // Limpiar localStorage para evitar monitoreo automático en futuras cargas
     localStorage.removeItem('lastTaskId');
+    // Ocultar badge de origen del scraping
+    updateScrapingSourceBadge(null);
 }
 
 function refreshProgress() {
@@ -1315,16 +1356,40 @@ document.addEventListener('DOMContentLoaded', function() {
                         currentTaskId = data.task_id;
                         localStorage.setItem('lastTaskId', data.task_id);
                         
+                        // Actualizar badge como scraping manual
+                        updateScrapingSourceBadge('manual');
+                        
                         // Comenzar monitoreo del nuevo scraping
                         // NOTA: Los logs ya se limpiaron en startMonitoring() antes de iniciar el scraping
                         setTimeout(() => { startMonitoring(); }, 300);
                     }
                 } else {
-                    // Mostrar resultado solo en caso de error
-                    scraperResult.style.display = 'block';
-                    scraperMessage.textContent = data.message;
-                    scraperResult.querySelector('.alert').className = 'alert alert-danger';
-                    scraperResult.querySelector('i').className = 'bi bi-exclamation-triangle me-2';
+                    // 🔒 Verificar si el error es por lock (scraping en curso)
+                    if (data.locked) {
+                        // Mostrar alerta especial para lock
+                        scraperResult.style.display = 'block';
+                        scraperMessage.innerHTML = `
+                            <strong>⏸️ Scraping en curso</strong><br>
+                            ${data.message || 'Ya hay un scraping activo en este momento.'}<br>
+                            <small class="text-muted">Por favor espera a que termine antes de iniciar uno nuevo.</small>
+                        `;
+                        scraperResult.querySelector('.alert').className = 'alert alert-warning';
+                        scraperResult.querySelector('i').className = 'bi bi-hourglass-split me-2';
+                        
+                        // Si hay task_id del scraping activo, intentar monitorearlo
+                        if (data.task_id) {
+                            console.log('🔒 Hay un scraping activo, monitoreando task:', data.task_id);
+                            currentTaskId = data.task_id;
+                            localStorage.setItem('lastTaskId', data.task_id);
+                            setTimeout(() => { startMonitoring(); }, 300);
+                        }
+                    } else {
+                        // Error normal (credenciales, etc.)
+                        scraperResult.style.display = 'block';
+                        scraperMessage.textContent = data.message;
+                        scraperResult.querySelector('.alert').className = 'alert alert-danger';
+                        scraperResult.querySelector('i').className = 'bi bi-exclamation-triangle me-2';
+                    }
                     // Reactivar botón en caso de error
                     enableScrapingButton();
                 }

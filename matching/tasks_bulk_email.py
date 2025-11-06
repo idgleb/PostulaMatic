@@ -157,14 +157,18 @@ def send_bulk_emails_task(
                     personalized_cv = personalization_result['personalized_cv']
                     cv_text = _format_cv_as_text(personalized_cv)
                     
-                    # 2. Generar PDF del CV
-                    logger.info(f"📄 Generando PDF del CV")
-                    pdf_buffer = _generate_cv_pdf_simple(cv_text, user.get_full_name() or user.username)
+                    # 2. Extraer nombre del CV si está disponible
+                    user_name = _extract_name_from_cv(user, user_cv)
+                    logger.info(f"👤 Nombre detectado: {user_name}")
                     
-                    # 3. Generar carta de presentación con IA
+                    # 3. Generar PDF del CV
+                    logger.info(f"📄 Generando PDF del CV")
+                    pdf_buffer = _generate_cv_pdf_simple(cv_text, user_name)
+                    
+                    # 4. Generar carta de presentación con IA
                     logger.info(f"✍️ Generando carta de presentación con IA (template: {email_template})")
                     cover_letter, actual_ai_provider = generate_cover_letter_with_ai(
-                        user_name=user.get_full_name() or user.username,
+                        user_name=user_name,
                         job_title=job_posting.title,
                         job_description=job_posting.description,
                         cv_summary=cv_text[:500],
@@ -180,7 +184,7 @@ def send_bulk_emails_task(
                         subject=f"Postulación para {job_posting.title}",
                         body=cover_letter,
                         pdf_attachment=pdf_buffer,
-                        pdf_filename=f"CV_{user.get_full_name().replace(' ', '_')}.pdf"
+                        pdf_filename=f"CV_{user_name.replace(' ', '_')}.pdf"
                     )
                     
                     if send_result['success']:
@@ -487,6 +491,45 @@ def _generate_cv_pdf_simple(cv_text, user_name):
     except Exception as e:
         logger.error(f"❌ Error generando PDF: {e}")
         return None
+
+
+def _extract_name_from_cv(user, user_cv):
+    """
+    Extrae el nombre del usuario desde el CV parseado.
+    Busca en las primeras 5 líneas del CV un nombre (máximo 4 palabras).
+    
+    Args:
+        user: Usuario de Django
+        user_cv: Objeto UserCV
+    
+    Returns:
+        str: Nombre extraído o fallback al username
+    """
+    # Fallback por defecto
+    default_name = user.get_full_name() or user.username
+    
+    if not user_cv or not user_cv.parsed_text:
+        return default_name
+    
+    # Buscar nombre en las primeras líneas
+    first_lines = user_cv.parsed_text.split('\n')[:5]
+    
+    for line in first_lines:
+        # Limpiar la línea (quitar # y espacios)
+        clean_line = line.strip().replace('#', '').strip()
+        
+        # Verificar que sea un nombre válido:
+        # - No vacío
+        # - Máximo 4 palabras (nombre completo típico)
+        # - No es un título de sección (como "DESARROLLADOR")
+        # - Contiene al menos una letra mayúscula
+        if (clean_line and 
+            len(clean_line.split()) <= 4 and 
+            not clean_line.isupper() and
+            any(c.isupper() for c in clean_line)):
+            return clean_line
+    
+    return default_name
 
 
 def _send_email_with_smtp(user_profile, to_email, subject, body, pdf_attachment, pdf_filename):

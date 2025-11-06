@@ -132,21 +132,34 @@
 <div class="row">
     <div class="col-12">
         <div class="card">
-            <div class="card-header">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">
                     <i class="bi bi-clock-history me-2"></i>Emails Recientes
                 </h5>
+                <button class="btn btn-danger btn-sm" onclick="confirmDeleteAllEmails()" title="Eliminar todos los emails">
+                    <i class="bi bi-trash me-1"></i>Eliminar Todos
+                </button>
             </div>
             <div class="card-body" id="recentEmailsContainer">
                 {% if recent_emails %}
                     <div id="recentEmailsList">
                     {% for email in recent_emails %}
-                    <div class="row align-items-center mb-3 p-3 border rounded email-item-clickable {% if email.status == 'failed' %}border-danger{% elif email.status == 'retry' %}border-warning{% else %}border-success{% endif %}" 
-                         style="cursor: pointer; transition: all 0.3s ease;"
-                         onclick="showEmailDetailModal({{ email.id }})"
-                         onmouseover="this.style.backgroundColor='#f8f9fa'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';"
-                         onmouseout="this.style.backgroundColor=''; this.style.transform=''; this.style.boxShadow='';">
-                        <div class="col-md-3">
+                    <div class="row align-items-center mb-3 border rounded {% if email.status == 'failed' %}border-danger{% elif email.status == 'retry' %}border-warning{% else %}border-success{% endif %}" 
+                         style="transition: all 0.3s ease; position: relative;"
+                         id="email-item-{{ email.id }}">
+                        <!-- Botón eliminar individual (fuera del padding) -->
+                        <button class="btn btn-sm btn-danger" 
+                                style="position: absolute; top: -8px; right: -8px; z-index: 10; padding: 4px 8px; font-size: 0.75rem; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;"
+                                onclick="deleteEmail({{ email.id }});"
+                                title="Eliminar este email">
+                            <i class="bi bi-trash" style="font-size: 0.75rem;"></i>
+                        </button>
+                        <div class="col-md-3 p-3" 
+                             style="cursor: pointer;"
+                             onclick="showEmailDetailModal({{ email.id }})"
+                             onmouseover="this.parentElement.style.backgroundColor='#f8f9fa';"
+                             onmouseout="this.parentElement.style.backgroundColor='';">
+
                             <h6 class="mb-1">
                                 <i class="bi bi-briefcase me-2"></i>
                                 {% if email.job_posting %}
@@ -159,7 +172,11 @@
                                 <i class="bi bi-envelope me-1"></i>{{ email.sent_to|truncatechars:25 }}
                             </small>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-3 p-3" 
+                             style="cursor: pointer;"
+                             onclick="showEmailDetailModal({{ email.id }})"
+                             onmouseover="this.parentElement.style.backgroundColor='#f8f9fa';"
+                             onmouseout="this.parentElement.style.backgroundColor='';">
                             <small class="text-muted d-block">
                                 <i class="bi bi-chat-left-text me-1"></i><strong>Asunto:</strong> {{ email.email_subject|truncatechars:30 }}
                             </small>
@@ -167,7 +184,11 @@
                                 <i class="bi bi-file-text me-1"></i><strong>Carta:</strong> {{ email.email_body|truncatechars:30 }}
                             </small>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-2 p-3" 
+                             style="cursor: pointer;"
+                             onclick="showEmailDetailModal({{ email.id }})"
+                             onmouseover="this.parentElement.style.backgroundColor='#f8f9fa';"
+                             onmouseout="this.parentElement.style.backgroundColor='';">
                             <small class="text-muted d-block">
                                 <i class="bi bi-file-earmark-pdf me-1"></i>
                                 {% if email.cv %}
@@ -177,12 +198,20 @@
                                 {% endif %}
                             </small>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-2 p-3" 
+                             style="cursor: pointer;"
+                             onclick="showEmailDetailModal({{ email.id }})"
+                             onmouseover="this.parentElement.style.backgroundColor='#f8f9fa';"
+                             onmouseout="this.parentElement.style.backgroundColor='';">
                             <span class="badge {% if email.status == 'sent' %}bg-success{% elif email.status == 'failed' %}bg-danger{% elif email.status == 'retry' %}bg-warning{% else %}bg-secondary{% endif %}">
                                 {{ email.get_status_display }}
                             </span>
                         </div>
-                        <div class="col-md-2 text-end">
+                        <div class="col-md-2 text-end p-3" 
+                             style="cursor: pointer;"
+                             onclick="showEmailDetailModal({{ email.id }})"
+                             onmouseover="this.parentElement.style.backgroundColor='#f8f9fa';"
+                             onmouseout="this.parentElement.style.backgroundColor='';">
                             <small class="text-muted d-block">
                                 <i class="bi bi-calendar me-1"></i>{{ email.sent_at|date:"d/m/Y" }}
                             </small>
@@ -395,9 +424,36 @@ function showBulkSendModal() {
                             <label class="form-label fw-bold">
                                 <i class="bi bi-briefcase me-1"></i>Puestos de Trabajo
                             </label>
-                            <select class="form-select" name="job_ids" multiple required size="8" id="jobSelectBulk">
-                            </select>
-                            <div class="form-text">Mantén presionado Ctrl para seleccionar múltiples puestos</div>
+                            
+                            <!-- Barra de búsqueda y selección rápida -->
+                            <div class="d-flex gap-2 mb-3">
+                                <input type="text" class="form-control" id="jobSearchInput" placeholder="🔍 Buscar puesto...">
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="selectAllJobs()">
+                                    <i class="bi bi-check-all me-1"></i>Todos
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="deselectAllJobs()">
+                                    <i class="bi bi-x-circle me-1"></i>Ninguno
+                                </button>
+                            </div>
+                            
+                            <!-- Contador de seleccionados -->
+                            <div class="alert alert-info py-2 px-3 mb-2" id="jobSelectionCounter" style="display: none;">
+                                <i class="bi bi-info-circle me-1"></i>
+                                <span id="selectedJobsCount">0</span> puesto(s) seleccionado(s)
+                            </div>
+                            
+                            <!-- Container de checkboxes con scroll -->
+                            <div id="jobCheckboxContainer" class="border rounded p-3" style="max-height: 400px; overflow-y: auto; background-color: #f8f9fa;">
+                                <div class="text-center text-muted py-3">
+                                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                                    Cargando puestos...
+                                </div>
+                            </div>
+                            
+                            <div class="form-text mt-2">
+                                <i class="bi bi-lightbulb me-1"></i>
+                                Selecciona los puestos a los que deseas postularte
+                            </div>
                         </div>
                         
                         <div class="row">
@@ -527,9 +583,31 @@ async function loadDataForBulkSendModal() {
         cvSelect.value = mostRecentCv.id;
     }
     
-    // Llenar select de Jobs
-    const jobSelect = document.getElementById('jobSelectBulk');
-    jobSelect.innerHTML = jobs.map(job => `<option value="${job.id}">${job.title || 'Sin título'}</option>`).join('');
+    // Llenar checkboxes de Jobs
+    const jobContainer = document.getElementById('jobCheckboxContainer');
+    jobContainer.innerHTML = jobs.map(job => `
+        <div class="job-checkbox-item mb-2 p-2 rounded" data-job-title="${(job.title || 'Sin título').toLowerCase()}" style="transition: all 0.2s ease;">
+            <div class="form-check">
+                <input class="form-check-input job-checkbox" type="checkbox" name="job_ids" value="${job.id}" id="job_${job.id}" 
+                       style="cursor: pointer; width: 20px; height: 20px;">
+                <label class="form-check-label ms-2" for="job_${job.id}" style="cursor: pointer; user-select: none;">
+                    <strong>${job.title || 'Sin título'}</strong>
+                    ${job.company ? `<br><small class="text-muted"><i class="bi bi-building me-1"></i>${job.company}</small>` : ''}
+                    ${job.location ? `<br><small class="text-muted"><i class="bi bi-geo-alt me-1"></i>${job.location}</small>` : ''}
+                </label>
+            </div>
+        </div>
+    `).join('');
+    
+    // Agregar event listeners para actualizar contador
+    const checkboxes = document.querySelectorAll('.job-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateJobSelectionCounter);
+    });
+    
+    // Agregar funcionalidad de búsqueda
+    const searchInput = document.getElementById('jobSearchInput');
+    searchInput.addEventListener('input', filterJobs);
     
     // Mostrar formulario
     spinner.style.display = 'none';
@@ -585,6 +663,79 @@ async function loadJobsData() {
     }
 }
 
+// ============================================================
+// Funciones auxiliares para checkboxes de puestos
+// ============================================================
+
+// Seleccionar todos los puestos visibles
+function selectAllJobs() {
+    const checkboxes = document.querySelectorAll('.job-checkbox-item:not([style*="display: none"]) .job-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = true;
+    });
+    updateJobSelectionCounter();
+}
+
+// Deseleccionar todos los puestos
+function deselectAllJobs() {
+    const checkboxes = document.querySelectorAll('.job-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    updateJobSelectionCounter();
+}
+
+// Actualizar contador de puestos seleccionados
+function updateJobSelectionCounter() {
+    const checkedBoxes = document.querySelectorAll('.job-checkbox:checked');
+    const counter = document.getElementById('jobSelectionCounter');
+    const countSpan = document.getElementById('selectedJobsCount');
+    
+    if (checkedBoxes.length > 0) {
+        counter.style.display = 'block';
+        countSpan.textContent = checkedBoxes.length;
+    } else {
+        counter.style.display = 'none';
+    }
+}
+
+// Filtrar puestos por búsqueda
+function filterJobs() {
+    const searchInput = document.getElementById('jobSearchInput');
+    const searchTerm = searchInput.value.toLowerCase();
+    const jobItems = document.querySelectorAll('.job-checkbox-item');
+    
+    let visibleCount = 0;
+    jobItems.forEach(item => {
+        const jobTitle = item.getAttribute('data-job-title');
+        if (jobTitle.includes(searchTerm)) {
+            item.style.display = 'block';
+            visibleCount++;
+        } else {
+            item.style.display = 'none';
+        }
+    });
+    
+    // Mostrar mensaje si no hay resultados
+    const container = document.getElementById('jobCheckboxContainer');
+    const noResultsMsg = container.querySelector('.no-results-message');
+    
+    if (visibleCount === 0 && searchTerm !== '') {
+        if (!noResultsMsg) {
+            const msg = document.createElement('div');
+            msg.className = 'no-results-message text-center text-muted py-3';
+            msg.innerHTML = '<i class="bi bi-search me-2"></i>No se encontraron puestos con ese término';
+            container.appendChild(msg);
+        }
+    } else if (noResultsMsg) {
+        noResultsMsg.remove();
+    }
+}
+
+// ============================================================
+// Envío de emails masivos
+// ============================================================
+
 // Enviar emails masivos
 async function sendBulkEmails() {
     const form = document.getElementById('bulkSendForm');
@@ -596,6 +747,12 @@ async function sendBulkEmails() {
     // Validar que se haya seleccionado un CV
     if (!cvId) {
         showAlert('Por favor selecciona un CV', 'error');
+        return;
+    }
+    
+    // Validar que se hayan seleccionado puestos
+    if (jobIds.length === 0) {
+        showAlert('Por favor selecciona al menos un puesto', 'error');
         return;
     }
     
@@ -830,12 +987,21 @@ function updateRecentEmails(emails) {
             const truncate = (str, maxLen) => str && str.length > maxLen ? str.substring(0, maxLen - 3) + '...' : str;
             
             html += `
-                <div class="row align-items-center mb-3 p-3 border rounded email-item-clickable ${borderClass}" 
-                     style="cursor: pointer; transition: all 0.3s ease;"
-                     onclick="showEmailDetailModal(${email.id})"
-                     onmouseover="this.style.backgroundColor='#f8f9fa'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';"
-                     onmouseout="this.style.backgroundColor=''; this.style.transform=''; this.style.boxShadow='';">
-                    <div class="col-md-3">
+                <div class="row align-items-center mb-3 border rounded ${borderClass}" 
+                     style="transition: all 0.3s ease; position: relative;"
+                     id="email-item-${email.id}">
+                    <!-- Botón eliminar individual -->
+                    <button class="btn btn-sm btn-danger" 
+                            style="position: absolute; top: -8px; right: -8px; z-index: 10; padding: 4px 8px; font-size: 0.75rem; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;"
+                            onclick="deleteEmail(${email.id});"
+                            title="Eliminar este email">
+                        <i class="bi bi-trash" style="font-size: 0.75rem;"></i>
+                    </button>
+                    <div class="col-md-3 p-3" 
+                         style="cursor: pointer;"
+                         onclick="showEmailDetailModal(${email.id})"
+                         onmouseover="this.parentElement.style.backgroundColor='#f8f9fa';"
+                         onmouseout="this.parentElement.style.backgroundColor='';">
                         <h6 class="mb-1">
                             <i class="bi bi-briefcase me-2"></i>${truncate(email.job_title, 30)}
                         </h6>
@@ -843,7 +1009,11 @@ function updateRecentEmails(emails) {
                             <i class="bi bi-envelope me-1"></i>${truncate(email.sent_to, 25)}
                         </small>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-3 p-3" 
+                         style="cursor: pointer;"
+                         onclick="showEmailDetailModal(${email.id})"
+                         onmouseover="this.parentElement.style.backgroundColor='#f8f9fa';"
+                         onmouseout="this.parentElement.style.backgroundColor='';">
                         <small class="text-muted d-block">
                             <i class="bi bi-chat-left-text me-1"></i><strong>Asunto:</strong> ${truncate(email.email_subject || '', 30)}
                         </small>
@@ -851,15 +1021,27 @@ function updateRecentEmails(emails) {
                             <i class="bi bi-file-text me-1"></i><strong>Carta:</strong> ${truncate(email.email_body || '', 30)}
                         </small>
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-md-2 p-3" 
+                         style="cursor: pointer;"
+                         onclick="showEmailDetailModal(${email.id})"
+                         onmouseover="this.parentElement.style.backgroundColor='#f8f9fa';"
+                         onmouseout="this.parentElement.style.backgroundColor='';">
                         <small class="text-muted d-block">
                             <i class="bi bi-file-earmark-pdf me-1"></i>${truncate(email.cv_filename || '[CV eliminado]', 9)}
                         </small>
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-md-2 p-3" 
+                         style="cursor: pointer;"
+                         onclick="showEmailDetailModal(${email.id})"
+                         onmouseover="this.parentElement.style.backgroundColor='#f8f9fa';"
+                         onmouseout="this.parentElement.style.backgroundColor='';">
                         <span class="badge ${badgeClass}">${email.status}</span>
                     </div>
-                    <div class="col-md-2 text-end">
+                    <div class="col-md-2 text-end p-3" 
+                         style="cursor: pointer;"
+                         onclick="showEmailDetailModal(${email.id})"
+                         onmouseover="this.parentElement.style.backgroundColor='#f8f9fa';"
+                         onmouseout="this.parentElement.style.backgroundColor='';">
                         <small class="text-muted d-block">
                             <i class="bi bi-calendar me-1"></i>${email.sent_at.split(' ')[0]}
                         </small>
@@ -876,14 +1058,211 @@ function updateRecentEmails(emails) {
     }
 }
 
+// ============================================================
+// Funciones para eliminar emails
+// ============================================================
+
+// Eliminar un email individual
+async function deleteEmail(emailId) {
+    if (!confirm('¿Estás seguro de que deseas eliminar este email?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/matching/api/delete-email/${emailId}/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': getCsrfToken()
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Remover el elemento del DOM con animación
+            const emailItem = document.getElementById(`email-item-${emailId}`);
+            if (emailItem) {
+                emailItem.style.opacity = '0';
+                emailItem.style.transform = 'translateX(100px)';
+                setTimeout(() => {
+                    emailItem.remove();
+                    // Si no quedan emails, mostrar mensaje
+                    const emailsList = document.getElementById('recentEmailsList');
+                    if (emailsList && emailsList.children.length === 0) {
+                        showNoEmailsMessage();
+                    }
+                }, 300);
+            }
+            showAlert('Email eliminado correctamente', 'success');
+            // Actualizar estadísticas
+            updateStatistics();
+        } else {
+            showAlert('Error al eliminar el email: ' + data.error, 'error');
+        }
+    } catch (error) {
+        console.error('Error eliminando email:', error);
+        showAlert('Error al eliminar el email', 'error');
+    }
+}
+
+// Confirmar eliminación de todos los emails
+function confirmDeleteAllEmails() {
+    if (confirm('⚠️ ¿Estás seguro de que deseas eliminar TODOS los emails?\n\nEsta acción no se puede deshacer.')) {
+        deleteAllEmails();
+    }
+}
+
+// Eliminar todos los emails
+async function deleteAllEmails() {
+    try {
+        const response = await fetch('/matching/api/delete-all-emails/', {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': getCsrfToken()
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Limpiar la lista de emails
+            const emailsList = document.getElementById('recentEmailsList');
+            if (emailsList) {
+                emailsList.style.opacity = '0';
+                setTimeout(() => {
+                    showNoEmailsMessage();
+                }, 300);
+            }
+            showAlert(`${data.deleted_count} email(s) eliminado(s) correctamente`, 'success');
+            // Actualizar estadísticas
+            updateStatistics();
+        } else {
+            showAlert('Error al eliminar los emails: ' + data.error, 'error');
+        }
+    } catch (error) {
+        console.error('Error eliminando emails:', error);
+        showAlert('Error al eliminar los emails', 'error');
+    }
+}
+
+// Mostrar mensaje cuando no hay emails
+function showNoEmailsMessage() {
+    const container = document.getElementById('recentEmailsContainer');
+    if (container) {
+        container.innerHTML = `
+            <div class="text-center py-5" id="noEmailsMessage">
+                <i class="bi bi-inbox display-1 text-muted"></i>
+                <h5 class="text-muted mt-3">No hay emails enviados aún</h5>
+                <p class="text-muted">Usa las acciones rápidas para enviar tu primer email</p>
+            </div>
+        `;
+    }
+}
+
 // Cargar datos al cargar la página
 document.addEventListener('DOMContentLoaded', function() {
     // Actualizar estadísticas cada 5 segundos
     setInterval(updateStatistics, 5000);
     
     console.log('✅ Actualización automática de estadísticas activada (cada 5 segundos)');
-    console.log('🔄 Versión: CV truncado a 6 chars');
+    console.log('🔄 Versión: CV truncado a 6 chars + Checkboxes bonitos + Delete emails');
 });
 </script>
+
+<style>
+/* ============================================================
+   Estilos para checkboxes de puestos de trabajo
+   ============================================================ */
+
+/* Contenedor de checkbox con hover effect */
+.job-checkbox-item {
+    background-color: white;
+    border: 1px solid #e0e0e0;
+    cursor: pointer;
+}
+
+.job-checkbox-item:hover {
+    background-color: #f0f4ff !important;
+    border-color: #667eea !important;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+}
+
+/* Checkbox seleccionado */
+.job-checkbox-item:has(.job-checkbox:checked) {
+    background-color: #e8edff !important;
+    border-color: #667eea !important;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+}
+
+/* Estilo del checkbox */
+.job-checkbox {
+    accent-color: #667eea;
+}
+
+.job-checkbox:checked {
+    background-color: #667eea;
+    border-color: #667eea;
+}
+
+/* Label del checkbox */
+.form-check-label {
+    flex: 1;
+}
+
+/* Barra de búsqueda */
+#jobSearchInput {
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+#jobSearchInput:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+/* Botones de selección rápida */
+.btn-outline-primary:hover,
+.btn-outline-secondary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+/* Scrollbar personalizado para el container */
+#jobCheckboxContainer::-webkit-scrollbar {
+    width: 8px;
+}
+
+#jobCheckboxContainer::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+#jobCheckboxContainer::-webkit-scrollbar-thumb {
+    background: #667eea;
+    border-radius: 10px;
+}
+
+#jobCheckboxContainer::-webkit-scrollbar-thumb:hover {
+    background: #5568d3;
+}
+
+/* Animación de entrada */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.job-checkbox-item {
+    animation: fadeIn 0.3s ease;
+}
+</style>
+
 {% csrf_token %}
 {% endblock %}

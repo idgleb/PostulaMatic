@@ -19,6 +19,56 @@
         border-radius: 8px;
         border-left: 3px solid #667eea;
     }
+    
+    /* Botón Personalizar CV mejorado */
+    #generateBtn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6) !important;
+    }
+    
+    #generateBtn:active {
+        transform: translateY(0);
+    }
+    
+    #generateBtn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none !important;
+    }
+    
+    /* Dropdowns mejorados */
+    #cvSelect, #jobSelect {
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        padding: 12px 16px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        background-color: #fff;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+    
+    #cvSelect:hover, #jobSelect:hover {
+        border-color: #667eea;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+    }
+    
+    #cvSelect:focus, #jobSelect:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        outline: none;
+    }
+    
+    /* Labels mejorados */
+    .form-label {
+        font-weight: 600;
+        color: #4a5568;
+        margin-bottom: 8px;
+        font-size: 0.95rem;
+    }
+    
+    .form-label i {
+        color: #667eea;
+    }
 </style>
 
 <!-- Header Section -->
@@ -73,9 +123,9 @@
 </div>
 
 <div class="row">
-    <!-- Configuración -->
-    <div class="col-lg-4 mb-4">
-        <div class="card shadow-sm">
+    <div class="col-12">
+        <!-- Configuración -->
+        <div class="card shadow-sm mb-4">
             <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                 <h5 class="card-title mb-0 text-white">
                     <i class="bi bi-gear me-2"></i>Configuración
@@ -84,70 +134,50 @@
             <div class="card-body">
                 <form id="personalizationForm">
                     {% csrf_token %}
-                    <div class="mb-3">
-                        <label for="cvSelect" class="form-label">
-                            <i class="bi bi-file-earmark-text me-1"></i>Seleccionar CV
-                        </label>
-                        <select class="form-select" id="cvSelect" name="cv_id" required>
-                            <option value="">-- Seleccionar CV --</option>
-                            {% for cv in user_cvs %}
-                            <option value="{{ cv.id }}">
-                                {{ cv.original_file.name|default:"CV" }} 
-                                ({{ cv.skills_list|length }} habilidades)
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
+                    <div class="row align-items-end">
+                        <div class="col-md-4 mb-3">
+                            <label for="cvSelect" class="form-label">
+                                <i class="bi bi-file-earmark-text me-1"></i>Seleccionar CV
+                            </label>
+                            <select class="form-select" id="cvSelect" name="cv_id" required>
+                                <option value="">-- Seleccionar CV --</option>
+                                {% for cv in user_cvs %}
+                                <option value="{{ cv.id }}">
+                                    {{ cv.original_file.name|default:"CV" }} 
+                                    ({{ cv.skills_list|length }} habilidades)
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
 
-                    <div class="mb-3">
-                        <label for="jobSelect" class="form-label">
-                            <i class="bi bi-briefcase me-1"></i>Seleccionar Puesto
-                        </label>
-                        <select class="form-select" id="jobSelect" name="job_id" required>
-                            <option value="">-- Seleccionar Puesto --</option>
-                            {% for job in job_postings %}
-                            <option value="{{ job.id }}">
-                                {{ job.title }} 
-                                {% if job.company %}({{ job.company }}){% endif %}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
+                        <div class="col-md-5 mb-3">
+                            <label for="jobSelect" class="form-label">
+                                <i class="bi bi-briefcase me-1"></i>Seleccionar Puesto
+                            </label>
+                            <select class="form-select" id="jobSelect" name="job_id" required>
+                                <option value="">-- Seleccionar Puesto --</option>
+                                {% for job in job_postings %}
+                                <option value="{{ job.id }}">
+                                    {{ job.title }} 
+                                    {% if job.company %}({{ job.company }}){% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
 
-                    <button type="submit" class="btn btn-custom-404 w-100" id="generateBtn">
-                        <i class="bi bi-magic me-2"></i>Personalizar CV
-                    </button>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label d-none d-md-block">&nbsp;</label>
+                            <button type="submit" class="btn w-100" id="generateBtn" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; color: white; padding: 12px 24px; font-size: 1.1rem; font-weight: 600; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); transition: all 0.3s ease;">
+                                <i class="bi bi-magic me-2"></i>Personalizar CV con IA
+                            </button>
+                        </div>
+                    </div>
                 </form>
             </div>
         </div>
 
-        <!-- Información del CV Seleccionado -->
-        <div class="card shadow-sm mt-3" id="cvInfoCard" style="display: none;">
-            <div class="card-header bg-info text-white">
-                <h6 class="card-title mb-0">
-                    <i class="bi bi-info-circle me-1"></i>CV Seleccionado
-                </h6>
-            </div>
-            <div class="card-body">
-                <div id="cvInfo"></div>
-            </div>
-        </div>
-
-        <!-- Información del Puesto Seleccionado -->
-        <div class="card shadow-sm mt-3" id="jobInfoCard" style="display: none;">
-            <div class="card-header bg-success text-white">
-                <h6 class="card-title mb-0">
-                    <i class="bi bi-briefcase me-1"></i>Puesto Seleccionado
-                </h6>
-            </div>
-            <div class="card-body">
-                <div id="jobInfo"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Resultados -->
-    <div class="col-lg-8 mb-4">
+        <!-- Resultados -->
+        <div class="mb-4">
         <div class="card shadow-sm">
             <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                 <h5 class="card-title mb-0 text-white">
@@ -327,45 +357,6 @@
     const initialDiv = document.getElementById('initialDiv');
     const generateBtn = document.getElementById('generateBtn');
 
-    // Mostrar información del CV seleccionado
-    document.getElementById('cvSelect').addEventListener('change', function() {
-        const cvId = this.value;
-        const cvInfoCard = document.getElementById('cvInfoCard');
-        const cvInfo = document.getElementById('cvInfo');
-        
-        if (cvId) {
-            const cvOption = this.options[this.selectedIndex];
-            const cvText = cvOption.text;
-            
-            cvInfo.innerHTML = `
-                <p class="mb-1"><strong>CV:</strong> ${cvText}</p>
-                <p class="mb-0"><strong>ID:</strong> ${cvId}</p>
-            `;
-            cvInfoCard.style.display = 'block';
-        } else {
-            cvInfoCard.style.display = 'none';
-        }
-    });
-
-    // Mostrar información del puesto seleccionado
-    document.getElementById('jobSelect').addEventListener('change', function() {
-        const jobId = this.value;
-        const jobInfoCard = document.getElementById('jobInfoCard');
-        const jobInfo = document.getElementById('jobInfo');
-        
-        if (jobId) {
-            const jobOption = this.options[this.selectedIndex];
-            const jobText = jobOption.text;
-            
-            jobInfo.innerHTML = `
-                <p class="mb-1"><strong>Puesto:</strong> ${jobText}</p>
-                <p class="mb-0"><strong>ID:</strong> ${jobId}</p>
-            `;
-            jobInfoCard.style.display = 'block';
-        } else {
-            jobInfoCard.style.display = 'none';
-        }
-    });
 
     form.addEventListener('submit', function(e) {
         e.preventDefault();

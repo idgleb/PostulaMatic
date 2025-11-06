@@ -247,10 +247,8 @@ Requisitos:
     def generate_with_vision(self, prompt: str, image_base64: str) -> str:
         """Genera texto a partir de una imagen usando visión."""
         try:
-            if not self._client:
-                self._initialize_client()
-            
-            response = self._client.chat.completions.create(
+            # Usar la propiedad client directamente (sin caché)
+            response = self.client.chat.completions.create(
                 model="gpt-4o",  # Modelo con visión
                 messages=[
                     {
@@ -294,11 +292,9 @@ Requisitos:
     def generate_text(self, prompt: str) -> str:
         """Genera texto a partir de un prompt."""
         try:
-            if not self._client:
-                self._initialize_client()
-            
-            response = self._client.chat.completions.create(
-                model=self._model,
+            # Usar las propiedades client y model directamente (sin caché)
+            response = self.client.chat.completions.create(
+                model=self.model,
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=4000,
                 temperature=0.1,
@@ -485,18 +481,15 @@ Responde con JSON válido:
         for attempt in range(max_retries):
             try:
                 logger.info(f"🔍 ANTHROPIC VISION: Intento {attempt + 1}/{max_retries}")
-                if not self._client:
-                    logger.info("🔍 ANTHROPIC VISION: Cliente no inicializado, inicializando...")
-                    self._initialize_client()
                 
-                # Usar el modelo seleccionado dinámicamente
-                model_to_use = self._model
+                # Usar las propiedades client y model directamente (sin caché)
+                model_to_use = self.model
                 logger.info(f"🔍 ANTHROPIC VISION: Modelo: {model_to_use}")
                 logger.info(f"🔍 ANTHROPIC VISION: Prompt: {len(prompt)} caracteres")
                 logger.info(f"🔍 ANTHROPIC VISION: Imagen: {len(image_base64)} caracteres base64")
                 logger.info("🔍 ANTHROPIC VISION: Enviando request a Anthropic...")
                 
-                response = self._client.messages.create(
+                response = self.client.messages.create(
                     model=model_to_use,
                     max_tokens=4000,
                     messages=[
@@ -560,12 +553,12 @@ Responde con JSON válido:
                 if self._model_finder:
                     self._model_finder.refresh_models()
                     fallback_model = self._model_finder.get_vision_model()
-                    if fallback_model and fallback_model != self._model:
+                    current_model = self.model
+                    if fallback_model and fallback_model != current_model:
                         logger.info(f"🔄 Intentando con modelo de fallback: {fallback_model}")
-                        self._model = fallback_model
                         
                         # Reintentar con el modelo de fallback
-                        response = self._client.messages.create(
+                        response = self.client.messages.create(
                             model=fallback_model,
                             max_tokens=4000,
                             messages=[
@@ -637,14 +630,12 @@ Responde con JSON válido:
         
         for attempt in range(max_retries):
             try:
-                if not self._client:
-                    self._initialize_client()
-                
                 if attempt > 0:
                     logger.info(f"🔄 ANTHROPIC TEXT: Reintento {attempt + 1}/{max_retries}")
                 
-                response = self._client.messages.create(
-                    model=self._model,
+                # Usar las propiedades client y model directamente (sin caché)
+                response = self.client.messages.create(
+                    model=self.model,
                     max_tokens=4000,
                     temperature=0.1,
                     messages=[{"role": "user", "content": prompt}],

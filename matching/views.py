@@ -11,9 +11,9 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
 from .forms import (CVUploadForm, DVCredentialsForm, MatchingConfigForm,
-                    SMTPConfigForm)
-from .forms_email import EmailConfigForm
-from .models import JobPosting, MatchScore, ScrapingLog, UserCV, UserProfile
+                    SMTPConfigForm, EmailConfigForm)
+from .models import (EmailSentLog, JobPosting, MatchScore, ScrapingLog, 
+                     UserCV, UserProfile)
 from .services.cv_parser import cv_parser
 from .services.skills_extractor import skills_extractor
 from .utils.log_capture import setup_log_capture, cleanup_log_capture, log_capture
@@ -26,14 +26,31 @@ logger = logging.getLogger(__name__)
 @login_required
 def dashboard_view(request):
     """Dashboard principal del usuario."""
+    from django.utils import timezone
+    from datetime import timedelta
+    
     user_profile = UserProfile.objects.get_or_create(user=request.user)[0]
 
     # Estadísticas básicas
+    today = timezone.now().date()
+    
+    # Contar emails enviados hoy
+    emails_sent_today = EmailSentLog.objects.filter(
+        user=request.user,
+        sent_at__date=today
+    ).count()
+    
+    # Contar emails fallidos
+    emails_failed = EmailSentLog.objects.filter(
+        user=request.user,
+        status='failed'
+    ).count()
+    
     stats = {
         "total_cvs": UserCV.objects.filter(user=request.user).count(),
         "total_matches": MatchScore.objects.filter(user=request.user).count(),
-        "emails_sent_today": 0,  # TODO: Implementar contador de emails
-        "emails_failed": 0,  # TODO: Implementar contador de errores
+        "emails_sent_today": emails_sent_today,
+        "emails_failed": emails_failed,
     }
 
     # Obtener ofertas recientes y matches para mostrar en el dashboard
@@ -880,72 +897,30 @@ def test_scraper_view(request):
                 )
                 return redirect("profile")
 
-            # Antes de lanzar, verificar si ya hay una tarea activa para este usuario
-            try:
-                from celery import current_app
-
-                inspect = current_app.control.inspect()
-                active_tasks = inspect.active() or {}
-                existing_task_id = None
-                for worker, tasks in active_tasks.items():
-                    for t in tasks:
-                        task_name = t.get("name", "")
-                        if task_name.endswith("scrape_dvcarreras_jobs_stealth") or task_name.endswith("scrape_dvcarreras_jobs_playwright"):
-                            args = t.get("args") or ""
-                            # args suele ser string como "(user_id,)" o lista
-                            if str(request.user.id) in str(args):
-                                existing_task_id = t.get("id")
-                                break
-                    if existing_task_id:
-                        break
-                if existing_task_id:
-                    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-                        return JsonResponse(
-                            {
-                                "success": True,
-                                "task_id": existing_task_id,
-                                "message": f"Ya hay un scraping activo. Reutilizando Task ID: {existing_task_id}",
-                            }
-                        )
-                    messages.info(
-                        request,
-                        f"Ya hay un scraping activo. Task ID: {existing_task_id}",
-                    )
-                    return redirect("test_scraper")
-            except Exception:
-                # Si falla la inspección, continuamos y lanzamos la tarea
-                pass
-
-            # CANCELACIÓN SEGURA: Revocar tareas anteriores sin terminate=True
-            from celery import current_app
+            # ============================================================
+            # 🔒 LOCK GLOBAL: Verificar si ya hay un scraping en curso
+            # ============================================================
+            from .services.scraping_lock import scraping_lock
             
-            try:
-                # Obtener tareas activas y reservadas
-                inspect = current_app.control.inspect()
-                active_tasks = inspect.active() or {}
-                reserved_tasks = inspect.reserved() or {}
+            active_scraping = scraping_lock.get_active_scraping()
+            if active_scraping:
+                task_id = active_scraping.get('task_id')
+                source = active_scraping.get('source', 'unknown')
+                started_at = active_scraping.get('started_at', 'desconocido')
                 
-                tasks_to_revoke = []
+                message = f"Ya hay un scraping en curso (iniciado {source} a las {started_at})"
                 
-                # Buscar tareas de scraping para este usuario
-                for worker, tasks in {**active_tasks, **reserved_tasks}.items():
-                    for task in tasks:
-                        task_name = task.get('name', '')
-                        task_args = str(task.get('args', ''))
-                        
-                        # Buscar tareas de scraping para este usuario
-                        if ('scrape_dvcarreras_jobs_stealth' in task_name or 
-                            'scrape_dvcarreras_jobs_playwright' in task_name) and str(request.user.id) in task_args:
-                            tasks_to_revoke.append(task.get('id'))
-                
-                # Revocar tareas encontradas (SIN terminate=True para evitar duplicación)
-                if tasks_to_revoke:
-                    for task_id in tasks_to_revoke:
-                        current_app.control.revoke(task_id, terminate=False)  # SEGURO: no termina abruptamente
-                    logger.info(f"🛡️ Canceladas {len(tasks_to_revoke)} tareas de scraping previas para usuario {request.user.id}")
-                    
-            except Exception as e:
-                logger.warning(f"⚠️ No se pudieron cancelar tareas previas: {e}")
+                if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                    return JsonResponse(
+                        {
+                            "success": False,
+                            "task_id": task_id,
+                            "message": message,
+                            "locked": True,
+                        }
+                    )
+                messages.warning(request, message)
+                return redirect("test_scraper")
 
             # Iniciar tarea de scraping con STEALTH usando rotación automática
             from .tasks_stealth import scrape_dvcarreras_jobs_stealth
@@ -955,7 +930,7 @@ def test_scraper_view(request):
             # Pasar requesting_user_id para que los logs se guarden también para el usuario actual
             task = scrape_dvcarreras_jobs_stealth.delay(user_id=None, requesting_user_id=request.user.id)
 
-            # Guardar task_id en cache para que todos los admins lo vean
+            # Guardar task_id en cache para que todos los admins lo vean (legacy, ahora usa lock)
             cache.set('current_scraping_task_id', task.id, timeout=3600)  # 1 hora
 
             # Solo devolver el task_id, sin mensajes
@@ -2444,4 +2419,49 @@ def calculate_matches_view(request):
         return JsonResponse({
             "success": False,
             "message": f"Error iniciando cálculo de matches: {str(e)}"
+        })
+
+
+@login_required
+@user_passes_test(lambda u: u.is_staff, login_url='dashboard')
+def get_global_scraping_status(request):
+    """
+    Vista para obtener el estado del scraping GLOBAL activo (si existe).
+    Todos los admins ven el mismo scraping sin importar quién lo inició.
+    """
+    try:
+        from .services.scraping_lock import scraping_lock
+        
+        # Verificar si hay un scraping activo globalmente
+        active_scraping = scraping_lock.get_active_scraping()
+        
+        if active_scraping:
+            task_id = active_scraping.get('task_id')
+            
+            # Verificar el estado real de la tarea en Celery
+            from celery.result import AsyncResult
+            task_result = AsyncResult(task_id)
+            
+            return JsonResponse({
+                'success': True,
+                'has_active_scraping': True,
+                'task_id': task_id,
+                'user_id': active_scraping.get('user_id'),
+                'source': active_scraping.get('source'),
+                'started_at': active_scraping.get('started_at'),
+                'celery_status': task_result.state,
+            })
+        else:
+            return JsonResponse({
+                'success': True,
+                'has_active_scraping': False,
+                'task_id': None,
+            })
+            
+    except Exception as e:
+        logger.error(f"Error obteniendo estado de scraping global: {e}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e),
+            'has_active_scraping': False,
         })

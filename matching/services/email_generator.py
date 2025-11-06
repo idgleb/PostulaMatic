@@ -95,6 +95,11 @@ INSTRUCCIONES GENERALES:
 - Adaptar COMPLETAMENTE el tono al template seleccionado
 
 FORMATO REQUERIDO:
+- NO incluyas títulos, encabezados ni formato Markdown (como "# Carta de Presentación")
+- Comienza directamente con el saludo
+- Usa SOLO texto plano, sin asteriscos (**) ni símbolos de formato
+- La carta debe tener esta estructura EXACTA:
+
 {style['saludo']}
 
 [Cuerpo de la carta adaptado al template {email_template}]

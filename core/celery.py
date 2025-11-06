@@ -14,6 +14,7 @@ app.autodiscover_tasks(['matching'], related_name='tasks_dv')
 app.autodiscover_tasks(['matching'], related_name='tasks_email')
 app.autodiscover_tasks(['matching'], related_name='tasks_stealth')
 app.autodiscover_tasks(['matching'], related_name='tasks_bulk_email')
+app.autodiscover_tasks(['matching'], related_name='tasks_auto_send')
 
 # Configuración de tareas periódicas
 app.conf.beat_schedule = {
@@ -26,6 +27,11 @@ app.conf.beat_schedule = {
     "cleanup-old-jobs": {
         "task": "matching.tasks.cleanup_old_jobs",
         "schedule": crontab(hour=2, minute=0),  # Diariamente a las 2 AM
+    },
+    # Verificar y enviar emails automáticos cada 5 minutos (TEMPORAL PARA PRUEBAS)
+    "check-auto-send-emails": {
+        "task": "matching.tasks_auto_send.check_and_send_auto_emails",
+        "schedule": crontab(minute="*/5"),  # Cada 5 minutos (TEMPORAL)
     },
 }
 

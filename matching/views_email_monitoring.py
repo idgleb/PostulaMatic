@@ -647,3 +647,53 @@ def download_personalized_cv(request, email_id):
         raise Http404("Email no encontrado")
     except Exception as e:
         raise Http404(f"Error descargando CV personalizado: {str(e)}")
+
+
+@login_required
+@require_http_methods(["DELETE"])
+def delete_email(request, email_id):
+    """Elimina un email individual."""
+    try:
+        email = get_object_or_404(
+            EmailSentLog,
+            id=email_id,
+            user=request.user
+        )
+        
+        email.delete()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Email eliminado correctamente'
+        })
+        
+    except EmailSentLog.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'error': 'Email no encontrado'
+        }, status=404)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+@require_http_methods(["DELETE"])
+def delete_all_emails(request):
+    """Elimina todos los emails del usuario."""
+    try:
+        deleted_count, _ = EmailSentLog.objects.filter(user=request.user).delete()
+        
+        return JsonResponse({
+            'success': True,
+            'deleted_count': deleted_count,
+            'message': f'{deleted_count} email(s) eliminado(s) correctamente'
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)

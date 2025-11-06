@@ -247,21 +247,38 @@ class EmailConfigForm(forms.ModelForm):
 
     class Meta:
         model = UserProfile
-        fields = ["daily_limit", "min_pause_seconds", "max_pause_seconds"]
+        fields = [
+            "daily_limit", 
+            "min_pause_seconds", 
+            "max_pause_seconds",
+            "auto_send_enabled",
+            "auto_send_time"
+        ]
         widgets = {
             "daily_limit": forms.NumberInput(attrs={"class": "form-control"}),
             "min_pause_seconds": forms.NumberInput(attrs={"class": "form-control"}),
             "max_pause_seconds": forms.NumberInput(attrs={"class": "form-control"}),
+            "auto_send_enabled": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "auto_send_time": forms.TimeInput(
+                attrs={
+                    "class": "form-control",
+                    "type": "time"
+                }
+            ),
         }
         labels = {
             "daily_limit": "Límite Diario de Emails",
             "min_pause_seconds": "Pausa Mínima (segundos)",
             "max_pause_seconds": "Pausa Máxima (segundos)",
+            "auto_send_enabled": "Envío Automático Diario",
+            "auto_send_time": "Hora de Envío Automático",
         }
         help_texts = {
             "daily_limit": "Número máximo de emails que se pueden enviar por día",
             "min_pause_seconds": "Pausa mínima entre envíos de emails",
             "max_pause_seconds": "Pausa máxima entre envíos de emails",
+            "auto_send_enabled": "Activar envío automático diario de emails a nuevos matches",
+            "auto_send_time": "Hora del día para enviar emails automáticamente (formato 24h)",
         }
 
     def __init__(self, *args, **kwargs):

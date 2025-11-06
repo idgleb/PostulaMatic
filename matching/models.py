@@ -54,6 +54,21 @@ class UserProfile(models.Model):
     is_active = models.BooleanField(
         default=False, help_text="Start/Stop del proceso automático"
     )
+    
+    # Configuración de envío automático diario
+    auto_send_enabled = models.BooleanField(
+        default=False,
+        help_text="Activar envío automático diario de emails a nuevos matches"
+    )
+    auto_send_time = models.TimeField(
+        default="09:00:00",
+        help_text="Hora del día para envío automático (formato 24h)"
+    )
+    auto_send_last_run = models.DateTimeField(
+        blank=True,
+        null=True,
+        help_text="Última vez que se ejecutó el envío automático"
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

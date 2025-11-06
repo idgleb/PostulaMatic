@@ -364,6 +364,75 @@
                         <strong>Importante sobre las pausas:</strong> El sistema elegirá un tiempo aleatorio entre la pausa mínima y máxima para cada email. Esto hace que los envíos parezcan más naturales y evita la detección de automatización. La pausa máxima debe ser mayor que la mínima.
                     </div>
                     
+                    <!-- Configuración de Envío Automático Diario -->
+                    <div class="card mb-4" style="border: 2px solid #667eea;">
+                        <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <h6 class="mb-0 text-white">
+                                <i class="bi bi-calendar-check me-2"></i>Envío Automático Diario
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-primary">
+                                <i class="bi bi-robot me-2"></i>
+                                <strong>¿Qué hace?</strong> El sistema buscará automáticamente nuevos matches cada día a la hora configurada y enviará emails personalizados con carta de presentación y CV adaptado.
+                            </div>
+                            
+                            <!-- Activar/Desactivar envío automático -->
+                            <div class="mb-4">
+                                <div class="form-check form-switch">
+                                    <input type="checkbox" 
+                                           class="form-check-input" 
+                                           name="auto_send_enabled" 
+                                           id="id_auto_send_enabled"
+                                           {% if profile.auto_send_enabled %}checked{% endif %}>
+                                    <label class="form-check-label" for="id_auto_send_enabled">
+                                        <strong>Envío Automático Diario</strong>
+                                        <br>
+                                        <small class="text-muted">Activar envío automático diario de emails a nuevos matches</small>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <!-- Hora de envío -->
+                            <div class="row" id="auto-send-time-container" style="display: {% if profile.auto_send_enabled %}block{% else %}none{% endif %};">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="id_auto_send_time" class="form-label">
+                                            <i class="bi bi-clock me-1"></i>Hora de Envío Automático
+                                        </label>
+                                        <input type="time" 
+                                               class="form-control" 
+                                               name="auto_send_time" 
+                                               id="id_auto_send_time"
+                                               value="{{ profile.auto_send_time|time:'H:i' }}"
+                                               required>
+                                        <small class="text-muted d-block mt-1">
+                                            <i class="bi bi-info-circle me-1"></i>Hora del día para enviar emails automáticamente (formato 24h)
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="alert alert-warning mb-0">
+                                        <i class="bi bi-exclamation-triangle me-2"></i>
+                                        <strong>Importante:</strong>
+                                        <ul class="mb-0 mt-2">
+                                            <li>Solo se enviarán emails a <strong>nuevos matches</strong> (no enviados previamente)</li>
+                                            <li>Se respetará el límite diario configurado arriba</li>
+                                            <li>El sistema verificará cada hora si es momento de enviar</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {% if profile.auto_send_last_run %}
+                            <div class="alert alert-success mt-3">
+                                <i class="bi bi-check-circle me-2"></i>
+                                <strong>Última ejecución:</strong> {{ profile.auto_send_last_run|date:"d/m/Y H:i" }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
                     <div class="d-flex justify-content-end">
                         <button type="submit" name="save_email" class="btn btn-success" id="btn-email" disabled>
                             <i class="bi bi-send me-2"></i>Guardar Configuración de Envíos
@@ -1430,6 +1499,29 @@
         // Iniciar monitoreo solo si está en proceso de verificación
         if (isConnectionInProgress) {
             startStatusMonitoring();
+        }
+        
+        // ============================================================
+        // Configuración de Envío Automático
+        // ============================================================
+        
+        // Toggle del campo de hora de envío automático
+        const autoSendCheckbox = document.getElementById('id_auto_send_enabled');
+        const autoSendTimeContainer = document.getElementById('auto-send-time-container');
+        
+        if (autoSendCheckbox && autoSendTimeContainer) {
+            autoSendCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    autoSendTimeContainer.style.display = 'block';
+                } else {
+                    autoSendTimeContainer.style.display = 'none';
+                }
+                // Habilitar botón de guardar cuando cambia
+                const btnEmail = document.getElementById('btn-email');
+                if (btnEmail) {
+                    btnEmail.disabled = false;
+                }
+            });
         }
     });
 })();

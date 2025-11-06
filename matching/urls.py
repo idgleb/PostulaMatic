@@ -24,6 +24,7 @@ urlpatterns = [
     path("cv-parsed-text/<int:cv_id>/", views.cv_parsed_text_view, name="cv_parsed_text"),
     path("probar-scraper/", views.test_scraper_view, name="test_scraper"),
     path("api/current-scraping-task/", views.get_current_scraping_task, name="current_scraping_task"),
+    path("api/global-scraping-status/", views.get_global_scraping_status, name="global_scraping_status"),
     path("api/next-user-rotation/", views.get_next_user_in_rotation, name="next_user_rotation"),
     path("api/scheduled-scraping/", views.scheduled_scraping_config, name="scheduled_scraping_config"),
     path(
@@ -112,6 +113,8 @@ urlpatterns = [
     path("task-status/<str:task_id>/", views_email_monitoring.task_status, name="task_status"),
     path("cleanup-email-logs/", views_email_monitoring.cleanup_email_logs, name="cleanup_email_logs"),
     path("email-settings/", views_email_monitoring.email_settings, name="email_settings"),
+    path("api/delete-email/<int:email_id>/", views_email_monitoring.delete_email, name="delete_email"),
+    path("api/delete-all-emails/", views_email_monitoring.delete_all_emails, name="delete_all_emails"),
     
     # URLs para APIs
     path("api/user-cvs/", views_api.user_cvs_api, name="user_cvs_api"),

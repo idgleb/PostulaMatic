@@ -324,6 +324,29 @@ def scrape_dvcarreras_jobs_stealth(self, user_id: int = None, requesting_user_id
     Returns:
         Diccionario con resultados del scraping
     """
+    from matching.services.scraping_lock import scraping_lock
+    
+    # Obtener el task_id de Celery
+    task_id = self.request.id
+    
+    # ============================================================
+    # 🔒 LOCK GLOBAL: Adquirir lock antes de empezar
+    # ============================================================
+    lock_acquired = scraping_lock.acquire_lock(
+        task_id=task_id,
+        user_id=requesting_user_id,
+        source='scheduled' if requesting_user_id is None else 'manual'
+    )
+    
+    if not lock_acquired:
+        logger.warning(f"⚠️ No se pudo adquirir lock para scraping (task={task_id})")
+        return {
+            'success': False,
+            'error': 'Ya hay un scraping en curso',
+            'locked': True,
+            'user_id': None
+        }
+    
     try:
         # Si no se proporciona user_id, usar rotación automática
         if user_id is None:
@@ -341,8 +364,6 @@ def scrape_dvcarreras_jobs_stealth(self, user_id: int = None, requesting_user_id
         else:
             logger.info(f"📌 Usando usuario específico: {user_id}")
         
-        # Obtener el task_id de Celery
-        task_id = self.request.id
         logger.info(f"🌍 Scraping iniciado con usuario {user_id} (task: {task_id})")
         
         # Ejecutar la función asíncrona con el task_id y requesting_user_id
@@ -367,6 +388,13 @@ def scrape_dvcarreras_jobs_stealth(self, user_id: int = None, requesting_user_id
             'error': str(e),
             'user_id': user_id
         }
+    
+    finally:
+        # ============================================================
+        # 🔓 LOCK GLOBAL: Liberar lock al terminar (éxito o error)
+        # ============================================================
+        scraping_lock.release_lock(task_id)
+        logger.info(f"🔓 Lock liberado para task={task_id}")
 
 
 @shared_task(bind=True, max_retries=2)
@@ -464,6 +492,21 @@ def check_and_run_scheduled_scraping(self):
                 'message': f'No es hora de ejecutar. Actual: {current_time.strftime("%H:%M")} (local), Programado: {scheduled_time.strftime("%H:%M")}'
             }
         
+        # ============================================================
+        # 🔒 LOCK GLOBAL: Verificar si ya hay un scraping en curso
+        # ============================================================
+        from matching.services.scraping_lock import scraping_lock
+        
+        if scraping_lock.is_locked():
+            active_scraping = scraping_lock.get_active_scraping()
+            task_id = active_scraping.get('task_id') if active_scraping else 'unknown'
+            logger.info(f"⏸️ Scraping programado omitido: ya hay un scraping activo (task={task_id})")
+            return {
+                'success': False,
+                'message': f'Ya hay un scraping en curso (task={task_id})',
+                'locked': True
+            }
+        
         # Verificar si ya se ejecutó en esta hora programada hoy
         # Solo bloquear si se ejecutó HOY a la MISMA HORA programada
         if config.last_run:
@@ -490,7 +533,7 @@ def check_and_run_scheduled_scraping(self):
         # Llamar a la tarea de scraping global
         task = scrape_dvcarreras_jobs_stealth.delay()
         
-        # Guardar task_id en cache para que todos los admins lo vean
+        # Guardar task_id en cache para que todos los admins lo vean (legacy, ahora usa lock)
         from django.core.cache import cache as django_cache
         django_cache.set('current_scraping_task_id', task.id, timeout=3600)  # 1 hora
         

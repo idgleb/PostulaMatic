@@ -79,8 +79,10 @@ class CVPersonalizationService:
             
             # Calcular scores (original y personalizado)
             process_logs.append("📊 Calculando scores ATS...")
+            # ✅ IMPORTANTE: Usar None para que el algoritmo busque estructura en el texto
+            # Esto es más realista y consistente con "Mis Matches" (ambos tendrán el mismo score)
             original_score_data = self._calculate_ats_score(
-                cv_data, job_data, self._create_minimal_cv_structure_from_text(cv_data)
+                cv_data, job_data, None  # Deja que el algoritmo busque en el texto (como ATS real)
             )
             personalized_score_data = self._calculate_ats_score(
                 cv_data, job_data, personalized_cv
@@ -763,15 +765,17 @@ Devuelve únicamente el JSON final."""
             return cv_data.get('parsed_text', '')
         return ''
     
-    def _create_minimal_cv_structure_from_text(self, cv_data: Dict) -> Dict:
-        """Crea estructura mínima del CV desde texto plano."""
-        cv_text = self._extract_text_from_cv_data(cv_data)
-        return {
-            'skills': [],
-            'summary': cv_text[:500],
-            'experience': [],
-            'projects': []
-        }
+    # DEPRECATED: Ya no se usa porque penaliza artificialmente el score
+    # Se mantiene comentado por si se necesita en el futuro
+    # def _create_minimal_cv_structure_from_text(self, cv_data: Dict) -> Dict:
+    #     """Crea estructura mínima del CV desde texto plano."""
+    #     cv_text = self._extract_text_from_cv_data(cv_data)
+    #     return {
+    #         'skills': [],
+    #         'summary': cv_text[:500],
+    #         'experience': [],
+    #         'projects': []
+    #     }
     
     def _error_response(self, error_msg: str, process_logs: List[str]) -> Dict:
         """Genera respuesta de error estandarizada."""
