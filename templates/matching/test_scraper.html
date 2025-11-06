@@ -152,7 +152,7 @@
                         <h6 class="text-primary">
                             <i class="bi bi-camera-video me-2"></i>Vista en Vivo del Navegador
                         </h6>
-            <div id="liveScreenshots" class="bg-dark p-3 rounded text-center" style="min-height: 200px; max-height: 800px; overflow-y: auto;">
+            <div id="liveScreenshots" class="bg-dark p-3 rounded text-center d-flex align-items-center justify-content-center" style="height: 600px; overflow-y: auto;">
                 <div class="text-light">
                     <i class="bi bi-camera-video fs-1"></i>
                     <p class="mt-2">Los screenshots aparecerán aquí durante el scraping</p>
@@ -954,12 +954,11 @@ function updateLiveScreenshots() {
                 const screenshotContainer = document.getElementById('liveScreenshots');
                 if (screenshotContainer) {
                     screenshotContainer.innerHTML = `
-                        <div class="text-center">
+                        <div class="text-center w-100">
                             <img src="${data.screenshot_url}" 
                                  class="img-fluid rounded shadow" 
-                                 style="max-width: 100%; height: auto; border: 2px solid #007bff;"
-                                 alt="Screenshot en vivo"
-                                 onload="this.parentElement.parentElement.style.height = 'auto';">
+                                 style="max-width: 100%; max-height: 550px; object-fit: contain; border: 2px solid #007bff;"
+                                 alt="Screenshot en vivo">
                             <div class="mt-2">
                                 <small class="text-light">
                                     <i class="bi bi-camera me-1"></i>
@@ -1765,9 +1764,11 @@ document.addEventListener('DOMContentLoaded', function() {
             addLogEntry('Limpiando sesión guardada...', 'info');
         }
         
-        // Limpiar screenshots
+        // Limpiar screenshots (mantener altura fija)
         const liveScreenshots = document.getElementById('liveScreenshots');
         if (liveScreenshots) {
+            // Mantener las clases que centran el contenido
+            liveScreenshots.className = 'bg-dark p-3 rounded text-center d-flex align-items-center justify-content-center';
             liveScreenshots.innerHTML = `
                 <div class="text-light">
                     <i class="bi bi-camera-video fs-1"></i>
