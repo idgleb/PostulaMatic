@@ -10,6 +10,7 @@ import logging
 import random
 import subprocess
 import re
+import asyncio
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 from pathlib import Path
@@ -90,16 +91,28 @@ class DVCarrerasStealth:
         else:
             logger.info(log_message)
         
-        # Guardar en base de datos
-        try:
-            await sync_to_async(ScrapingLog.objects.create)(
-                user_id=self.user_id,
-                message=message,
-                log_type=level,
-                task_id=self.task_id
-            )
-        except Exception as e:
-            logger.warning(f"Error guardando log en BD: {e}")
+        # Guardar en base de datos con reintentos
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                # Forzar cierre de conexiones antiguas antes del primer intento
+                if attempt == 0:
+                    from django.db import connection
+                    await sync_to_async(connection.close_if_unusable_or_obsolete)()
+                
+                await sync_to_async(ScrapingLog.objects.create)(
+                    user_id=self.user_id,
+                    message=message,
+                    log_type=level,
+                    task_id=self.task_id
+                )
+                break  # Éxito, salir del loop
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    logger.warning(f"Intento {attempt + 1}/{max_retries} fallido guardando log en BD: {e}")
+                    await asyncio.sleep(0.1)  # Pequeño delay antes de reintentar
+                else:
+                    logger.error(f"Error guardando log en BD después de {max_retries} intentos: {e}")
     
     async def _clear_previous_screenshots(self):
         """Limpiar screenshots anteriores del usuario"""
