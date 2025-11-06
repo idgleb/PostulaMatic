@@ -880,45 +880,61 @@ function loadAllLogsFromDatabase(forceReload = false) {
     
     // Si hay task_id específico, cargar logs de esa tarea
     if (currentTaskId) {
+        console.log(`📥 Cargando logs para task_id: ${currentTaskId}`);
         fetch(`/matching/scraping-logs/${currentTaskId}/`)
             .then(response => response.json())
             .then(data => {
+                console.log(`📊 Respuesta de logs recibida:`, data);
                 if (data.success && data.logs) {
+                    console.log(`✅ ${data.logs.length} logs recibidos de la BD`);
                     const statusLog = document.getElementById('statusLog');
                     if (statusLog) {
+                        let newLogsCount = 0;
                         // Solo agregar logs nuevos (no borrar los existentes)
                         data.logs.forEach(log => {
                             if (!loadedLogIds.has(log.id)) {
                                 addLogEntryFromDatabase(log.message, log.type, log.timestamp);
                                 loadedLogIds.add(log.id);
+                                newLogsCount++;
                             }
                         });
+                        console.log(`📝 ${newLogsCount} logs nuevos agregados al DOM`);
                     }
+                } else {
+                    console.warn('⚠️ No se recibieron logs o success=false:', data);
                 }
             })
             .catch(error => {
-                console.error('Error cargando logs:', error);
+                console.error('❌ Error cargando logs:', error);
             });
     } else {
         // Si no hay task_id, cargar logs generales del usuario
+        console.log('📥 Cargando logs generales (sin task_id específico)');
         fetch('/matching/scraping-logs/')
             .then(response => response.json())
             .then(data => {
+                console.log(`📊 Respuesta de logs generales recibida:`, data);
                 if (data.success && data.logs) {
+                    console.log(`✅ ${data.logs.length} logs generales recibidos de la BD`);
                     const statusLog = document.getElementById('statusLog');
                     if (statusLog) {
+                        let newLogsCount = 0;
                         // Solo agregar logs nuevos (no borrar los existentes)
                         data.logs.forEach(log => {
                             if (!loadedLogIds.has(log.id)) {
                                 addLogEntryFromDatabase(log.message, log.type, log.timestamp);
                                 loadedLogIds.add(log.id);
+                                newLogsCount++;
                             }
                         });
+                        console.log(`📝 ${newLogsCount} logs generales nuevos agregados al DOM`);
                     }
+                } else {
+                    console.warn('⚠️ No se recibieron logs generales o success=false:', data);
                 }
             })
             .catch(error => {
-                console.error('Error cargando logs generales:', error);
+                console.error('❌ Error cargando logs generales:', error);
             });
     }
 }
