@@ -472,6 +472,8 @@ function checkCurrentScrapingStatus() {
                 if (data.status === 'PENDING' || data.status === 'STARTED' || data.status === 'PROGRESS') {
                     console.log('✅ Tarea activa encontrada, continuando monitoreo');
                     currentTaskId = lastTaskId;
+                    // Cargar todos los logs desde el inicio (forzar recarga completa)
+                    loadAllLogsFromDatabase(true);
                     startSimpleMonitoring();
                 } else {
                     // La tarea ya terminó o no existe - limpiar localStorage
@@ -498,8 +500,8 @@ function checkCurrentScrapingStatus() {
         console.log('No hay Task ID disponible, cargando logs generales...');
         updateProgressBar(0, 'Inicia un scraping para comenzar', 'secondary');
         
-        // Cargar logs generales del usuario
-        loadAllLogsFromDatabase();
+        // Cargar logs generales del usuario (forzar recarga completa)
+        loadAllLogsFromDatabase(true);
         
         // Si no hay logs, mostrar mensaje inicial
         setTimeout(() => {
@@ -865,7 +867,17 @@ function saveLogToDatabase(message, type) {
 // Variable para trackear los logs ya cargados
 let loadedLogIds = new Set();
 
-function loadAllLogsFromDatabase() {
+function loadAllLogsFromDatabase(forceReload = false) {
+    // Si forceReload es true, limpiar el Set para recargar todos los logs
+    if (forceReload) {
+        console.log('🔄 Forzando recarga completa de logs (limpiando Set)');
+        loadedLogIds.clear();
+        const statusLog = document.getElementById('statusLog');
+        if (statusLog) {
+            statusLog.innerHTML = '';
+        }
+    }
+    
     // Si hay task_id específico, cargar logs de esa tarea
     if (currentTaskId) {
         fetch(`/matching/scraping-logs/${currentTaskId}/`)
