@@ -56,8 +56,34 @@ def check_and_send_auto_emails(self):
     for profile in users_with_auto_send:
         user = profile.user
         
-        # Verificar si ya se ejecutó hoy
+        # ============================================================
+        # 🔄 VERIFICAR SI LA HORA PROGRAMADA CAMBIÓ
+        # ============================================================
+        # Si el usuario cambió la hora programada, permitir ejecución inmediata
+        schedule_changed = False
         if profile.auto_send_last_run:
+            # Obtener la hora a la que se ejecutó la última vez
+            last_run_local = profile.auto_send_last_run.astimezone(buenos_aires_tz)
+            last_run_time = last_run_local.time()
+            
+            # Comparar con la hora actualmente programada (con tolerancia de ±1 minuto)
+            time_diff_minutes = abs(
+                (profile.auto_send_time.hour * 60 + profile.auto_send_time.minute) -
+                (last_run_time.hour * 60 + last_run_time.minute)
+            )
+            
+            if time_diff_minutes > 1:  # Si la diferencia es mayor a 1 minuto
+                schedule_changed = True
+                logger.info(
+                    f"🔄 Usuario {user.username}: Hora programada cambió: "
+                    f"Anterior={last_run_time.strftime('%H:%M')}, "
+                    f"Nueva={profile.auto_send_time.strftime('%H:%M')} - "
+                    f"Permitiendo ejecución inmediata"
+                )
+        
+        # Verificar si ya se ejecutó hoy (prevenir ejecuciones duplicadas)
+        # PERO: Si la hora programada cambió, permitir ejecución
+        if profile.auto_send_last_run and not schedule_changed:
             last_run_date = profile.auto_send_last_run.date()
             if last_run_date == current_date:
                 logger.info(f"⏭️ Usuario {user.username}: Ya se ejecutó hoy ({profile.auto_send_last_run})")
@@ -85,8 +111,8 @@ def check_and_send_auto_emails(self):
         
         if not new_matches:
             logger.info(f"📭 Usuario {user.username}: No hay nuevos matches")
-            # Actualizar last_run aunque no haya matches
-            profile.auto_send_last_run = now
+            # Actualizar last_run aunque no haya matches (guardar hora local)
+            profile.auto_send_last_run = now_local
             profile.save(update_fields=['auto_send_last_run'])
             continue
         
@@ -119,8 +145,8 @@ def check_and_send_auto_emails(self):
                 f"(Task ID: {result.id}, {len(job_ids)} puestos)"
             )
             
-            # Actualizar última ejecución
-            profile.auto_send_last_run = now
+            # Actualizar última ejecución (guardar hora local)
+            profile.auto_send_last_run = now_local
             profile.save(update_fields=['auto_send_last_run'])
             
             users_processed += 1
