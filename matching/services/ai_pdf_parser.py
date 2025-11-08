@@ -77,9 +77,15 @@ class AIPDFParser:
                 logger.info(f"🔍 PASO 2.{i+1}: Procesando página {i+1} con IA...")
                 logger.info(f"🔍 PASO 2.{i+1}: Tamaño de imagen base64: {len(image_base64)} caracteres")
                 
-                # Actualizar progreso para OpenAI (solo en la primera página)
+                # Actualizar progreso según el proveedor configurado (solo en la primera página)
                 if progress_tracker and i == 0:
-                    progress_tracker.update_step("openai_vision", "in_progress", "Extrayendo texto con OpenAI")
+                    # Verificar qué proveedor está configurado
+                    if self.ai_service.is_provider_configured('openai'):
+                        progress_tracker.update_step("openai_vision", "in_progress", "Extrayendo texto con OpenAI")
+                    elif self.ai_service.is_provider_configured('anthropic'):
+                        progress_tracker.update_step("anthropic_vision", "in_progress", "Extrayendo texto con Anthropic")
+                    else:
+                        progress_tracker.update_step("openai_vision", "error", "No hay proveedores de IA configurados")
                 
                 try:
                     page_text, used_fallback = self._extract_text_from_image_with_ai(image_base64, progress_tracker if i == 0 else None)
@@ -95,9 +101,14 @@ class AIPDFParser:
                                 # Solo actualizamos Anthropic
                                 progress_tracker.update_step("anthropic_vision", "in_progress", f"Procesando con Anthropic (página {i+1}/{len(pdf_images)})")
                             else:
-                                # OpenAI tuvo éxito
-                                progress_tracker.update_step("openai_vision", "in_progress", f"Procesando con OpenAI (página {i+1}/{len(pdf_images)})")
-                                progress_tracker.update_step("anthropic_vision", "skipped", "No fue necesario")
+                                # El proveedor configurado tuvo éxito (OpenAI o Anthropic)
+                                if self.ai_service.is_provider_configured('openai'):
+                                    progress_tracker.update_step("openai_vision", "in_progress", f"Procesando con OpenAI (página {i+1}/{len(pdf_images)})")
+                                    progress_tracker.update_step("anthropic_vision", "skipped", "No fue necesario")
+                                else:
+                                    # Solo Anthropic está configurado y funcionó
+                                    progress_tracker.update_step("anthropic_vision", "in_progress", f"Procesando con Anthropic (página {i+1}/{len(pdf_images)})")
+                                    progress_tracker.update_step("openai_vision", "skipped", "No configurado")
                         else:
                             # Actualizar progreso de páginas subsiguientes
                             if fallback_used or used_fallback:
@@ -129,7 +140,11 @@ class AIPDFParser:
                 if fallback_used:
                     progress_tracker.update_step("anthropic_vision", "completed", f"Texto extraído con Anthropic ({len(pdf_images)} páginas)")
                 else:
-                    progress_tracker.update_step("openai_vision", "completed", f"Texto extraído con OpenAI ({len(pdf_images)} páginas)")
+                    # Marcar como completado el proveedor que se usó
+                    if self.ai_service.is_provider_configured('openai'):
+                        progress_tracker.update_step("openai_vision", "completed", f"Texto extraído con OpenAI ({len(pdf_images)} páginas)")
+                    else:
+                        progress_tracker.update_step("anthropic_vision", "completed", f"Texto extraído con Anthropic ({len(pdf_images)} páginas)")
             
             if not extracted_texts:
                 error_msg = "❌ IA no pudo extraer texto de las imágenes"
