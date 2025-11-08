@@ -1085,6 +1085,41 @@ def scheduled_scraping_config(request):
                 config.scheduled_time = scheduled_time
                 config.save()
             
+            # ============================================================
+            # Actualizar el CrontabSchedule de la tarea periódica
+            # ============================================================
+            from django_celery_beat.models import PeriodicTask, CrontabSchedule
+            
+            # Crear o obtener el CrontabSchedule específico para esta hora
+            crontab, _ = CrontabSchedule.objects.get_or_create(
+                minute=str(scheduled_time.minute),
+                hour=str(scheduled_time.hour),
+                day_of_week='*',
+                day_of_month='*',
+                month_of_year='*',
+                timezone='America/Argentina/Buenos_Aires'
+            )
+            
+            # Buscar y actualizar la tarea periódica
+            task = PeriodicTask.objects.filter(
+                task='matching.tasks_stealth.check_and_run_scheduled_scraping'
+            ).first()
+            
+            if task:
+                task.crontab = crontab
+                task.enabled = is_enabled
+                task.save()
+                logger.info(f"✅ Tarea periódica actualizada: {task.name} - Schedule: {crontab} - Enabled: {is_enabled}")
+            else:
+                # Si no existe, crearla
+                task = PeriodicTask.objects.create(
+                    name='check-scheduled-scraping',
+                    crontab=crontab,
+                    task='matching.tasks_stealth.check_and_run_scheduled_scraping',
+                    enabled=is_enabled
+                )
+                logger.info(f"✅ Tarea periódica creada: {task.name} - Schedule: {crontab}")
+            
             return JsonResponse({
                 'success': True,
                 'message': 'Configuración guardada exitosamente',

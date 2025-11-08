@@ -454,12 +454,12 @@ def test_stealth_login(self, user_id: int) -> Dict[str, Any]:
 @shared_task(bind=True)
 def check_and_run_scheduled_scraping(self):
     """
-    Tarea periódica que verifica si debe ejecutar el scraping programado.
-    Se ejecuta cada minuto y verifica si la hora actual coincide con la hora configurada.
+    Tarea periódica que ejecuta el scraping programado.
+    El CrontabSchedule de django-celery-beat maneja cuándo ejecutar esta tarea,
+    por lo que ya no necesitamos verificar la hora manualmente.
     """
     from matching.models import ScheduledScraping
     from django.utils import timezone
-    from datetime import datetime, timedelta
     
     try:
         # Obtener configuración
@@ -473,24 +473,8 @@ def check_and_run_scheduled_scraping(self):
             }
         
         now = timezone.now()
-        # Usar hora local (Argentina) en lugar de UTC
         local_now = timezone.localtime(now)
-        current_time = local_now.time()
         scheduled_time = config.scheduled_time
-        
-        # Verificar si la hora actual está dentro de la ventana de 1 minuto
-        # (para evitar ejecutar múltiples veces)
-        current_hour = current_time.hour
-        current_minute = current_time.minute
-        scheduled_hour = scheduled_time.hour
-        scheduled_minute = scheduled_time.minute
-        
-        # Solo ejecutar si coincide la hora y el minuto
-        if current_hour != scheduled_hour or current_minute != scheduled_minute:
-            return {
-                'success': False,
-                'message': f'No es hora de ejecutar. Actual: {current_time.strftime("%H:%M")} (local), Programado: {scheduled_time.strftime("%H:%M")}'
-            }
         
         # ============================================================
         # 🔒 LOCK GLOBAL: Verificar si ya hay un scraping en curso
@@ -507,28 +491,22 @@ def check_and_run_scheduled_scraping(self):
                 'locked': True
             }
         
-        # Verificar si ya se ejecutó en esta hora programada hoy
-        # Solo bloquear si se ejecutó HOY a la MISMA HORA programada
+        # Verificar si ya se ejecutó hoy (prevenir ejecuciones duplicadas)
         if config.last_run:
             last_run_local = timezone.localtime(config.last_run)
             last_run_date = last_run_local.date()
-            last_run_time = last_run_local.time()
             today = local_now.date()
             
-            # Solo prevenir si:
-            # 1. Se ejecutó hoy (misma fecha)
-            # 2. Y fue a la misma hora programada (mismo hour:minute)
-            if (last_run_date == today and 
-                last_run_time.hour == scheduled_hour and 
-                last_run_time.minute == scheduled_minute):
-                logger.info(f"Scraping ya ejecutado hoy a las {last_run_local.strftime('%H:%M:%S')}")
+            # Si ya se ejecutó hoy, no ejecutar de nuevo
+            if last_run_date == today:
+                logger.info(f"✋ Scraping ya ejecutado hoy a las {last_run_local.strftime('%H:%M:%S')}")
                 return {
                     'success': False,
                     'message': f'Scraping ya ejecutado hoy a las {last_run_local.strftime("%H:%M:%S")}'
                 }
         
         # Ejecutar scraping
-        logger.info(f"🕒 Iniciando scraping programado a las {now.strftime('%H:%M:%S')}")
+        logger.info(f"🕒 Iniciando scraping programado a las {local_now.strftime('%H:%M:%S')}")
         
         # Llamar a la tarea de scraping global
         task = scrape_dvcarreras_jobs_stealth.delay()
@@ -545,7 +523,7 @@ def check_and_run_scheduled_scraping(self):
         
         return {
             'success': True,
-            'message': f'Scraping programado iniciado a las {now.strftime("%H:%M:%S")}',
+            'message': f'Scraping programado iniciado a las {local_now.strftime("%H:%M:%S")}',
             'task_id': task.id,
             'scheduled_time': scheduled_time.strftime('%H:%M')
         }
