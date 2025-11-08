@@ -2,7 +2,7 @@ FROM python:3.12-slim
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 WORKDIR /app
 
-# Dependencias del sistema y Chrome
+# Dependencias del sistema, Chrome y LibreOffice
 RUN apt-get update && apt-get install -y \
     build-essential \
     xvfb \
@@ -34,6 +34,9 @@ RUN apt-get update && apt-get install -y \
     lsb-release \
     xdg-utils \
     libgbm1 \
+    # LibreOffice para conversión DOCX a PDF
+    libreoffice-writer \
+    libreoffice-core \
   && rm -rf /var/lib/apt/lists/*
 
 # Instalar Google Chrome (método actualizado sin apt-key deprecado)
