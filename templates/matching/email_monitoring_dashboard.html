@@ -85,48 +85,6 @@
     </div>
 </div>
 
-<!-- Configuration Section -->
-<div class="row mb-5">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="bi bi-gear me-2"></i>Configuración Actual
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-3">
-                        <div class="text-center">
-                            <h6 class="text-muted mb-1">Límite Diario</h6>
-                            <h4 class="fw-bold text-primary">{{ user_config.daily_limit }}</h4>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="text-center">
-                            <h6 class="text-muted mb-1">Umbral de Match</h6>
-                            <h4 class="fw-bold text-success">{{ user_config.match_threshold }}%</h4>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="text-center">
-                            <h6 class="text-muted mb-1">Estado</h6>
-                            <span class="badge {% if user_config.is_active %}bg-success{% else %}bg-secondary{% endif %} fs-6">
-                                {% if user_config.is_active %}Activo{% else %}Inactivo{% endif %}
-                            </span>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="text-center">
-                            <h6 class="text-muted mb-1">Pausa entre Envíos</h6>
-                            <h4 class="fw-bold text-info">{{ user_config.min_pause }}-{{ user_config.max_pause }}s</h4>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
 <!-- Recent Emails Section -->
 <div class="row">
