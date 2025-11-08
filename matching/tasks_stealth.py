@@ -515,8 +515,34 @@ def check_and_run_scheduled_scraping(self):
                 'locked': True
             }
         
-        # Verificar si ya se ejecutó hoy (prevenir ejecuciones duplicadas)
+        # ============================================================
+        # 🔄 VERIFICAR SI LA HORA PROGRAMADA CAMBIÓ
+        # ============================================================
+        # Si el usuario cambió la hora programada, permitir ejecución inmediata
+        schedule_changed = False
         if config.last_run:
+            # Obtener la hora a la que se ejecutó la última vez
+            last_run_local = timezone.localtime(config.last_run)
+            last_run_time = last_run_local.time()
+            
+            # Comparar con la hora actualmente programada (con tolerancia de ±1 minuto)
+            time_diff_minutes = abs(
+                (scheduled_time.hour * 60 + scheduled_time.minute) -
+                (last_run_time.hour * 60 + last_run_time.minute)
+            )
+            
+            if time_diff_minutes > 1:  # Si la diferencia es mayor a 1 minuto
+                schedule_changed = True
+                logger.info(
+                    f"🔄 Hora programada cambió: "
+                    f"Anterior={last_run_time.strftime('%H:%M')}, "
+                    f"Nueva={scheduled_time.strftime('%H:%M')} - "
+                    f"Permitiendo ejecución inmediata"
+                )
+        
+        # Verificar si ya se ejecutó hoy (prevenir ejecuciones duplicadas)
+        # PERO: Si la hora programada cambió, permitir ejecución
+        if config.last_run and not schedule_changed:
             last_run_local = timezone.localtime(config.last_run)
             last_run_date = last_run_local.date()
             today = local_now.date()
