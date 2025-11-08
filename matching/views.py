@@ -2103,18 +2103,22 @@ def dv_login_manual_view(request):
 def scraping_logs_view(request, task_id):
     """Vista para obtener los logs GLOBALES de un scraping específico (solo admins)."""
     try:
+        from django.utils import timezone as django_timezone
+        
         # Obtener logs del scraping SIN filtrar por usuario (global para admins)
         logs = ScrapingLog.objects.filter(task_id=task_id).order_by("timestamp")
 
         # Convertir a formato JSON
         logs_data = []
         for log in logs:
+            # Convertir timestamp a zona horaria local (Buenos Aires)
+            local_timestamp = django_timezone.localtime(log.timestamp)
             logs_data.append(
                 {
                     "id": log.id,
                     "message": log.message,
                     "type": log.log_type,
-                    "timestamp": log.timestamp.strftime("%H:%M:%S"),
+                    "timestamp": local_timestamp.strftime("%H:%M:%S"),
                 }
             )
 
@@ -2132,15 +2136,19 @@ def scraping_logs_view(request, task_id):
 def scraping_logs_general_view(request):
     """Vista para obtener TODOS los logs GLOBALES (solo admins)"""
     try:
+        from django.utils import timezone as django_timezone
+        
         # Obtener TODOS los logs SIN filtrar por usuario (global para admins)
         logs = ScrapingLog.objects.all().order_by('timestamp')
         
         logs_data = []
         for log in logs:
+            # Convertir timestamp a zona horaria local (Buenos Aires)
+            local_timestamp = django_timezone.localtime(log.timestamp)
             logs_data.append({
                 "message": log.message,
                 "type": log.log_type,
-                "timestamp": log.timestamp.strftime("%H:%M:%S"),
+                "timestamp": local_timestamp.strftime("%H:%M:%S"),
                 "task_id": log.task_id
             })
 
