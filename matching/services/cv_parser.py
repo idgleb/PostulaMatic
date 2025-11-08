@@ -61,14 +61,40 @@ class CVParser:
             )
 
         try:
-            # Delegar al parser especializado
-            if file_extension == ".pdf":
+            # ============================================================
+            # 🆕 NUEVO: Procesar DOCX con IA (convertir a PDF primero)
+            # ============================================================
+            if file_extension == ".docx":
+                logger.info(f"🔍 CVParser: Convirtiendo DOCX a PDF para procesamiento con IA")
+                print(f"🔍 CVParser: Convirtiendo DOCX a PDF para procesamiento con IA")
+                
+                if progress_tracker:
+                    progress_tracker.update_step("docx_to_pdf", "in_progress", "Convirtiendo DOCX a PDF")
+                
+                # Convertir DOCX a PDF temporal
+                pdf_path = self._convert_docx_to_pdf(str(file_path))
+                
+                if progress_tracker:
+                    progress_tracker.update_step("docx_to_pdf", "completed", "DOCX convertido a PDF")
+                
+                # Procesar el PDF con IA
+                logger.info(f"🔍 CVParser: Usando AIPDFParser para DOCX convertido")
+                print(f"🔍 CVParser: Usando AIPDFParser para DOCX convertido")
+                result = self.pdf_parser.parse_cv(pdf_path, progress_tracker=progress_tracker)
+                
+                # Limpiar archivo temporal
+                import os
+                if os.path.exists(pdf_path):
+                    os.remove(pdf_path)
+                    logger.info(f"🔍 CVParser: Archivo PDF temporal eliminado")
+                
+                logger.info(f"🔍 CVParser: DOCX procesado con IA exitosamente")
+                print(f"🔍 CVParser: DOCX procesado con IA exitosamente")
+                
+            elif file_extension == ".pdf":
                 logger.info(f"🔍 CVParser: Usando AIPDFParser para {file_path}")
                 result = self.pdf_parser.parse_cv(str(file_path), progress_tracker=progress_tracker)
                 logger.info(f"🔍 CVParser: Resultado del AIPDFParser: {type(result)}")
-            elif file_extension == ".docx":
-                logger.info(f"🔍 CVParser: Usando DOCXParser para {file_path}")
-                result = self.docx_parser.parse_cv(str(file_path))
             else:
                 raise CVParserError(f"Parser no implementado para {file_extension}")
 
@@ -109,6 +135,69 @@ class CVParser:
             else:
                 logger.error(f"🔴 ERROR NO ES DE IA: {str(e)}")
                 raise CVParserError(f"Error procesando el archivo: {str(e)}")
+
+    def _convert_docx_to_pdf(self, docx_path: str) -> str:
+        """
+        Convierte un archivo DOCX a PDF temporal para procesamiento con IA.
+        
+        Args:
+            docx_path: Ruta al archivo DOCX
+            
+        Returns:
+            Ruta al archivo PDF temporal
+            
+        Raises:
+            CVParserError: Si la conversión falla
+        """
+        try:
+            import os
+            import tempfile
+            from docx2pdf import convert
+            
+            logger.info(f"🔄 Iniciando conversión de DOCX a PDF: {docx_path}")
+            
+            # Crear archivo PDF temporal
+            temp_dir = tempfile.gettempdir()
+            base_name = os.path.basename(docx_path).replace('.docx', '')
+            pdf_filename = f"temp_cv_{base_name}_{os.getpid()}.pdf"
+            pdf_path = os.path.join(temp_dir, pdf_filename)
+            
+            logger.info(f"🔄 Ruta PDF temporal: {pdf_path}")
+            
+            # Convertir DOCX a PDF
+            # Nota: docx2pdf requiere Microsoft Word (Windows) o LibreOffice (Linux/Mac)
+            convert(docx_path, pdf_path)
+            
+            # Verificar que el PDF se creó correctamente
+            if not os.path.exists(pdf_path):
+                raise CVParserError("El archivo PDF no se generó correctamente")
+            
+            file_size = os.path.getsize(pdf_path)
+            logger.info(f"✅ DOCX convertido a PDF exitosamente: {pdf_path} ({file_size} bytes)")
+            
+            return pdf_path
+            
+        except ImportError as e:
+            error_msg = (
+                "❌ La biblioteca 'docx2pdf' no está instalada o no está disponible. "
+                "Para procesar archivos DOCX con IA, necesitas instalar: pip install docx2pdf"
+            )
+            logger.error(error_msg)
+            raise CVParserError(error_msg)
+        except Exception as e:
+            error_msg = f"❌ Error convirtiendo DOCX a PDF: {str(e)}"
+            logger.error(error_msg)
+            logger.error(f"🔍 Tipo de error: {type(e)}")
+            
+            # Si es un error de que no hay Word/LibreOffice instalado
+            if "no such file" in str(e).lower() or "cannot find" in str(e).lower():
+                raise CVParserError(
+                    "❌ No se pudo convertir DOCX a PDF. "
+                    "El servidor necesita Microsoft Word (Windows) o LibreOffice (Linux/Mac) instalado. "
+                    "Por favor, contacta al administrador del sistema."
+                )
+            else:
+                raise CVParserError(error_msg)
 
     def _normalize_result(self, result: Dict, file_extension: str) -> Dict:
         """
