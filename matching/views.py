@@ -1120,9 +1120,35 @@ def scheduled_scraping_config(request):
                 )
                 logger.info(f"✅ Tarea periódica creada: {task.name} - Schedule: {crontab}")
             
+            # ============================================================
+            # 🔄 FORZAR RECARGA: Hacer que el beat detecte el cambio inmediatamente
+            # ============================================================
+            try:
+                from django.core.cache import cache
+                
+                # Limpiar el cache del scheduler de django-celery-beat
+                # Esto fuerza al beat a recargar el schedule desde la BD
+                cache_keys = [
+                    'celery-beat-schedule',
+                    'celery-beat-last-run',
+                    f'celery-beat-task-{task.id}',
+                ]
+                for key in cache_keys:
+                    cache.delete(key)
+                
+                # Actualizar last_run_at a NULL para forzar recalcular el próximo run
+                # Esto hace que el beat recalcule inmediatamente cuándo debe ejecutarse
+                task.last_run_at = None
+                task.save(update_fields=['last_run_at'])
+                
+                logger.info(f"🔄 Cache del scheduler limpiado, beat recargará el schedule inmediatamente")
+            except Exception as e:
+                # No fallar si la limpieza de cache falla
+                logger.warning(f"⚠️ No se pudo limpiar el cache del scheduler: {e}")
+            
             return JsonResponse({
                 'success': True,
-                'message': 'Configuración guardada exitosamente',
+                'message': f'Configuración guardada exitosamente. El scraping se ejecutará diariamente a las {scheduled_time.strftime("%H:%M")}.',
                 'config': {
                     'is_enabled': config.is_enabled,
                     'scheduled_time': config.scheduled_time.strftime('%H:%M'),
