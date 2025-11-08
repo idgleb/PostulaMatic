@@ -23,5 +23,4 @@ anthropic
 undetected-chromedriver
 selenium
 reportlab
-docx2pdf
 

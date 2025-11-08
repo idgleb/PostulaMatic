@@ -82,11 +82,13 @@ class CVParser:
                 print(f"🔍 CVParser: Usando AIPDFParser para DOCX convertido")
                 result = self.pdf_parser.parse_cv(pdf_path, progress_tracker=progress_tracker)
                 
-                # Limpiar archivo temporal
+                # Limpiar archivo temporal y directorio
                 import os
-                if os.path.exists(pdf_path):
-                    os.remove(pdf_path)
-                    logger.info(f"🔍 CVParser: Archivo PDF temporal eliminado")
+                import shutil
+                temp_dir = os.path.dirname(pdf_path)
+                if os.path.exists(temp_dir):
+                    shutil.rmtree(temp_dir)
+                    logger.info(f"🔍 CVParser: Directorio temporal eliminado: {temp_dir}")
                 
                 logger.info(f"🔍 CVParser: DOCX procesado con IA exitosamente")
                 print(f"🔍 CVParser: DOCX procesado con IA exitosamente")
@@ -138,7 +140,7 @@ class CVParser:
 
     def _convert_docx_to_pdf(self, docx_path: str) -> str:
         """
-        Convierte un archivo DOCX a PDF temporal para procesamiento con IA.
+        Convierte un archivo DOCX a PDF temporal para procesamiento con IA usando LibreOffice.
         
         Args:
             docx_path: Ruta al archivo DOCX
@@ -152,35 +154,80 @@ class CVParser:
         try:
             import os
             import tempfile
-            from docx2pdf import convert
+            import subprocess
+            import time
             
-            logger.info(f"🔄 Iniciando conversión de DOCX a PDF: {docx_path}")
+            logger.info(f"🔄 Iniciando conversión de DOCX a PDF con LibreOffice: {docx_path}")
             
-            # Crear archivo PDF temporal
-            temp_dir = tempfile.gettempdir()
-            base_name = os.path.basename(docx_path).replace('.docx', '')
-            pdf_filename = f"temp_cv_{base_name}_{os.getpid()}.pdf"
-            pdf_path = os.path.join(temp_dir, pdf_filename)
+            # Verificar que el archivo DOCX existe
+            if not os.path.exists(docx_path):
+                raise CVParserError(f"El archivo DOCX no existe: {docx_path}")
             
-            logger.info(f"🔄 Ruta PDF temporal: {pdf_path}")
+            # Crear directorio temporal para el PDF
+            temp_dir = tempfile.mkdtemp()
             
-            # Convertir DOCX a PDF
-            # Nota: docx2pdf requiere Microsoft Word (Windows) o LibreOffice (Linux/Mac)
-            convert(docx_path, pdf_path)
+            logger.info(f"🔄 Directorio temporal: {temp_dir}")
+            
+            # Comando de LibreOffice para convertir DOCX a PDF
+            # --headless: sin interfaz gráfica
+            # --convert-to pdf: formato de salida
+            # --outdir: directorio de salida
+            cmd = [
+                'libreoffice',
+                '--headless',
+                '--convert-to',
+                'pdf',
+                '--outdir',
+                temp_dir,
+                docx_path
+            ]
+            
+            logger.info(f"🔄 Ejecutando comando: {' '.join(cmd)}")
+            
+            # Ejecutar LibreOffice con timeout de 60 segundos
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=60
+            )
+            
+            # Verificar el resultado
+            if result.returncode != 0:
+                error_msg = f"LibreOffice falló con código {result.returncode}"
+                if result.stderr:
+                    error_msg += f"\nError: {result.stderr}"
+                logger.error(error_msg)
+                raise CVParserError(error_msg)
+            
+            # El PDF generado tendrá el mismo nombre que el DOCX pero con extensión .pdf
+            base_name = os.path.basename(docx_path).replace('.docx', '.pdf')
+            pdf_path = os.path.join(temp_dir, base_name)
+            
+            # Esperar un poco para asegurar que el archivo se escribió completamente
+            time.sleep(0.5)
             
             # Verificar que el PDF se creó correctamente
             if not os.path.exists(pdf_path):
-                raise CVParserError("El archivo PDF no se generó correctamente")
+                raise CVParserError(
+                    f"El archivo PDF no se generó. Esperado en: {pdf_path}\n"
+                    f"Archivos en {temp_dir}: {os.listdir(temp_dir)}"
+                )
             
             file_size = os.path.getsize(pdf_path)
             logger.info(f"✅ DOCX convertido a PDF exitosamente: {pdf_path} ({file_size} bytes)")
             
             return pdf_path
             
-        except ImportError as e:
+        except subprocess.TimeoutExpired:
+            error_msg = "❌ La conversión de DOCX a PDF excedió el tiempo límite (60s)"
+            logger.error(error_msg)
+            raise CVParserError(error_msg)
+        except FileNotFoundError:
             error_msg = (
-                "❌ La biblioteca 'docx2pdf' no está instalada o no está disponible. "
-                "Para procesar archivos DOCX con IA, necesitas instalar: pip install docx2pdf"
+                "❌ LibreOffice no está instalado o no está en el PATH. "
+                "Para procesar archivos DOCX con IA, necesitas LibreOffice instalado. "
+                "En el contenedor Docker ya debería estar instalado."
             )
             logger.error(error_msg)
             raise CVParserError(error_msg)
@@ -188,16 +235,7 @@ class CVParser:
             error_msg = f"❌ Error convirtiendo DOCX a PDF: {str(e)}"
             logger.error(error_msg)
             logger.error(f"🔍 Tipo de error: {type(e)}")
-            
-            # Si es un error de que no hay Word/LibreOffice instalado
-            if "no such file" in str(e).lower() or "cannot find" in str(e).lower():
-                raise CVParserError(
-                    "❌ No se pudo convertir DOCX a PDF. "
-                    "El servidor necesita Microsoft Word (Windows) o LibreOffice (Linux/Mac) instalado. "
-                    "Por favor, contacta al administrador del sistema."
-                )
-            else:
-                raise CVParserError(error_msg)
+            raise CVParserError(error_msg)
 
     def _normalize_result(self, result: Dict, file_extension: str) -> Dict:
         """
