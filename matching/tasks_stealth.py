@@ -477,6 +477,30 @@ def check_and_run_scheduled_scraping(self):
         scheduled_time = config.scheduled_time
         
         # ============================================================
+        # 🔍 VERIFICAR CONSISTENCIA: CrontabSchedule vs ScheduledScraping
+        # ============================================================
+        from django_celery_beat.models import PeriodicTask
+        
+        periodic_task = PeriodicTask.objects.filter(
+            task='matching.tasks_stealth.check_and_run_scheduled_scraping'
+        ).first()
+        
+        if periodic_task and periodic_task.crontab:
+            expected_hour = config.scheduled_time.hour
+            expected_minute = config.scheduled_time.minute
+            actual_hour = int(periodic_task.crontab.hour)
+            actual_minute = int(periodic_task.crontab.minute)
+            
+            if actual_hour != expected_hour or actual_minute != expected_minute:
+                logger.warning(
+                    f"⚠️ Inconsistencia detectada entre ScheduledScraping y CrontabSchedule: "
+                    f"ScheduledScraping={expected_hour:02d}:{expected_minute:02d}, "
+                    f"CrontabSchedule={actual_hour:02d}:{actual_minute:02d}"
+                )
+                # Opcional: Auto-corregir la inconsistencia
+                # periodic_task.crontab = CrontabSchedule.objects.get_or_create(...)
+        
+        # ============================================================
         # 🔒 LOCK GLOBAL: Verificar si ya hay un scraping en curso
         # ============================================================
         from matching.services.scraping_lock import scraping_lock
