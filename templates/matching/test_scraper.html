@@ -982,6 +982,9 @@ function loadAllLogsFromDatabase(forceReload = false) {
     }
 }
 
+// Variable global para almacenar la última URL de screenshot
+let lastScreenshotUrl = null;
+
 // Función para actualizar screenshots en tiempo real
 function updateLiveScreenshots() {
     if (!currentTaskId) return;
@@ -990,23 +993,29 @@ function updateLiveScreenshots() {
         .then(response => response.json())
         .then(data => {
             if (data.success && data.screenshot_url) {
-                const screenshotContainer = document.getElementById('liveScreenshots');
-                if (screenshotContainer) {
-                    screenshotContainer.innerHTML = `
-                        <div class="text-center w-100">
-                            <img src="${data.screenshot_url}" 
-                                 class="img-fluid rounded shadow" 
-                                 style="max-width: 100%; max-height: 550px; object-fit: contain; border: 2px solid #007bff;"
-                                 alt="Screenshot en vivo">
-                            <div class="mt-2">
-                                <small class="text-light">
-                                    <i class="bi bi-camera me-1"></i>
-                                    Vista en vivo - ${new Date().toLocaleTimeString()}
-                                </small>
+                // Solo actualizar si la URL cambió (nuevo screenshot)
+                if (data.screenshot_url !== lastScreenshotUrl) {
+                    lastScreenshotUrl = data.screenshot_url;
+                    
+                    const screenshotContainer = document.getElementById('liveScreenshots');
+                    if (screenshotContainer) {
+                        screenshotContainer.innerHTML = `
+                            <div class="text-center w-100">
+                                <img src="${data.screenshot_url}" 
+                                     class="img-fluid rounded shadow" 
+                                     style="max-width: 100%; max-height: 550px; object-fit: contain; border: 2px solid #007bff;"
+                                     alt="Screenshot en vivo">
+                                <div class="mt-2">
+                                    <small class="text-light">
+                                        <i class="bi bi-camera me-1"></i>
+                                        Vista en vivo - ${new Date().toLocaleTimeString()}
+                                    </small>
+                                </div>
                             </div>
-                        </div>
-                    `;
+                        `;
+                    }
                 }
+                // Si la URL no cambió, no hacemos nada (mantiene el screenshot anterior sin recargar)
             }
         })
         .catch(error => {
