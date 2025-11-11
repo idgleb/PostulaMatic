@@ -1,0 +1,9 @@
+# Comando para aplicar fix de timeout directamente en el servidor
+# Copia y pega este comando en tu terminal:
+
+ssh -i ~/.ssh/postulamatic_win_ed25519 deploy@178.156.188.95 'cd /home/deploy/apps/postulamatic && grep -r "migrate --check" . 2>/dev/null | head -5'
+
+# Si encuentra archivos, ejecuta esto para modificarlos:
+
+ssh -i ~/.ssh/postulamatic_win_ed25519 deploy@178.156.188.95 'cd /home/deploy/apps/postulamatic && for file in $(grep -r "migrate --check" . 2>/dev/null | cut -d: -f1 | sort -u); do echo "Modificando: $file"; cp "$file" "${file}.backup.$(date +%Y%m%d_%H%M%S)"; sed -i "s/.*migrate --check.*/echo \"🔄 Aplicando migraciones...\"\ndocker compose run --rm postulamatic_web python manage.py migrate --noinput/" "$file"; done && echo "✅ Fix aplicado"'
+
