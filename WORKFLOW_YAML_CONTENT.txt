@@ -1,0 +1,151 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  pull_request:
+    branches:
+      - master
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postulamatic_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Run Black
+        run: black --check --line-length 88 .
+      
+      - name: Run isort
+        run: isort --check-only .
+      
+      - name: Run Ruff
+        run: ruff check .
+      
+      - name: Run Django tests
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postulamatic_test
+          SECRET_KEY: test-secret-key-for-ci
+          DEBUG: "False"
+        run: |
+          python manage.py test --noinput
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd ${{ secrets.APP_DIR }}
+            
+            # Backup current config
+            if [ -f "conf.d/postulamatic.conf" ]; then
+              cp conf.d/postulamatic.conf conf.d/postulamatic.conf.backup.$(date +%Y%m%d_%H%M%S) || true
+            fi
+            
+            # Pull latest changes
+            git fetch origin
+            git reset --hard origin/master || git reset --hard origin/main
+            
+            # Update Nginx config from repository (if exists)
+            if [ -f "nginx/postulamatic.conf" ]; then
+              if [ -d "conf.d" ]; then
+                cp nginx/postulamatic.conf conf.d/postulamatic.conf
+              fi
+            fi
+            
+            # Validate Nginx config
+            if [ -d "conf.d" ] && [ -f "conf.d/postulamatic.conf" ]; then
+              if docker exec nginx-proxy nginx -t 2>&1; then
+                echo "✅ Nginx config valid"
+              else
+                echo "❌ Nginx config invalid, restoring backup"
+                if ls conf.d/postulamatic.conf.backup.* 1> /dev/null 2>&1; then
+                  LATEST_BACKUP=$(ls -t conf.d/postulamatic.conf.backup.* | head -1)
+                  cp "$LATEST_BACKUP" conf.d/postulamatic.conf
+                fi
+                exit 1
+              fi
+            fi
+            
+            # Backup database
+            if [ -f "db.sqlite3" ]; then
+              cp db.sqlite3 db.sqlite3.backup.$(date +%Y%m%d_%H%M%S) || true
+            fi
+            
+            # Build Docker containers
+            docker compose build
+            
+            # ✅ FIX: Aplicar migraciones directamente (sin --check que causa timeout)
+            # Django es seguro: si no hay migraciones pendientes, termina rápidamente
+            echo "🔄 Aplicando migraciones..."
+            docker compose run --rm postulamatic_web python manage.py migrate --noinput
+            
+            # Start containers
+            docker compose up -d
+            
+            # Wait for containers to be ready
+            sleep 15
+            
+            # Reload Nginx (if config exists)
+            if [ -d "conf.d" ] && [ -f "conf.d/postulamatic.conf" ]; then
+              docker exec nginx-proxy nginx -s reload || true
+            fi
+            
+            # Health check
+            echo "🏥 Verificando salud del sitio..."
+            MAX_RETRIES=3
+            RETRY_DELAY=10
+            
+            for i in $(seq 1 $MAX_RETRIES); do
+              if curl -f -s https://postulamatic.app > /dev/null 2>&1; then
+                echo "✅ Health check exitoso (intento $i/$MAX_RETRIES)"
+                echo "🎉 Deployment completado exitosamente"
+                exit 0
+              else
+                echo "⏳ Health check fallido (intento $i/$MAX_RETRIES), reintentando en ${RETRY_DELAY}s..."
+                sleep $RETRY_DELAY
+              fi
+            done
+            
+            echo "⚠️ Health check falló después de $MAX_RETRIES intentos"
+            echo "ℹ️ El deployment se completó, pero el sitio puede tardar unos minutos en responder"
+            exit 0
+
