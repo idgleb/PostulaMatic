@@ -1,0 +1,17 @@
+# Development and CI/CD dependencies
+# These are not needed in production
+
+# Code formatting
+black==24.8.0
+isort==5.13.2
+
+# Linting
+ruff==0.6.9
+
+# Testing (if needed)
+pytest==8.3.3
+pytest-django==4.8.0
+
+# Development tools
+ipython==8.25.0
+
