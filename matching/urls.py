@@ -109,6 +109,7 @@ urlpatterns = [
     path("process-auto-matching/", views_email_monitoring.process_auto_matching, name="process_auto_matching"),
     path("email-statistics/", views_email_monitoring.email_statistics, name="email_statistics"),
     path("api/email-statistics/", views_email_monitoring.email_statistics_api, name="email_statistics_api"),
+    path("api/paginated-emails/", views_email_monitoring.paginated_emails_api, name="paginated_emails_api"),
     path("api/user-cvs/", views_email_monitoring.get_user_cvs_api, name="get_user_cvs_api"),
     path("task-status/<str:task_id>/", views_email_monitoring.task_status, name="task_status"),
     path("cleanup-email-logs/", views_email_monitoring.cleanup_email_logs, name="cleanup_email_logs"),

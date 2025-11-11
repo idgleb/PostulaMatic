@@ -99,9 +99,9 @@
                 </button>
             </div>
             <div class="card-body" id="recentEmailsContainer">
-                {% if recent_emails %}
+                {% if emails_page %}
                     <div id="recentEmailsList">
-                    {% for email in recent_emails %}
+                    {% for email in emails_page %}
                     <div class="row align-items-center mb-3 border rounded {% if email.status == 'failed' %}border-danger{% elif email.status == 'retry' %}border-warning{% else %}border-success{% endif %}" 
                          style="transition: all 0.3s ease; position: relative;"
                          id="email-item-{{ email.id }}">
@@ -180,6 +180,60 @@
                     </div>
                     {% endfor %}
                     </div>
+                    
+                    <!-- Controles de paginación -->
+                    {% if emails_page.paginator.num_pages > 1 %}
+                    <nav aria-label="Paginación de emails" class="mt-4">
+                        <ul class="pagination justify-content-center" id="emailsPagination">
+                            {% if emails_page.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1" onclick="loadEmailsPage(1); return false;">
+                                        <i class="bi bi-chevron-double-left"></i> Primera
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ emails_page.previous_page_number }}" onclick="loadEmailsPage({{ emails_page.previous_page_number }}); return false;">
+                                        <i class="bi bi-chevron-left"></i> Anterior
+                                    </a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link"><i class="bi bi-chevron-double-left"></i> Primera</span>
+                                </li>
+                                <li class="page-item disabled">
+                                    <span class="page-link"><i class="bi bi-chevron-left"></i> Anterior</span>
+                                </li>
+                            {% endif %}
+                            
+                            <li class="page-item active">
+                                <span class="page-link">
+                                    Página {{ emails_page.number }} de {{ emails_page.paginator.num_pages }}
+                                    <small class="d-block text-muted">({{ emails_page.paginator.count }} total)</small>
+                                </span>
+                            </li>
+                            
+                            {% if emails_page.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ emails_page.next_page_number }}" onclick="loadEmailsPage({{ emails_page.next_page_number }}); return false;">
+                                        Siguiente <i class="bi bi-chevron-right"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ emails_page.paginator.num_pages }}" onclick="loadEmailsPage({{ emails_page.paginator.num_pages }}); return false;">
+                                        Última <i class="bi bi-chevron-double-right"></i>
+                                    </a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">Siguiente <i class="bi bi-chevron-right"></i></span>
+                                </li>
+                                <li class="page-item disabled">
+                                    <span class="page-link">Última <i class="bi bi-chevron-double-right"></i></span>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
                 {% else %}
                     <div class="text-center py-5" id="noEmailsMessage">
                         <i class="bi bi-inbox display-1 text-muted"></i>
@@ -889,7 +943,7 @@ if (!document.getElementById('alertAnimationStyles')) {
     document.head.appendChild(alertStyles);
 }
 
-// Actualizar estadísticas en tiempo real
+// Actualizar estadísticas en tiempo real (sin actualizar lista paginada)
 async function updateStatistics() {
     try {
         const response = await fetch('/matching/api/email-statistics/');
@@ -902,11 +956,194 @@ async function updateStatistics() {
             document.getElementById('successRateStat').textContent = data.stats.success_rate + '%';
             document.getElementById('dailyLimitStat').textContent = data.stats.daily_limit;
             
-            // Actualizar emails recientes
-            updateRecentEmails(data.recent_emails);
+            // NO actualizar la lista de emails aquí - la paginación se mantiene
+            // Solo actualizar si estamos en la primera página y no hay paginación activa
+            const pagination = document.getElementById('emailsPagination');
+            if (!pagination) {
+                // Solo actualizar si no hay paginación (menos de 20 emails)
+                updateRecentEmails(data.recent_emails);
+            }
         }
     } catch (error) {
         console.error('Error actualizando estadísticas:', error);
+    }
+}
+
+// Variable para rastrear la página actual
+let currentPage = {% if emails_page %}{{ emails_page.number }}{% else %}1{% endif %};
+
+// Cargar página específica de emails vía AJAX
+async function loadEmailsPage(pageNumber) {
+    try {
+        // Mostrar indicador de carga
+        const container = document.getElementById('recentEmailsContainer');
+        const oldContent = container.innerHTML;
+        container.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div><p class="mt-2 text-muted">Cargando emails...</p></div>';
+        
+        const response = await fetch(`/matching/api/paginated-emails/?page=${pageNumber}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            currentPage = data.pagination.current_page;
+            
+            // Construir HTML de los emails
+            let html = '<div id="recentEmailsList">';
+            
+            if (data.emails.length === 0) {
+                html = `
+                    <div class="text-center py-5" id="noEmailsMessage">
+                        <i class="bi bi-inbox display-1 text-muted"></i>
+                        <h5 class="text-muted mt-3">No hay emails en esta página</h5>
+                    </div>
+                `;
+            } else {
+                data.emails.forEach(email => {
+                    const borderClass = email.status === 'failed' ? 'border-danger' : 
+                                      email.status === 'retry' ? 'border-warning' : 'border-success';
+                    const badgeClass = email.status === 'sent' ? 'bg-success' : 
+                                     email.status === 'failed' ? 'bg-danger' : 
+                                     email.status === 'retry' ? 'bg-warning' : 'bg-secondary';
+                    
+                    // Truncar textos largos
+                    const truncate = (str, maxLen) => str && str.length > maxLen ? str.substring(0, maxLen - 3) + '...' : (str || '');
+                    
+                    html += `
+                        <div class="row align-items-center mb-3 border rounded ${borderClass}" 
+                             style="transition: all 0.3s ease; position: relative;"
+                             id="email-item-${email.id}">
+                            <!-- Botón eliminar individual -->
+                            <button class="btn btn-sm btn-danger" 
+                                    style="position: absolute; top: -8px; right: -8px; z-index: 10; padding: 4px 8px; font-size: 0.75rem; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;"
+                                    onclick="deleteEmail(${email.id});"
+                                    title="Eliminar este email">
+                                <i class="bi bi-trash" style="font-size: 0.75rem;"></i>
+                            </button>
+                            <div class="col-md-3 p-3" 
+                                 style="cursor: pointer;"
+                                 onclick="showEmailDetailModal(${email.id})"
+                                 onmouseover="this.parentElement.style.backgroundColor='#f8f9fa';"
+                                 onmouseout="this.parentElement.style.backgroundColor='';">
+                                <h6 class="mb-1">
+                                    <i class="bi bi-briefcase me-2"></i>${truncate(email.job_title, 30)}
+                                </h6>
+                                <small class="text-muted">
+                                    <i class="bi bi-envelope me-1"></i>${truncate(email.sent_to, 25)}
+                                </small>
+                            </div>
+                            <div class="col-md-3 p-3" 
+                                 style="cursor: pointer;"
+                                 onclick="showEmailDetailModal(${email.id})"
+                                 onmouseover="this.parentElement.style.backgroundColor='#f8f9fa';"
+                                 onmouseout="this.parentElement.style.backgroundColor='';">
+                                <small class="text-muted d-block">
+                                    <i class="bi bi-chat-left-text me-1"></i><strong>Asunto:</strong> ${truncate(email.email_subject || '', 30)}
+                                </small>
+                                <small class="text-muted d-block">
+                                    <i class="bi bi-file-text me-1"></i><strong>Carta:</strong> ${truncate(email.email_body || '', 30)}
+                                </small>
+                            </div>
+                            <div class="col-md-2 p-3" 
+                                 style="cursor: pointer;"
+                                 onclick="showEmailDetailModal(${email.id})"
+                                 onmouseover="this.parentElement.style.backgroundColor='#f8f9fa';"
+                                 onmouseout="this.parentElement.style.backgroundColor='';">
+                                <small class="text-muted d-block">
+                                    <i class="bi bi-file-earmark-pdf me-1"></i>${truncate(email.cv_filename || '[CV eliminado]', 9)}
+                                </small>
+                            </div>
+                            <div class="col-md-2 p-3" 
+                                 style="cursor: pointer;"
+                                 onclick="showEmailDetailModal(${email.id})"
+                                 onmouseover="this.parentElement.style.backgroundColor='#f8f9fa';"
+                                 onmouseout="this.parentElement.style.backgroundColor='';">
+                                <span class="badge ${badgeClass}">${email.status_display || email.status}</span>
+                            </div>
+                            <div class="col-md-2 text-end p-3" 
+                                 style="cursor: pointer;"
+                                 onclick="showEmailDetailModal(${email.id})"
+                                 onmouseover="this.parentElement.style.backgroundColor='#f8f9fa';"
+                                 onmouseout="this.parentElement.style.backgroundColor='';">
+                                <small class="text-muted d-block">
+                                    <i class="bi bi-calendar me-1"></i>${email.sent_at_date}
+                                </small>
+                                <small class="text-muted d-block">
+                                    <i class="bi bi-clock me-1"></i>${email.sent_at_time}
+                                </small>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                
+                // Agregar controles de paginación
+                if (data.pagination.total_pages > 1) {
+                    html += `
+                        <nav aria-label="Paginación de emails" class="mt-4">
+                            <ul class="pagination justify-content-center" id="emailsPagination">
+                                ${data.pagination.has_previous ? `
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1" onclick="loadEmailsPage(1); return false;">
+                                            <i class="bi bi-chevron-double-left"></i> Primera
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=${data.pagination.previous_page}" onclick="loadEmailsPage(${data.pagination.previous_page}); return false;">
+                                            <i class="bi bi-chevron-left"></i> Anterior
+                                        </a>
+                                    </li>
+                                ` : `
+                                    <li class="page-item disabled">
+                                        <span class="page-link"><i class="bi bi-chevron-double-left"></i> Primera</span>
+                                    </li>
+                                    <li class="page-item disabled">
+                                        <span class="page-link"><i class="bi bi-chevron-left"></i> Anterior</span>
+                                    </li>
+                                `}
+                                
+                                <li class="page-item active">
+                                    <span class="page-link">
+                                        Página ${data.pagination.current_page} de ${data.pagination.total_pages}
+                                        <small class="d-block text-muted">(${data.pagination.total_count} total)</small>
+                                    </span>
+                                </li>
+                                
+                                ${data.pagination.has_next ? `
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=${data.pagination.next_page}" onclick="loadEmailsPage(${data.pagination.next_page}); return false;">
+                                            Siguiente <i class="bi bi-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=${data.pagination.total_pages}" onclick="loadEmailsPage(${data.pagination.total_pages}); return false;">
+                                            Última <i class="bi bi-chevron-double-right"></i>
+                                        </a>
+                                    </li>
+                                ` : `
+                                    <li class="page-item disabled">
+                                        <span class="page-link">Siguiente <i class="bi bi-chevron-right"></i></span>
+                                    </li>
+                                    <li class="page-item disabled">
+                                        <span class="page-link">Última <i class="bi bi-chevron-double-right"></i></span>
+                                    </li>
+                                `}
+                            </ul>
+                        </nav>
+                    `;
+                }
+            }
+            
+            container.innerHTML = html;
+            
+            // Scroll suave al inicio de la lista
+            container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+            container.innerHTML = oldContent;
+            showAlert('Error al cargar los emails', 'error');
+        }
+    } catch (error) {
+        console.error('Error cargando página de emails:', error);
+        const container = document.getElementById('recentEmailsContainer');
+        container.innerHTML = '<div class="alert alert-danger">Error al cargar los emails. Por favor, recarga la página.</div>';
     }
 }
 
@@ -1037,21 +1274,42 @@ async function deleteEmail(emailId) {
         const data = await response.json();
         
         if (data.success) {
-            // Remover el elemento del DOM con animación
-            const emailItem = document.getElementById(`email-item-${emailId}`);
-            if (emailItem) {
-                emailItem.style.opacity = '0';
-                emailItem.style.transform = 'translateX(100px)';
-                setTimeout(() => {
-                    emailItem.remove();
-                    // Si no quedan emails, mostrar mensaje
-                    const emailsList = document.getElementById('recentEmailsList');
-                    if (emailsList && emailsList.children.length === 0) {
-                        showNoEmailsMessage();
-                    }
-                }, 300);
-            }
             showAlert('Email eliminado correctamente', 'success');
+            
+            // Verificar si hay paginación activa
+            const pagination = document.getElementById('emailsPagination');
+            if (pagination) {
+                // Si hay paginación, usar la variable currentPage para recargar
+                let pageNumber = currentPage;
+                
+                // Verificar cuántos emails quedan en la página actual (después de eliminar)
+                const emailsList = document.getElementById('recentEmailsList');
+                const remainingEmails = emailsList ? emailsList.children.length - 1 : 0; // -1 porque estamos eliminando uno
+                
+                // Si no quedan emails en la página actual y no es la primera página, ir a la anterior
+                if (remainingEmails === 0 && pageNumber > 1) {
+                    pageNumber = pageNumber - 1;
+                }
+                
+                // Recargar la página
+                loadEmailsPage(pageNumber);
+            } else {
+                // Si no hay paginación, simplemente remover el elemento
+                const emailItem = document.getElementById(`email-item-${emailId}`);
+                if (emailItem) {
+                    emailItem.style.opacity = '0';
+                    emailItem.style.transform = 'translateX(100px)';
+                    setTimeout(() => {
+                        emailItem.remove();
+                        // Si no quedan emails, mostrar mensaje
+                        const emailsList = document.getElementById('recentEmailsList');
+                        if (emailsList && emailsList.children.length === 0) {
+                            showNoEmailsMessage();
+                        }
+                    }, 300);
+                }
+            }
+            
             // Actualizar estadísticas
             updateStatistics();
         } else {
@@ -1083,14 +1341,8 @@ async function deleteAllEmails() {
         const data = await response.json();
         
         if (data.success) {
-            // Limpiar la lista de emails
-            const emailsList = document.getElementById('recentEmailsList');
-            if (emailsList) {
-                emailsList.style.opacity = '0';
-                setTimeout(() => {
-                    showNoEmailsMessage();
-                }, 300);
-            }
+            // Mostrar mensaje de "no hay emails"
+            showNoEmailsMessage();
             showAlert(`${data.deleted_count} email(s) eliminado(s) correctamente`, 'success');
             // Actualizar estadísticas
             updateStatistics();

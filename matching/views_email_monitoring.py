@@ -54,10 +54,14 @@ def email_monitoring_dashboard(request):
         ).count()
         stats['success_rate'] = round((successful / total_sent) * 100, 1)
     
-    # Emails recientes
-    recent_emails = EmailSentLog.objects.filter(
+    # Emails recientes con paginación (20 por página)
+    emails_query = EmailSentLog.objects.filter(
         user=request.user
-    ).select_related('job_posting', 'cv')[:10]
+    ).select_related('job_posting', 'cv').order_by('-sent_at')
+    
+    paginator = Paginator(emails_query, 20)
+    page_number = request.GET.get('page', 1)
+    emails_page = paginator.get_page(page_number)
     
     # Configuración del usuario
     try:
@@ -80,7 +84,7 @@ def email_monitoring_dashboard(request):
     
     context = {
         'stats': stats,
-        'recent_emails': recent_emails,
+        'emails_page': emails_page,
         'user_config': user_config,
         'page_title': 'Monitoreo de Emails',
     }
@@ -492,7 +496,7 @@ def email_statistics_api(request):
     if total_emails > 0:
         success_rate = round((successful / total_emails) * 100, 1)
     
-    # Emails recientes
+    # Emails recientes (solo los primeros 10 para la actualización automática)
     recent_emails = EmailSentLog.objects.filter(
         user=request.user
     ).select_related('job_posting', 'cv').order_by('-sent_at')[:10]
@@ -525,6 +529,59 @@ def email_statistics_api(request):
             'daily_limit': daily_limit
         },
         'recent_emails': recent_emails_data
+    })
+
+
+@login_required
+@require_http_methods(["GET"])
+def paginated_emails_api(request):
+    """API para obtener emails paginados."""
+    page_number = request.GET.get('page', 1)
+    
+    # Query base
+    emails_query = EmailSentLog.objects.filter(
+        user=request.user
+    ).select_related('job_posting', 'cv').order_by('-sent_at')
+    
+    # Paginación
+    paginator = Paginator(emails_query, 20)
+    try:
+        emails_page = paginator.get_page(page_number)
+    except:
+        emails_page = paginator.get_page(1)
+    
+    # Preparar datos de los emails
+    emails_data = []
+    for email in emails_page:
+        emails_data.append({
+            'id': email.id,
+            'job_title': email.job_posting.title if email.job_posting else '[Oferta eliminada]',
+            'sent_to': email.sent_to,
+            'status': email.status,
+            'status_display': email.get_status_display(),
+            'sent_at': email.sent_at.strftime('%d/%m/%Y %H:%M'),
+            'sent_at_date': email.sent_at.strftime('%d/%m/%Y'),
+            'sent_at_time': email.sent_at.strftime('%H:%M'),
+            'error_message': email.error_message or '',
+            'email_subject': email.email_subject or '',
+            'email_body': email.email_body or '',
+            'cv_filename': email.cv.original_file.name.split('/')[-1] if email.cv and email.cv.original_file else '[CV eliminado]',
+            'has_job_posting': bool(email.job_posting),
+            'has_cv': bool(email.cv),
+        })
+    
+    return JsonResponse({
+        'success': True,
+        'emails': emails_data,
+        'pagination': {
+            'current_page': emails_page.number,
+            'total_pages': emails_page.paginator.num_pages,
+            'has_previous': emails_page.has_previous(),
+            'has_next': emails_page.has_next(),
+            'previous_page': emails_page.previous_page_number() if emails_page.has_previous() else None,
+            'next_page': emails_page.next_page_number() if emails_page.has_next() else None,
+            'total_count': emails_page.paginator.count,
+        }
     })
 
 
