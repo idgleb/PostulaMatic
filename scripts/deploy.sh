@@ -86,7 +86,11 @@ fi
 # 6. Desplegar aplicación Django
 echo "🐳 Desplegando aplicación Django..."
 run_ssh "cd /home/deploy/apps/postulamatic && docker compose build" "Build de Docker"
-run_ssh "cd /home/deploy/apps/postulamatic && docker compose run --rm postulamatic_web python manage.py migrate" "Migraciones"
+
+# ✅ MEJORA: Aplicar migraciones directamente (sin --check que causa timeout)
+# Django es seguro: si no hay migraciones pendientes, termina rápidamente
+run_ssh "cd /home/deploy/apps/postulamatic && docker compose run --rm postulamatic_web python manage.py migrate --noinput" "Migraciones"
+
 run_ssh "cd /home/deploy/apps/postulamatic && docker compose up -d" "Start de contenedores"
 
 # 7. Health check
