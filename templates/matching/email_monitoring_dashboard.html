@@ -183,56 +183,67 @@
                     
                     <!-- Controles de paginación -->
                     {% if emails_page.paginator.num_pages > 1 %}
-                    <nav aria-label="Paginación de emails" class="mt-4">
-                        <ul class="pagination justify-content-center" id="emailsPagination">
-                            {% if emails_page.has_previous %}
-                                <li class="page-item">
-                                    <a class="page-link" href="?page=1" onclick="loadEmailsPage(1); return false;">
-                                        <i class="bi bi-chevron-double-left"></i> Primera
-                                    </a>
-                                </li>
-                                <li class="page-item">
-                                    <a class="page-link" href="?page={{ emails_page.previous_page_number }}" onclick="loadEmailsPage({{ emails_page.previous_page_number }}); return false;">
-                                        <i class="bi bi-chevron-left"></i> Anterior
-                                    </a>
-                                </li>
-                            {% else %}
-                                <li class="page-item disabled">
-                                    <span class="page-link"><i class="bi bi-chevron-double-left"></i> Primera</span>
-                                </li>
-                                <li class="page-item disabled">
-                                    <span class="page-link"><i class="bi bi-chevron-left"></i> Anterior</span>
-                                </li>
-                            {% endif %}
-                            
-                            <li class="page-item active">
-                                <span class="page-link">
-                                    Página {{ emails_page.number }} de {{ emails_page.paginator.num_pages }}
-                                    <small class="d-block text-muted">({{ emails_page.paginator.count }} total)</small>
-                                </span>
-                            </li>
-                            
-                            {% if emails_page.has_next %}
-                                <li class="page-item">
-                                    <a class="page-link" href="?page={{ emails_page.next_page_number }}" onclick="loadEmailsPage({{ emails_page.next_page_number }}); return false;">
-                                        Siguiente <i class="bi bi-chevron-right"></i>
-                                    </a>
-                                </li>
-                                <li class="page-item">
-                                    <a class="page-link" href="?page={{ emails_page.paginator.num_pages }}" onclick="loadEmailsPage({{ emails_page.paginator.num_pages }}); return false;">
-                                        Última <i class="bi bi-chevron-double-right"></i>
-                                    </a>
-                                </li>
-                            {% else %}
-                                <li class="page-item disabled">
-                                    <span class="page-link">Siguiente <i class="bi bi-chevron-right"></i></span>
-                                </li>
-                                <li class="page-item disabled">
-                                    <span class="page-link">Última <i class="bi bi-chevron-double-right"></i></span>
-                                </li>
-                            {% endif %}
-                        </ul>
-                    </nav>
+                    <div class="pagination-wrapper mt-4">
+                        <nav aria-label="Paginación de emails">
+                            <div class="pagination-container">
+                                <div class="pagination-info">
+                                    <span class="pagination-text">
+                                        Página <strong>{{ emails_page.number }}</strong> de <strong>{{ emails_page.paginator.num_pages }}</strong>
+                                        <span class="pagination-total">({{ emails_page.paginator.count }} total)</span>
+                                    </span>
+                                </div>
+                                <ul class="pagination mb-0" id="emailsPagination">
+                                    {% if emails_page.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page=1" onclick="loadEmailsPage(1); return false;" title="Primera página">
+                                                <i class="bi bi-chevron-double-left"></i>
+                                            </a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ emails_page.previous_page_number }}" onclick="loadEmailsPage({{ emails_page.previous_page_number }}); return false;" title="Página anterior">
+                                                <i class="bi bi-chevron-left"></i>
+                                            </a>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item disabled">
+                                            <span class="page-link" title="Primera página">
+                                                <i class="bi bi-chevron-double-left"></i>
+                                            </span>
+                                        </li>
+                                        <li class="page-item disabled">
+                                            <span class="page-link" title="Página anterior">
+                                                <i class="bi bi-chevron-left"></i>
+                                            </span>
+                                        </li>
+                                    {% endif %}
+                                    
+                                    {% if emails_page.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ emails_page.next_page_number }}" onclick="loadEmailsPage({{ emails_page.next_page_number }}); return false;" title="Página siguiente">
+                                                <i class="bi bi-chevron-right"></i>
+                                            </a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ emails_page.paginator.num_pages }}" onclick="loadEmailsPage({{ emails_page.paginator.num_pages }}); return false;" title="Última página">
+                                                <i class="bi bi-chevron-double-right"></i>
+                                            </a>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item disabled">
+                                            <span class="page-link" title="Página siguiente">
+                                                <i class="bi bi-chevron-right"></i>
+                                            </span>
+                                        </li>
+                                        <li class="page-item disabled">
+                                            <span class="page-link" title="Última página">
+                                                <i class="bi bi-chevron-double-right"></i>
+                                            </span>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </nav>
+                    </div>
                     {% endif %}
                 {% else %}
                     <div class="text-center py-5" id="noEmailsMessage">
@@ -1078,56 +1089,67 @@ async function loadEmailsPage(pageNumber) {
                 // Agregar controles de paginación
                 if (data.pagination.total_pages > 1) {
                     html += `
-                        <nav aria-label="Paginación de emails" class="mt-4">
-                            <ul class="pagination justify-content-center" id="emailsPagination">
-                                ${data.pagination.has_previous ? `
-                                    <li class="page-item">
-                                        <a class="page-link" href="?page=1" onclick="loadEmailsPage(1); return false;">
-                                            <i class="bi bi-chevron-double-left"></i> Primera
-                                        </a>
-                                    </li>
-                                    <li class="page-item">
-                                        <a class="page-link" href="?page=${data.pagination.previous_page}" onclick="loadEmailsPage(${data.pagination.previous_page}); return false;">
-                                            <i class="bi bi-chevron-left"></i> Anterior
-                                        </a>
-                                    </li>
-                                ` : `
-                                    <li class="page-item disabled">
-                                        <span class="page-link"><i class="bi bi-chevron-double-left"></i> Primera</span>
-                                    </li>
-                                    <li class="page-item disabled">
-                                        <span class="page-link"><i class="bi bi-chevron-left"></i> Anterior</span>
-                                    </li>
-                                `}
-                                
-                                <li class="page-item active">
-                                    <span class="page-link">
-                                        Página ${data.pagination.current_page} de ${data.pagination.total_pages}
-                                        <small class="d-block text-muted">(${data.pagination.total_count} total)</small>
-                                    </span>
-                                </li>
-                                
-                                ${data.pagination.has_next ? `
-                                    <li class="page-item">
-                                        <a class="page-link" href="?page=${data.pagination.next_page}" onclick="loadEmailsPage(${data.pagination.next_page}); return false;">
-                                            Siguiente <i class="bi bi-chevron-right"></i>
-                                        </a>
-                                    </li>
-                                    <li class="page-item">
-                                        <a class="page-link" href="?page=${data.pagination.total_pages}" onclick="loadEmailsPage(${data.pagination.total_pages}); return false;">
-                                            Última <i class="bi bi-chevron-double-right"></i>
-                                        </a>
-                                    </li>
-                                ` : `
-                                    <li class="page-item disabled">
-                                        <span class="page-link">Siguiente <i class="bi bi-chevron-right"></i></span>
-                                    </li>
-                                    <li class="page-item disabled">
-                                        <span class="page-link">Última <i class="bi bi-chevron-double-right"></i></span>
-                                    </li>
-                                `}
-                            </ul>
-                        </nav>
+                        <div class="pagination-wrapper mt-4">
+                            <nav aria-label="Paginación de emails">
+                                <div class="pagination-container">
+                                    <div class="pagination-info">
+                                        <span class="pagination-text">
+                                            Página <strong>${data.pagination.current_page}</strong> de <strong>${data.pagination.total_pages}</strong>
+                                            <span class="pagination-total">(${data.pagination.total_count} total)</span>
+                                        </span>
+                                    </div>
+                                    <ul class="pagination mb-0" id="emailsPagination">
+                                        ${data.pagination.has_previous ? `
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page=1" onclick="loadEmailsPage(1); return false;" title="Primera página">
+                                                    <i class="bi bi-chevron-double-left"></i>
+                                                </a>
+                                            </li>
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page=${data.pagination.previous_page}" onclick="loadEmailsPage(${data.pagination.previous_page}); return false;" title="Página anterior">
+                                                    <i class="bi bi-chevron-left"></i>
+                                                </a>
+                                            </li>
+                                        ` : `
+                                            <li class="page-item disabled">
+                                                <span class="page-link" title="Primera página">
+                                                    <i class="bi bi-chevron-double-left"></i>
+                                                </span>
+                                            </li>
+                                            <li class="page-item disabled">
+                                                <span class="page-link" title="Página anterior">
+                                                    <i class="bi bi-chevron-left"></i>
+                                                </span>
+                                            </li>
+                                        `}
+                                        
+                                        ${data.pagination.has_next ? `
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page=${data.pagination.next_page}" onclick="loadEmailsPage(${data.pagination.next_page}); return false;" title="Página siguiente">
+                                                    <i class="bi bi-chevron-right"></i>
+                                                </a>
+                                            </li>
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page=${data.pagination.total_pages}" onclick="loadEmailsPage(${data.pagination.total_pages}); return false;" title="Última página">
+                                                    <i class="bi bi-chevron-double-right"></i>
+                                                </a>
+                                            </li>
+                                        ` : `
+                                            <li class="page-item disabled">
+                                                <span class="page-link" title="Página siguiente">
+                                                    <i class="bi bi-chevron-right"></i>
+                                                </span>
+                                            </li>
+                                            <li class="page-item disabled">
+                                                <span class="page-link" title="Última página">
+                                                    <i class="bi bi-chevron-double-right"></i>
+                                                </span>
+                                            </li>
+                                        `}
+                                    </ul>
+                                </div>
+                            </nav>
+                        </div>
                     `;
                 }
             }
@@ -1471,6 +1493,144 @@ document.addEventListener('DOMContentLoaded', function() {
 
 .job-checkbox-item {
     animation: fadeIn 0.3s ease;
+}
+
+/* ============================================================
+   Estilos de Paginación
+   ============================================================ */
+
+.pagination-wrapper {
+    padding: 1rem 0;
+    border-top: 1px solid #e0e0e0;
+    margin-top: 1.5rem;
+}
+
+.pagination-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    width: 100%;
+}
+
+@media (min-width: 768px) {
+    .pagination-container {
+        flex-wrap: nowrap;
+    }
+}
+
+.pagination-info {
+    display: flex;
+    align-items: center;
+}
+
+.pagination-text {
+    font-size: 0.95rem;
+    color: #495057;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pagination-text strong {
+    color: #212529;
+    font-weight: 600;
+}
+
+.pagination-total {
+    color: #6c757d;
+    font-size: 0.85rem;
+    font-weight: normal;
+}
+
+/* Estilos de los botones de paginación - Mayor especificidad para sobrescribir Bootstrap */
+.pagination-wrapper .pagination-container ul.pagination {
+    margin: 0 !important;
+    display: flex !important;
+    gap: 0.5rem !important;
+    list-style: none !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+}
+
+.pagination-wrapper .pagination-container ul.pagination .page-item {
+    margin: 0 !important;
+}
+
+.pagination-wrapper .pagination-container ul.pagination .page-link {
+    color: #667eea !important;
+    border: 1px solid #dee2e6 !important;
+    padding: 0.5rem 0.75rem !important;
+    border-radius: 6px !important;
+    transition: all 0.2s ease !important;
+    background-color: #fff !important;
+    min-width: 38px !important;
+    text-align: center !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-decoration: none !important;
+    line-height: 1.5 !important;
+    position: relative !important;
+}
+
+.pagination-wrapper .pagination-container ul.pagination .page-link:hover {
+    color: #5568d3 !important;
+    background-color: #f8f9fa !important;
+    border-color: #667eea !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2) !important;
+    z-index: 1 !important;
+}
+
+.pagination-wrapper .pagination-container ul.pagination .page-link:focus {
+    color: #5568d3 !important;
+    background-color: #f8f9fa !important;
+    border-color: #667eea !important;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25) !important;
+    outline: none !important;
+    z-index: 1 !important;
+}
+
+.pagination-wrapper .pagination-container ul.pagination .page-item.disabled .page-link {
+    color: #6c757d !important;
+    background-color: #f8f9fa !important;
+    border-color: #dee2e6 !important;
+    cursor: not-allowed !important;
+    opacity: 0.6 !important;
+    pointer-events: none !important;
+}
+
+.pagination-wrapper .pagination-container ul.pagination .page-item.disabled .page-link:hover {
+    transform: none !important;
+    box-shadow: none !important;
+    border-color: #dee2e6 !important;
+    background-color: #f8f9fa !important;
+}
+
+.pagination-wrapper .pagination-container ul.pagination .page-link i {
+    font-size: 1rem !important;
+    line-height: 1 !important;
+}
+
+/* Responsive: En pantallas pequeñas, apilar elementos */
+@media (max-width: 576px) {
+    .pagination-container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .pagination-info {
+        justify-content: center;
+        margin-bottom: 0.75rem;
+        text-align: center;
+    }
+    
+    .pagination-wrapper .pagination-container ul.pagination {
+        justify-content: center !important;
+        width: 100%;
+    }
 }
 </style>
 
