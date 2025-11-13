@@ -1,15 +1,8 @@
 from django.urls import path
 
-from . import (
-    views,
-    views_ai_admin,
-    views_ai_testing,
-    views_api,
-    views_cv_personalization,
-    views_email_generation,
-    views_email_monitoring,
-    views_email_sending,
-)
+from . import (views, views_ai_admin, views_ai_testing, views_api,
+               views_cv_personalization, views_email_generation,
+               views_email_monitoring, views_email_sending)
 
 urlpatterns = [
     path("", views.dashboard_view, name="dashboard"),
