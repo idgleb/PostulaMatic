@@ -55,9 +55,7 @@ class RestrictedSocialAccountAdapter(DefaultSocialAccountAdapter):
                     "Solo se permiten cuentas con email institucional de @davinci.edu.ar",
                 )
                 # Redirigir al login con mensaje de error
-                raise ImmediateHttpResponse(
-                    HttpResponseRedirect("/matching/login/")
-                )
+                raise ImmediateHttpResponse(HttpResponseRedirect("/matching/login/"))
 
     def is_open_for_signup(self, request, sociallogin):
         """Permitir registro solo con emails válidos."""
@@ -66,4 +64,3 @@ class RestrictedSocialAccountAdapter(DefaultSocialAccountAdapter):
             domain = email.split("@")[-1].lower()
             return domain in self.ALLOWED_DOMAINS
         return False
-
