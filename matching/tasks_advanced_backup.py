@@ -48,10 +48,11 @@ def scrape_dvcarreras_jobs_advanced(self, user_id: int):
             "error": "Esta función está deprecada. Usar scrape_dvcarreras_jobs_playwright en su lugar.",
             "redirect_to": "scrape_dvcarreras_jobs_playwright"
         }
-        ) as client:
-
-            # Login con técnicas avanzadas
-            if not client.login():
+        # Código deprecado eliminado
+        # ) as client:
+        #
+        #     # Login con técnicas avanzadas
+        #     if not client.login():
                 logger.error(f"Login AVANZADO fallido para usuario {user_id}")
                 raise Exception("Login fallido en dvcarreras (método avanzado)")
 

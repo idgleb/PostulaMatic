@@ -200,14 +200,14 @@ def scrape_dvcarreras_jobs(self, user_id: int):
 
         # Cliente básico eliminado - usar FlareSolverr en su lugar
         raise Exception("Cliente básico eliminado - usar scrape_dvcarreras_jobs_playwright")
-
-            # Login
-            if not client.login():
-                logger.error(f"Login fallido para usuario {user_id}")
-                raise Exception("Login fallido en INTRANET DAVINCI")
-
-            # Scrapear ofertas
-            job_postings_data = client.scrape_job_board(max_pages=3)
+        # Código deprecado eliminado
+        # # Login
+        # if not client.login():
+        #     logger.error(f"Login fallido para usuario {user_id}")
+        #     raise Exception("Login fallido en INTRANET DAVINCI")
+        #
+        # # Scrapear ofertas
+        # job_postings_data = client.scrape_job_board(max_pages=3)
 
             logger.info(
                 f"Encontradas {len(job_postings_data)} ofertas para usuario {user_id}"
