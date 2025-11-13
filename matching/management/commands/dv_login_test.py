@@ -2,7 +2,6 @@
 Comando simple para probar el login manual en DV Carreras.
 """
 
-import os
 from pathlib import Path
 
 from django.contrib.auth import get_user_model

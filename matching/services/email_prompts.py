@@ -198,7 +198,7 @@ class PromptCustomizer:
     ) -> str:
         """Agrega información de la empresa al prompt."""
         if company_name or industry:
-            company_info = f"\nInformación de la empresa:\n"
+            company_info = "\nInformación de la empresa:\n"
             if company_name:
                 company_info += f"- Nombre: {company_name}\n"
             if industry:

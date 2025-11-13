@@ -9,7 +9,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand, CommandError
 
-from matching.models import JobPosting, UserCV, UserProfile
+from matching.models import JobPosting, UserCV
 from matching.services.ai_service import ai_email_service
 from matching.services.email_personalizer import email_personalization_service
 
@@ -224,11 +224,11 @@ class Command(BaseCommand):
             self.stdout.write(f"Tokens usados: {result.tokens_used}")
 
         # Asunto
-        self.stdout.write(f"\n📌 Asunto:")
+        self.stdout.write("\n📌 Asunto:")
         self.stdout.write(f"  {result.subject}")
 
         # Cuerpo
-        self.stdout.write(f"\n📝 Cuerpo:")
+        self.stdout.write("\n📝 Cuerpo:")
         body_lines = result.body.split("\n")
         for line in body_lines[:10]:  # Mostrar primeras 10 líneas
             self.stdout.write(f"  {line}")

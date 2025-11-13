@@ -1044,10 +1044,6 @@ def scrape_dvcarreras_jobs_playwright(self, user_id: int):
 
 
 # Importar tareas de email para que estén disponibles en Celery
-from .tasks_email import (cleanup_old_email_logs_task,
-                          process_matching_and_send_emails_task,
-                          send_bulk_emails_task, send_email_reminder_task,
-                          send_personalized_email_task)
 
 # Intentar importar la tarea de verificación DV (puede no existir aún en algunos entornos)
 try:  # pragma: no cover

@@ -5,10 +5,8 @@ Tests para el servicio de personalización de emails.
 import unittest
 from unittest.mock import Mock, patch
 
-from django.contrib.auth.models import User
 from django.test import TestCase
 
-from matching.models import JobPosting, MatchScore, UserCV, UserProfile
 
 from .email_personalizer import (CVDataExtractor, EmailPersonalizationService,
                                  JobDataExtractor)

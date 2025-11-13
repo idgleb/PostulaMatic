@@ -4,7 +4,6 @@ Vista para enviar CV personalizado por email con carta de presentación generada
 
 import json
 import logging
-import tempfile
 from io import BytesIO
 
 from django.contrib.auth.decorators import login_required
@@ -12,7 +11,6 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 
 from .models import JobPosting, UserCV, UserProfile
-from .services.ai_service import ai_email_service
 
 # PDF generation será manejado en el frontend con jsPDF
 

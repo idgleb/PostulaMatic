@@ -5,13 +5,12 @@ Tareas de Celery limpias - solo con FlareSolverr
 import asyncio
 import logging
 from datetime import datetime
-from typing import Any, Dict
 
 # Importar sync_to_async para usar ORM en contexto async
 from asgiref.sync import sync_to_async
 from celery import shared_task
 
-from .models import JobPosting, MatchScore, ScrapingLog, UserCV, UserProfile
+from .models import JobPosting, ScrapingLog, UserCV, UserProfile
 from .services.matching import matching_service
 
 logger = logging.getLogger(__name__)
@@ -58,7 +57,6 @@ def scrape_dvcarreras_jobs_playwright(self, user_id: int):
 
         # Función async para usar Playwright
         async def run_playwright_scraping():
-            import asyncio
 
             from .clients.dvcarreras_playwright_flaresolverr import \
                 DVCarrerasPlaywrightFlareSolverr

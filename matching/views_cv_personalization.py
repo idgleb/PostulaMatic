@@ -12,7 +12,6 @@ from django.core.paginator import Paginator
 from django.db import models
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
 from matching.models import JobPosting, UserCV
@@ -80,7 +79,7 @@ def generate_personalized_cv(request):
             "experience_summary": f"Usuario con {len(user_cv.skills_list)} habilidades",
         }
 
-        logger.info(f"🤖 Generando CV personalizado con IA...")
+        logger.info("🤖 Generando CV personalizado con IA...")
 
         # Personalizar CV usando el servicio de IA
         result = cv_personalization_service.personalize_cv_for_job(
@@ -117,7 +116,7 @@ def generate_personalized_cv(request):
                     ],
                 },
             }
-            logger.info(f"📤 Enviando respuesta exitosa al cliente")
+            logger.info("📤 Enviando respuesta exitosa al cliente")
             return JsonResponse(response_data)
         else:
             # Mostrar error explícito de la IA

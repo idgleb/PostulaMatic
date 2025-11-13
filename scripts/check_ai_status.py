@@ -26,23 +26,23 @@ def check_ai_status():
 
     # Verificar OpenAI
     openai_key = os.getenv("OPENAI_API_KEY")
-    print(f"\n🔍 OpenAI:")
+    print("\n🔍 OpenAI:")
     print(f"   API Key: {'✅ CONFIGURADA' if openai_key else '❌ NO CONFIGURADA'}")
     if openai_key:
         print(f"   Preview: {openai_key[:8]}...")
         print(f"   Modelo: {os.getenv('OPENAI_MODEL', 'gpt-3.5-turbo')}")
     else:
-        print(f"   Variable: OPENAI_API_KEY no encontrada")
+        print("   Variable: OPENAI_API_KEY no encontrada")
 
     # Verificar Anthropic
     anthropic_key = os.getenv("ANTHROPIC_API_KEY")
-    print(f"\n🔍 Anthropic:")
+    print("\n🔍 Anthropic:")
     print(f"   API Key: {'✅ CONFIGURADA' if anthropic_key else '❌ NO CONFIGURADA'}")
     if anthropic_key:
         print(f"   Preview: {anthropic_key[:12]}...")
         print(f"   Modelo: {os.getenv('ANTHROPIC_MODEL', 'claude-3-haiku-20240307')}")
     else:
-        print(f"   Variable: ANTHROPIC_API_KEY no encontrada")
+        print("   Variable: ANTHROPIC_API_KEY no encontrada")
 
     # Proveedor por defecto
     default_provider = os.getenv("AI_PROVIDER", "openai")
@@ -58,7 +58,7 @@ def check_ai_status():
         print(f"\n❌ Error verificando servicios: {e}")
 
     # Estado general
-    print(f"\n📊 Estado General:")
+    print("\n📊 Estado General:")
     if openai_key or anthropic_key:
         print("   ✅ Al menos un proveedor está configurado")
         print("   🚀 El sistema de IA debería funcionar")
@@ -67,7 +67,7 @@ def check_ai_status():
         print("   ⚠️  El sistema de IA no funcionará")
 
     # Instrucciones
-    print(f"\n📝 Próximos pasos:")
+    print("\n📝 Próximos pasos:")
     if not openai_key and not anthropic_key:
         print("   1. Configura al menos una API key:")
         print("      - OpenAI: https://platform.openai.com/api-keys")

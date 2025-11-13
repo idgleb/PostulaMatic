@@ -1,8 +1,5 @@
-import asyncio
 import logging
-import os
 import threading
-from datetime import datetime
 
 from celery import shared_task
 
@@ -27,8 +24,6 @@ def verify_dv_login_manual_task(self, user_id: int, timeout_seconds: int = 300):
 
         # Ejecutar login manual con navegador visible (usando FlareSolverr)
         import asyncio
-        import json
-        from pathlib import Path
 
         from .clients.dvcarreras_playwright_flaresolverr import \
             DVCarrerasPlaywrightFlareSolverr

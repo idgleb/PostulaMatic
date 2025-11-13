@@ -2,11 +2,9 @@
 Vistas para probar la integración con proveedores de IA.
 """
 
-import json
 import logging
 import os
 
-from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import render

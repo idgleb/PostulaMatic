@@ -8,8 +8,6 @@ import logging
 import re
 from typing import Dict, List, Optional
 
-from django.contrib.auth.models import User
-from django.core.files.base import ContentFile
 
 from matching.models import JobPosting, UserCV
 
@@ -812,7 +810,7 @@ Devuelve únicamente el JSON final."""
     def _normalize_cv_data(self, cv_data) -> Dict:
         """Normaliza cv_data a Dict."""
         if isinstance(cv_data, str):
-            logger.warning(f"⚠️ cv_data recibido como string, convirtiendo a dict")
+            logger.warning("⚠️ cv_data recibido como string, convirtiendo a dict")
             return {"parsed_text": cv_data}
         elif isinstance(cv_data, dict):
             return cv_data

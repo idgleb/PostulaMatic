@@ -63,7 +63,7 @@ class CaptchaSolver:
             result = self.solver.turnstile(sitekey=site_key, url=page_url)
 
             if result and result.get("code"):
-                logger.info(f"2Captcha: Turnstile resuelto exitosamente")
+                logger.info("2Captcha: Turnstile resuelto exitosamente")
                 return result["code"]
             else:
                 logger.warning(f"2Captcha: respuesta inesperada: {result}")
@@ -90,7 +90,7 @@ class CaptchaSolver:
             result = self.solver.hcaptcha(sitekey=site_key, url=page_url)
 
             if result and result.get("code"):
-                logger.info(f"2Captcha: hCaptcha resuelto exitosamente")
+                logger.info("2Captcha: hCaptcha resuelto exitosamente")
                 return result["code"]
             else:
                 logger.warning(f"2Captcha: respuesta inesperada: {result}")

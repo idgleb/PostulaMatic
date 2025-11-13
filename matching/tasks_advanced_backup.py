@@ -8,8 +8,7 @@ import logging
 from celery import shared_task
 
 # Cliente avanzado eliminado - usar FlareSolverr
-from .models import JobPosting, UserCV, UserProfile
-from .services.matching import matching_service
+from .models import UserCV, UserProfile
 
 logger = logging.getLogger(__name__)
 

@@ -3,7 +3,6 @@
 Script para probar la conectividad con proveedores de IA.
 """
 
-import asyncio
 import os
 import sys
 from pathlib import Path

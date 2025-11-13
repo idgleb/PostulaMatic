@@ -11,7 +11,6 @@ from typing import Any, Dict, Optional
 
 import anthropic
 import openai
-from django.conf import settings
 
 from matching.utils.anthropic_model_finder import create_model_finder
 
@@ -619,25 +618,25 @@ Responde con JSON válido:
             error_msg = (
                 "❌ Anthropic: Servidores sobrecargados - Reintentando automáticamente"
             )
-            logger.error(f"❌ ANTHROPIC VISION: Error 529 Overloaded detectado")
+            logger.error("❌ ANTHROPIC VISION: Error 529 Overloaded detectado")
         elif "429" in error_str or "quota" in error_str.lower():
             error_msg = "❌ Anthropic: Cuota agotada - Verifica tu plan y facturación"
-            logger.error(f"❌ ANTHROPIC VISION: Error de cuota detectado")
+            logger.error("❌ ANTHROPIC VISION: Error de cuota detectado")
         elif "401" in error_str or "invalid_api_key" in error_str.lower():
             error_msg = "❌ Anthropic: API key inválida - Verifica tu clave de API"
-            logger.error(f"❌ ANTHROPIC VISION: Error de autenticación detectado")
+            logger.error("❌ ANTHROPIC VISION: Error de autenticación detectado")
         elif "403" in error_str or "forbidden" in error_str.lower():
             error_msg = "❌ Anthropic: Acceso denegado - Verifica permisos de tu cuenta"
-            logger.error(f"❌ ANTHROPIC VISION: Error de permisos detectado")
+            logger.error("❌ ANTHROPIC VISION: Error de permisos detectado")
         elif "500" in error_str or "internal" in error_str.lower():
             error_msg = "❌ Anthropic: Error interno del servidor"
-            logger.error(f"❌ ANTHROPIC VISION: Error interno detectado")
+            logger.error("❌ ANTHROPIC VISION: Error interno detectado")
         elif "timeout" in error_str.lower():
             error_msg = "❌ Anthropic: Tiempo de espera agotado"
-            logger.error(f"❌ ANTHROPIC VISION: Error de timeout detectado")
+            logger.error("❌ ANTHROPIC VISION: Error de timeout detectado")
         else:
             error_msg = f"❌ Anthropic: {error_str}"
-            logger.error(f"❌ ANTHROPIC VISION: Error genérico")
+            logger.error("❌ ANTHROPIC VISION: Error genérico")
 
         logger.error(f"❌ ANTHROPIC VISION: Error final formateado: {error_msg}")
         raise Exception(error_msg)

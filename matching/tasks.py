@@ -6,7 +6,6 @@ import asyncio
 import logging
 import os
 from datetime import datetime
-from typing import Any, Dict
 
 # Importar sync_to_async para usar ORM en contexto async
 from asgiref.sync import sync_to_async
@@ -59,7 +58,6 @@ def scrape_dvcarreras_jobs_playwright(self, user_id: int):
 
         # Función async para usar Playwright
         async def run_playwright_scraping():
-            import asyncio
 
             from .clients.dvcarreras_playwright_flaresolverr import \
                 DVCarrerasPlaywrightFlareSolverr
@@ -772,7 +770,7 @@ def process_cv_async(
             tracker.update_step(
                 "matching",
                 "warning",
-                f"No se pudo iniciar el cálculo automático de matches",
+                "No se pudo iniciar el cálculo automático de matches",
             )
 
         # Limpiar archivo temporal
