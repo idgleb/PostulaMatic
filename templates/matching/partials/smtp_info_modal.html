@@ -1,12 +1,12 @@
 <!-- Modal: Información SMTP Gmail -->
 <div class="modal fade" id="smtpInfoModal" tabindex="-1" aria-labelledby="smtpInfoModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content matching-modal">
             <div class="modal-header">
                 <h5 class="modal-title" id="smtpInfoModalLabel">
                     <i class="bi bi-envelope-check me-2"></i>Configuración SMTP para Gmail
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div class="alert alert-info">
@@ -117,7 +117,9 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-custom-modal" data-bs-dismiss="modal">
+                    <i class="bi bi-check-circle me-2"></i>Cerrar
+                </button>
                 <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener noreferrer" class="btn btn-primary">
                     <i class="bi bi-box-arrow-up-right me-2"></i>Abrir Contraseñas de aplicaciones
                 </a>
