@@ -14,9 +14,11 @@ from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
 from .models import EmailSentLog, JobPosting, MatchScore, UserCV, UserProfile
-from .tasks_email import (cleanup_old_email_logs_task,
-                          process_matching_and_send_emails_task,
-                          send_personalized_email_task)
+from .tasks_email import (
+    cleanup_old_email_logs_task,
+    process_matching_and_send_emails_task,
+    send_personalized_email_task,
+)
 
 
 @login_required
