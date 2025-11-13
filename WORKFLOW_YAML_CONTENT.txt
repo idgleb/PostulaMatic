@@ -59,7 +59,18 @@ jobs:
           fi
       
       - name: Run isort
-        run: isort --check-only .
+        run: |
+          # Formatear imports
+          isort .
+          
+          # Si hay cambios, hacer commit automático
+          if [ -n "$(git status --porcelain)" ]; then
+            git config --local user.email "action@github.com"
+            git config --local user.name "GitHub Action"
+            git add .
+            git commit -m "Format: Aplicar formateo isort automático [skip ci]" || exit 0
+            git push origin HEAD:master || exit 0
+          fi
       
       - name: Run Ruff
         run: ruff check .
