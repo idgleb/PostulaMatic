@@ -34,14 +34,12 @@ class Command(BaseCommand):
 
         # Encontrar crontabs no utilizados
         unused_crontabs = [
-            crontab
-            for crontab in all_crontabs
-            if crontab.id not in used_crontab_ids
+            crontab for crontab in all_crontabs if crontab.id not in used_crontab_ids
         ]
 
         unused_count = len(unused_crontabs)
 
-        self.stdout.write(f"\n📊 Estadísticas:")
+        self.stdout.write("\n📊 Estadísticas:")
         self.stdout.write(f"   Total de crontabs: {total_crontabs}")
         self.stdout.write(f"   Crontabs en uso: {len(used_crontab_ids)}")
         self.stdout.write(f"   Crontabs no utilizados: {unused_count}")
@@ -63,9 +61,7 @@ class Command(BaseCommand):
                     f"   - {crontab} (ID: {crontab.id}) - {crontab.human_readable}"
                 )
             self.stdout.write(
-                self.style.WARNING(
-                    "\n💡 Ejecuta sin --dry-run para eliminar realmente"
-                )
+                self.style.WARNING("\n💡 Ejecuta sin --dry-run para eliminar realmente")
             )
             return
 
@@ -87,4 +83,3 @@ class Command(BaseCommand):
                 f"\n✅ Limpieza completada: {deleted_count} de {unused_count} crontabs eliminados"
             )
         )
-
