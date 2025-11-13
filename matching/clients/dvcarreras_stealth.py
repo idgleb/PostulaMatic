@@ -244,9 +244,7 @@ class DVCarrerasStealth:
                         "warning",
                     )
                 except Exception as e:
-                    await self._log(
-                        f"⚠️ Error comprimiendo screenshot: {e}", "warning"
-                    )
+                    await self._log(f"⚠️ Error comprimiendo screenshot: {e}", "warning")
                     # Continuar aunque falle la compresión
 
                 await self._log(
