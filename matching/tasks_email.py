@@ -14,8 +14,7 @@ from django.contrib.auth.models import User
 from django.core.mail import EmailMultiAlternatives
 from django.utils import timezone
 
-from matching.models import (EmailSentLog, JobPosting, MatchScore, UserCV,
-                             UserProfile)
+from matching.models import EmailSentLog, JobPosting, MatchScore, UserCV, UserProfile
 
 from .services.cv_personalizer import cv_personalization_service
 from .services.email_personalizer import email_personalization_service
