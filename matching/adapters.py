@@ -47,8 +47,8 @@ class RestrictedSocialAccountAdapter(DefaultSocialAccountAdapter):
             if domain not in self.ALLOWED_DOMAINS:
                 # Usar el método de respuesta de allauth para rechazar el login
                 from allauth.exceptions import ImmediateHttpResponse
-                from django.http import HttpResponseRedirect
                 from django.contrib import messages
+                from django.http import HttpResponseRedirect
 
                 messages.error(
                     request,
