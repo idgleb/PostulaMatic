@@ -194,6 +194,61 @@ class DVCarrerasStealth:
 
             # Verificar que se creó el archivo
             if screenshot_path.exists():
+                # Comprimir screenshot para reducir tamaño (~70% de reducción)
+                try:
+                    from PIL import Image
+
+                    # Obtener tamaño original
+                    original_size = screenshot_path.stat().st_size
+
+                    # Abrir imagen
+                    img = Image.open(screenshot_path)
+
+                    # Redimensionar si es muy grande (max 1920px de ancho para mantener calidad)
+                    max_width = 1920
+                    if img.width > max_width:
+                        ratio = max_width / img.width
+                        new_height = int(img.height * ratio)
+                        img = img.resize(
+                            (max_width, new_height), Image.Resampling.LANCZOS
+                        )
+                        await self._log(
+                            f"📐 Screenshot redimensionado: {img.width}x{img.height}",
+                            "info",
+                        )
+
+                    # Guardar con compresión optimizada
+                    # compress_level=6 es un buen balance entre tamaño y velocidad
+                    img.save(
+                        screenshot_path,
+                        "PNG",
+                        optimize=True,
+                        compress_level=6,
+                    )
+
+                    # Obtener tamaño comprimido
+                    compressed_size = screenshot_path.stat().st_size
+                    reduction_percent = (
+                        (1 - compressed_size / original_size) * 100
+                        if original_size > 0
+                        else 0
+                    )
+
+                    await self._log(
+                        f"🗜️ Screenshot comprimido: {original_size / 1024:.1f}KB → {compressed_size / 1024:.1f}KB ({reduction_percent:.1f}% reducción)",
+                        "success",
+                    )
+                except ImportError:
+                    await self._log(
+                        "⚠️ Pillow no disponible, screenshot guardado sin compresión",
+                        "warning",
+                    )
+                except Exception as e:
+                    await self._log(
+                        f"⚠️ Error comprimiendo screenshot: {e}", "warning"
+                    )
+                    # Continuar aunque falle la compresión
+
                 await self._log(
                     f"✅ Screenshot guardado exitosamente: {screenshot_path}", "success"
                 )
