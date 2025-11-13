@@ -5,7 +5,7 @@ Tareas de Celery limpias - solo con FlareSolverr
 import asyncio
 import logging
 from datetime import datetime
-from typing import Dict, Any
+from typing import Any, Dict
 
 # Importar sync_to_async para usar ORM en contexto async
 from asgiref.sync import sync_to_async
@@ -60,9 +60,8 @@ def scrape_dvcarreras_jobs_playwright(self, user_id: int):
         async def run_playwright_scraping():
             import asyncio
 
-            from .clients.dvcarreras_playwright_flaresolverr import (
-                DVCarrerasPlaywrightFlareSolverr,
-            )
+            from .clients.dvcarreras_playwright_flaresolverr import \
+                DVCarrerasPlaywrightFlareSolverr
 
             # Actualizar estado: Iniciando navegador
             logger.info("Enviando actualización de estado: Iniciando navegador")

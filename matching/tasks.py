@@ -6,7 +6,7 @@ import asyncio
 import logging
 import os
 from datetime import datetime
-from typing import Dict, Any
+from typing import Any, Dict
 
 # Importar sync_to_async para usar ORM en contexto async
 from asgiref.sync import sync_to_async
@@ -61,9 +61,8 @@ def scrape_dvcarreras_jobs_playwright(self, user_id: int):
         async def run_playwright_scraping():
             import asyncio
 
-            from .clients.dvcarreras_playwright_flaresolverr import (
-                DVCarrerasPlaywrightFlareSolverr,
-            )
+            from .clients.dvcarreras_playwright_flaresolverr import \
+                DVCarrerasPlaywrightFlareSolverr
 
             # Actualizar estado: Iniciando navegador
             logger.info("Enviando actualización de estado: Iniciando navegador")
@@ -664,10 +663,11 @@ def process_cv_async(
     Returns:
         Dict con el resultado del procesamiento
     """
+    from django.contrib.auth import get_user_model
+
     from matching.services.cv_parser import CVParser
     from matching.services.skills_extractor import SkillsExtractor
     from matching.utils.progress_tracker import ProgressTracker
-    from django.contrib.auth import get_user_model
 
     User = get_user_model()
     tracker = ProgressTracker(progress_id)

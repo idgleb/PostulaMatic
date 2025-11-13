@@ -2,13 +2,14 @@
 Comando Django para probar la integración con proveedores de IA.
 """
 
-import os
 import logging
-from django.core.management.base import BaseCommand, CommandError
-from django.contrib.auth.models import User
-from django.conf import settings
+import os
 
-from matching.models import UserCV, JobPosting, UserProfile
+from django.conf import settings
+from django.contrib.auth.models import User
+from django.core.management.base import BaseCommand, CommandError
+
+from matching.models import JobPosting, UserCV, UserProfile
 from matching.services.ai_service import ai_email_service
 from matching.services.email_personalizer import email_personalization_service
 

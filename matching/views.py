@@ -5,29 +5,20 @@ import os
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.http import JsonResponse, HttpResponse, Http404
-from matching.tasks_dv import verify_dv_login_task
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
-from .forms import (
-    CVUploadForm,
-    DVCredentialsForm,
-    MatchingConfigForm,
-    SMTPConfigForm,
-    EmailConfigForm,
-)
-from .models import (
-    EmailSentLog,
-    JobPosting,
-    MatchScore,
-    ScrapingLog,
-    UserCV,
-    UserProfile,
-)
+from matching.tasks_dv import verify_dv_login_task
+
+from .forms import (CVUploadForm, DVCredentialsForm, EmailConfigForm,
+                    MatchingConfigForm, SMTPConfigForm)
+from .models import (EmailSentLog, JobPosting, MatchScore, ScrapingLog, UserCV,
+                     UserProfile)
 from .services.cv_parser import cv_parser
 from .services.skills_extractor import skills_extractor
-from .utils.log_capture import setup_log_capture, cleanup_log_capture, log_capture
+from .utils.log_capture import (cleanup_log_capture, log_capture,
+                                setup_log_capture)
 
 # from .tasks import scrape_dvcarreras_jobs  # Comentado para usar Playwright
 
@@ -37,8 +28,9 @@ logger = logging.getLogger(__name__)
 @login_required
 def dashboard_view(request):
     """Dashboard principal del usuario."""
-    from django.utils import timezone
     from datetime import timedelta
+
+    from django.utils import timezone
 
     user_profile = UserProfile.objects.get_or_create(user=request.user)[0]
 
@@ -320,8 +312,10 @@ def get_cv_progress(request, progress_id):
 def cancel_cv_task(request):
     """Vista AJAX para cancelar una tarea de procesamiento de CV."""
     import json
+
     from celery.result import AsyncResult
     from django.core.cache import cache
+
     from matching.utils.progress_tracker import ProgressTracker
 
     try:
@@ -389,9 +383,11 @@ def upload_cv_view(request):
         try:
             import os
             import uuid
+
             from django.conf import settings
-            from matching.utils.progress_tracker import ProgressTracker
+
             from matching.tasks import process_cv_async
+            from matching.utils.progress_tracker import ProgressTracker
 
             # Crear tracker de progreso
             progress_tracker = ProgressTracker()
@@ -478,6 +474,7 @@ def upload_cv_view_OLD_SYNC(request):
         try:
             import os
             import tempfile
+
             from matching.utils.progress_tracker import ProgressTracker
 
             # Crear tracker de progreso
@@ -1013,8 +1010,9 @@ def test_scraper_view(request):
                 return redirect("test_scraper")
 
             # Iniciar tarea de scraping con STEALTH usando rotación automática
-            from .tasks_stealth import scrape_dvcarreras_jobs_stealth
             from django.core.cache import cache
+
+            from .tasks_stealth import scrape_dvcarreras_jobs_stealth
 
             # Llamar sin user_id para usar rotación automática de credenciales
             # Pasar requesting_user_id para que los logs se guarden también para el usuario actual
@@ -1147,9 +1145,11 @@ def test_scraper_view(request):
 @require_http_methods(["GET", "POST"])
 def scheduled_scraping_config(request):
     """Vista para configurar el scraping programado."""
-    from .models import ScheduledScraping
-    from django.utils import timezone
     import json
+
+    from django.utils import timezone
+
+    from .models import ScheduledScraping
 
     if request.method == "POST":
         try:
@@ -1181,7 +1181,7 @@ def scheduled_scraping_config(request):
             # ============================================================
             # Actualizar el CrontabSchedule de la tarea periódica
             # ============================================================
-            from django_celery_beat.models import PeriodicTask, CrontabSchedule
+            from django_celery_beat.models import CrontabSchedule, PeriodicTask
 
             # Crear o obtener el CrontabSchedule específico para esta hora
             crontab, _ = CrontabSchedule.objects.get_or_create(
@@ -1679,9 +1679,9 @@ def paginated_jobs_view(request):
 
 def logout_view(request):
     """Vista para cerrar sesión."""
+    from django.contrib import messages
     from django.contrib.auth import logout
     from django.shortcuts import redirect
-    from django.contrib import messages
 
     logout(request)
     messages.success(request, "Has cerrado sesión correctamente.")
@@ -2346,9 +2346,9 @@ def clear_session_view(request):
         return JsonResponse({"success": False, "message": "Método no permitido"})
 
     try:
+        import glob
         import os
         from pathlib import Path
-        import glob
 
         # Buscar TODOS los archivos de sesión en el directorio
         sessions_dir = Path("media/sessions")

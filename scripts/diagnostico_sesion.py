@@ -3,8 +3,8 @@
 Script de diagnóstico para entender por qué las sesiones se marcan como inválidas.
 """
 
-import os
 import json
+import os
 from datetime import datetime
 
 

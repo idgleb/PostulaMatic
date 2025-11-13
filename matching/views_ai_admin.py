@@ -2,17 +2,18 @@
 Vistas para administración de configuración de IA.
 """
 
-import logging
-from django.shortcuts import render, redirect
-from django.contrib.admin.views.decorators import staff_member_required
-from django.contrib import messages
-from django.http import JsonResponse
-from django.views.decorators.http import require_http_methods
-from django.views.decorators.csrf import csrf_exempt
 import json
+import logging
 
-from .models import AIConfiguration
+from django.contrib import messages
+from django.contrib.admin.views.decorators import staff_member_required
+from django.http import JsonResponse
+from django.shortcuts import redirect, render
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+
 from .forms import AIConfigurationForm
+from .models import AIConfiguration
 from .services.ai_service import ai_email_service
 
 logger = logging.getLogger(__name__)
@@ -319,7 +320,8 @@ def get_available_models(request):
         # Consultar modelos de Anthropic
         if config.anthropic_api_key:
             try:
-                from matching.utils.anthropic_model_finder import AnthropicModelFinder
+                from matching.utils.anthropic_model_finder import \
+                    AnthropicModelFinder
 
                 finder = AnthropicModelFinder(api_key=config.get_anthropic_key())
                 available_models = finder.get_available_models()

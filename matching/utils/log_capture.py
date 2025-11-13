@@ -1,8 +1,8 @@
-import logging
 import io
+import logging
 import sys
 from contextlib import contextmanager
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 
 class LogCapture:

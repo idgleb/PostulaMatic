@@ -11,17 +11,14 @@ from django.contrib.auth.models import User
 from django.core.paginator import Paginator
 from django.db.models import Count, Q
 from django.http import JsonResponse
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
-from .models import EmailSentLog, UserCV, JobPosting, MatchScore, UserProfile
-from .tasks_email import (
-    send_personalized_email_task,
-    send_bulk_emails_task,
-    process_matching_and_send_emails_task,
-    cleanup_old_email_logs_task,
-)
+from .models import EmailSentLog, JobPosting, MatchScore, UserCV, UserProfile
+from .tasks_email import (cleanup_old_email_logs_task,
+                          process_matching_and_send_emails_task,
+                          send_bulk_emails_task, send_personalized_email_task)
 
 
 @login_required
@@ -712,6 +709,7 @@ def get_email_detail(request, email_id):
 def download_personalized_cv(request, email_id):
     """Descarga el CV personalizado adjunto a un email enviado."""
     import os
+
     from django.http import Http404, HttpResponse
 
     try:

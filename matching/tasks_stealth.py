@@ -2,14 +2,14 @@
 Tareas Celery para el scraper stealth de DV Carreras.
 """
 
-import logging
 import asyncio
-from typing import Dict, Any, Optional
+import logging
+from typing import Any, Dict, Optional
 
+from asgiref.sync import async_to_sync
 from celery import shared_task
 from django.conf import settings
 from django.core.cache import cache
-from asgiref.sync import async_to_sync
 
 from matching.clients.dvcarreras_stealth import DVCarrerasStealth
 from matching.models import JobPosting, ScrapingLog, UserProfile
@@ -242,8 +242,9 @@ async def _run_scraping_stealth(
         for job_data in jobs:
             try:
                 # Verificar si ya existe
-                from asgiref.sync import sync_to_async
                 import hashlib
+
+                from asgiref.sync import sync_to_async
 
                 # Crear ID único basado en título + descripción
                 unique_id = hashlib.md5(
@@ -500,8 +501,9 @@ def check_and_run_scheduled_scraping(self):
     El CrontabSchedule de django-celery-beat maneja cuándo ejecutar esta tarea,
     por lo que ya no necesitamos verificar la hora manualmente.
     """
-    from matching.models import ScheduledScraping
     from django.utils import timezone
+
+    from matching.models import ScheduledScraping
 
     try:
         # Obtener configuración

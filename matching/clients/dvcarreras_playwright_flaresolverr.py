@@ -4,18 +4,17 @@ Combina la potencia de Playwright con la capacidad de FlareSolverr para resolver
 """
 
 import asyncio
+import json
 import logging
 import os
-import json
-from typing import List, Optional, Dict, Any
 from datetime import datetime
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 from playwright.async_api import async_playwright
-from ..services.flaresolverr_client import (
-    get_flaresolverr_client,
-    test_flaresolverr_connection,
-)
+
+from ..services.flaresolverr_client import (get_flaresolverr_client,
+                                            test_flaresolverr_connection)
 
 logger = logging.getLogger(__name__)
 

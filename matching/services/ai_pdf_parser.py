@@ -4,7 +4,8 @@ Parser de PDFs que usa IA para extraer texto de manera inteligente.
 
 import base64
 import logging
-from typing import Dict, Any
+from typing import Any, Dict
+
 from .ai_service import AIEmailService
 from .pdf_parser import PDFParser
 

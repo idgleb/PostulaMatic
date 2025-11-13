@@ -6,9 +6,10 @@ FlareSolverr es un proxy server que bypasea la protección de Cloudflare.
 import json
 import logging
 import os
-import requests
-from typing import Dict, Optional, Any
+from typing import Any, Dict, Optional
 from urllib.parse import urljoin
+
+import requests
 
 logger = logging.getLogger(__name__)
 

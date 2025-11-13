@@ -7,10 +7,9 @@ import logging
 from pathlib import Path
 from typing import Dict
 
-from .docx_parser import DOCXParser
-
 # Importar parsers especializados
 from .ai_pdf_parser import AIPDFParser
+from .docx_parser import DOCXParser
 
 logger = logging.getLogger(__name__)
 
@@ -178,8 +177,8 @@ class CVParser:
         """
         try:
             import os
-            import tempfile
             import subprocess
+            import tempfile
             import time
 
             logger.info(

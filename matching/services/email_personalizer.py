@@ -5,10 +5,12 @@ Integra el servicio de IA con los datos reales del sistema.
 
 import logging
 from typing import Dict, List, Optional, Tuple
+
 from django.contrib.auth.models import User
 
-from matching.models import UserCV, JobPosting, MatchScore, UserProfile
-from .ai_service import ai_email_service, EmailContent
+from matching.models import JobPosting, MatchScore, UserCV, UserProfile
+
+from .ai_service import EmailContent, ai_email_service
 from .email_prompts import EmailPersonalizationData, EmailPromptTemplates
 
 logger = logging.getLogger(__name__)

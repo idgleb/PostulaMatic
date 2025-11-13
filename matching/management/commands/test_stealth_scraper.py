@@ -2,8 +2,10 @@
 Comando Django para probar el scraper stealth de DV Carreras.
 """
 
-from django.core.management.base import BaseCommand
 import asyncio
+
+from django.core.management.base import BaseCommand
+
 from matching.clients.dvcarreras_stealth import DVCarrerasStealth
 
 

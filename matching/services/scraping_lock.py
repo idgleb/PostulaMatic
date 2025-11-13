@@ -4,7 +4,8 @@ Garantiza que solo un scraping pueda ejecutarse a la vez en todo el sistema.
 """
 
 import logging
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
+
 from django.core.cache import cache
 from django.utils import timezone
 

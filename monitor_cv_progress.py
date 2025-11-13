@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Script para monitorear el progreso del procesamiento de CV en tiempo real."""
 
-import subprocess
 import re
+import subprocess
 import time
 from datetime import datetime
 

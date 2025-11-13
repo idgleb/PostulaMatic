@@ -1,4 +1,5 @@
 import logging
+
 from django.contrib.auth.models import User
 from django.db import models
 
@@ -538,8 +539,9 @@ class AIConfiguration(models.Model):
     def _encrypt_key(self, key):
         """Encripta una API key."""
         try:
-            from cryptography.fernet import Fernet
             import os
+
+            from cryptography.fernet import Fernet
 
             # Obtener clave de encriptación
             encryption_key = os.getenv("ENCRYPTION_KEY")
@@ -579,8 +581,9 @@ class AIConfiguration(models.Model):
     def _decrypt_key(self, encrypted_key):
         """Desencripta una API key."""
         try:
-            from cryptography.fernet import Fernet
             import os
+
+            from cryptography.fernet import Fernet
 
             encryption_key = os.getenv("ENCRYPTION_KEY")
             if not encryption_key:

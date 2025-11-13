@@ -6,7 +6,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 
-from .models import UserProfile, UserCV, AIConfiguration
+from .models import AIConfiguration, UserCV, UserProfile
 
 
 class UserRegistrationForm(UserCreationForm):
