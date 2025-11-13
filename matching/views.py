@@ -1176,8 +1176,18 @@ def scheduled_scraping_config(request):
             # ============================================================
             from django_celery_beat.models import CrontabSchedule, PeriodicTask
 
+            # Buscar la tarea periódica existente primero
+            task = PeriodicTask.objects.filter(
+                task="matching.tasks_stealth.check_and_run_scheduled_scraping"
+            ).first()
+
+            # Guardar el crontab anterior para limpiarlo después si no se usa
+            old_crontab = None
+            if task and task.crontab:
+                old_crontab = task.crontab
+
             # Crear o obtener el CrontabSchedule específico para esta hora
-            crontab, _ = CrontabSchedule.objects.get_or_create(
+            crontab, crontab_created = CrontabSchedule.objects.get_or_create(
                 minute=str(scheduled_time.minute),
                 hour=str(scheduled_time.hour),
                 day_of_week="*",
@@ -1186,11 +1196,7 @@ def scheduled_scraping_config(request):
                 timezone="America/Argentina/Buenos_Aires",
             )
 
-            # Buscar y actualizar la tarea periódica
-            task = PeriodicTask.objects.filter(
-                task="matching.tasks_stealth.check_and_run_scheduled_scraping"
-            ).first()
-
+            # Actualizar o crear la tarea periódica
             if task:
                 task.crontab = crontab
                 task.enabled = is_enabled
@@ -1209,6 +1215,31 @@ def scheduled_scraping_config(request):
                 logger.info(
                     f"✅ Tarea periódica creada: {task.name} - Schedule: {crontab}"
                 )
+
+            # ============================================================
+            # Limpiar el crontab anterior si no se usa más
+            # ============================================================
+            if old_crontab and old_crontab.id != crontab.id:
+                # Verificar si el crontab anterior tiene otras tareas asociadas
+                other_tasks_count = PeriodicTask.objects.filter(
+                    crontab=old_crontab
+                ).count()
+
+                if other_tasks_count == 0:
+                    # No hay otras tareas usando este crontab, eliminarlo
+                    try:
+                        old_crontab.delete()
+                        logger.info(
+                            f"🧹 Crontab anterior eliminado: {old_crontab} (no utilizado)"
+                        )
+                    except Exception as e:
+                        logger.warning(
+                            f"⚠️ No se pudo eliminar el crontab anterior {old_crontab}: {e}"
+                        )
+                else:
+                    logger.debug(
+                        f"ℹ️ Crontab anterior {old_crontab} aún en uso por {other_tasks_count} tarea(s)"
+                    )
 
             # ============================================================
             # 🔄 FORZAR RECARGA: Hacer que el beat detecte el cambio inmediatamente
