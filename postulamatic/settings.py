@@ -254,7 +254,17 @@ LOGIN_REDIRECT_URL = "/matching/"
 ACCOUNT_LOGOUT_REDIRECT_URL = "/"
 SOCIALACCOUNT_LOGIN_ON_GET = True
 
-# Forzar HTTPS solo en producción
-if not DEBUG:
+# Forzar HTTPS en URLs de OAuth (importante para Google OAuth)
+ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
+SOCIALACCOUNT_QUERY_EMAIL = True
+
+# Forzar HTTPS en producción y asegurar que Django genere URLs HTTPS
+USE_TLS = env.bool("USE_TLS", default=True)  # Por defecto True en producción
+
+if not DEBUG or USE_TLS:
     SECURE_SSL_REDIRECT = True
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    # Asegurar que Django genere URLs HTTPS
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    # Forzar que las URLs generadas sean HTTPS
+    USE_TLS = True
