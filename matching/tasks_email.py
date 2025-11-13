@@ -6,20 +6,17 @@ import logging
 import random
 import time
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 from celery import shared_task
-from celery.exceptions import Retry
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.mail import EmailMultiAlternatives
-from django.template.loader import render_to_string
 from django.utils import timezone
 
 from matching.models import (EmailSentLog, JobPosting, MatchScore, UserCV,
                              UserProfile)
 
-from .services.ai_service import ai_email_service
 from .services.cv_personalizer import cv_personalization_service
 from .services.email_personalizer import email_personalization_service
 

@@ -3,13 +3,12 @@ Tarea Celery para envío automático diario de emails a nuevos matches.
 """
 
 import logging
-from datetime import datetime, timedelta
 
 from celery import shared_task
 from django.contrib.auth.models import User
 from django.utils import timezone
 
-from .models import EmailSentLog, JobPosting, MatchScore, UserCV, UserProfile
+from .models import EmailSentLog, MatchScore, UserCV, UserProfile
 from .tasks_bulk_email import send_bulk_emails_task
 
 logger = logging.getLogger(__name__)

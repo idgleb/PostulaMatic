@@ -69,7 +69,7 @@ def setup_environment():
                 if key not in ai_vars:
                     f.write(f"{key}={value}\n")
 
-        print(f"📄 Archivo .env actualizado")
+        print("📄 Archivo .env actualizado")
     else:
         print("ℹ️ Archivo .env ya está actualizado")
 

@@ -17,8 +17,7 @@ from .models import (EmailSentLog, JobPosting, MatchScore, ScrapingLog, UserCV,
                      UserProfile)
 from .services.cv_parser import cv_parser
 from .services.skills_extractor import skills_extractor
-from .utils.log_capture import (cleanup_log_capture, log_capture,
-                                setup_log_capture)
+from .utils.log_capture import (cleanup_log_capture, setup_log_capture)
 
 # from .tasks import scrape_dvcarreras_jobs  # Comentado para usar Playwright
 
@@ -28,7 +27,6 @@ logger = logging.getLogger(__name__)
 @login_required
 def dashboard_view(request):
     """Dashboard principal del usuario."""
-    from datetime import timedelta
 
     from django.utils import timezone
 
@@ -316,7 +314,6 @@ def cancel_cv_task(request):
     from celery.result import AsyncResult
     from django.core.cache import cache
 
-    from matching.utils.progress_tracker import ProgressTracker
 
     try:
         data = json.loads(request.body)
@@ -1080,7 +1077,6 @@ def test_scraper_view(request):
         return JsonResponse({"success": True, "stats": stats})
 
     # Obtener información de rotación de credenciales
-    from django.contrib.auth.models import User
     from django.core.cache import cache
 
     verified_users = (
@@ -1147,7 +1143,6 @@ def scheduled_scraping_config(request):
     """Vista para configurar el scraping programado."""
     import json
 
-    from django.utils import timezone
 
     from .models import ScheduledScraping
 
@@ -1239,7 +1234,7 @@ def scheduled_scraping_config(request):
                 task.save(update_fields=["last_run_at"])
 
                 logger.info(
-                    f"🔄 Cache del scheduler limpiado, beat recargará el schedule inmediatamente"
+                    "🔄 Cache del scheduler limpiado, beat recargará el schedule inmediatamente"
                 )
             except Exception as e:
                 # No fallar si la limpieza de cache falla
@@ -1680,7 +1675,6 @@ def paginated_jobs_view(request):
 def logout_view(request):
     """Vista para cerrar sesión."""
     from django.contrib import messages
-    from django.contrib.auth import logout
     from django.shortcuts import redirect
 
     logout(request)
@@ -1990,7 +1984,7 @@ def test_smtp_email_view(request):
             message = "❌ Error de autenticación SMTP. Verifica usuario y contraseña."
         return JsonResponse({"success": False, "message": message})
 
-    except smtplib.SMTPConnectError as e:
+    except smtplib.SMTPConnectError:
         return JsonResponse(
             {
                 "success": False,
@@ -2384,7 +2378,7 @@ def clear_session_view(request):
                 }
             )
         else:
-            logger.info(f"ℹ️ No había sesiones guardadas para eliminar")
+            logger.info("ℹ️ No había sesiones guardadas para eliminar")
             return JsonResponse(
                 {
                     "success": True,

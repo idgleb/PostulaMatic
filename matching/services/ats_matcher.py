@@ -15,8 +15,7 @@ El score ATS se calcula en base a 4 factores:
 import json
 import logging
 import re
-from collections import Counter
-from typing import Dict, List, Union
+from typing import Dict, List
 
 logger = logging.getLogger(__name__)
 

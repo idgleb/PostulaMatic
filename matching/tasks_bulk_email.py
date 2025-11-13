@@ -164,7 +164,7 @@ def send_bulk_emails_task(
                     logger.info(f"👤 Nombre detectado: {user_name}")
 
                     # 3. Generar PDF del CV
-                    logger.info(f"📄 Generando PDF del CV")
+                    logger.info("📄 Generando PDF del CV")
                     pdf_buffer = _generate_cv_pdf_simple(cv_text, user_name)
 
                     # 4. Generar carta de presentación con IA
@@ -412,7 +412,6 @@ def _format_cv_as_text(cv_dict):
 
 def _generate_cv_pdf_simple(cv_text, user_name):
     """Genera un PDF simple del CV usando ReportLab."""
-    from io import BytesIO
 
     from reportlab.lib.enums import TA_LEFT
     from reportlab.lib.pagesizes import letter
@@ -608,7 +607,6 @@ def _create_email_log(
     pdf_buffer=None,
 ):
     """Crea un registro de email enviado."""
-    import os
 
     from django.core.files.base import ContentFile
 

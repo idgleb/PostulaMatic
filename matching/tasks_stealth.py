@@ -6,9 +6,7 @@ import asyncio
 import logging
 from typing import Any, Dict, Optional
 
-from asgiref.sync import async_to_sync
 from celery import shared_task
-from django.conf import settings
 from django.core.cache import cache
 
 from matching.clients.dvcarreras_stealth import DVCarrerasStealth
@@ -207,7 +205,7 @@ async def _run_scraping_stealth(
                 )
 
                 await save_log(
-                    f"❌ Login fallido - Credenciales incorrectas. Usuario marcado como no verificado.",
+                    "❌ Login fallido - Credenciales incorrectas. Usuario marcado como no verificado.",
                     "error",
                 )
             except Exception as e:

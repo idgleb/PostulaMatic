@@ -7,7 +7,6 @@ import logging
 from typing import Any, Dict
 
 from .ai_service import AIEmailService
-from .pdf_parser import PDFParser
 
 logger = logging.getLogger(__name__)
 
@@ -323,7 +322,7 @@ class AIPDFParser:
 
                 # Convertir página a imagen
                 mat = fitz.Matrix(2.0, 2.0)  # Escala 2x para mejor calidad
-                logger.info(f"🔍 MATRIZ DE ESCALA CREADA: 2.0x")
+                logger.info("🔍 MATRIZ DE ESCALA CREADA: 2.0x")
                 pix = page.get_pixmap(matrix=mat)
                 logger.info(
                     f"🔍 PIXMAP CREADO PARA PÁGINA {page_num + 1}: {pix.width}x{pix.height}"
@@ -497,7 +496,7 @@ IMPORTANTE: Solo devuelve el texto mejorado, sin explicaciones adicionales.
                 or "API keys inválidas" in str(e)
             ):
                 raise Exception(
-                    f"❌ IA no disponible - Cuota agotada o API keys inválidas"
+                    "❌ IA no disponible - Cuota agotada o API keys inválidas"
                 )
             else:
                 return text, False

@@ -1,7 +1,7 @@
 import logging
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
-from anthropic import Anthropic, NotFoundError
+from anthropic import Anthropic
 
 logger = logging.getLogger(__name__)
 

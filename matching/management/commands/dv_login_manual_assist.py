@@ -5,8 +5,6 @@ Permite al usuario resolver el CAPTCHA manualmente una vez y guarda la sesión p
 
 import asyncio
 import json
-import os
-from datetime import datetime
 from pathlib import Path
 
 from django.contrib.auth import get_user_model

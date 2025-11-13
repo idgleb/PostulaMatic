@@ -145,7 +145,7 @@ def email_logs_api(request):
 def email_statistics_api(request):
     """API para obtener estadísticas de emails."""
 
-    from datetime import datetime, timedelta
+    from datetime import timedelta
 
     from django.db.models import Count, Q
     from django.utils import timezone

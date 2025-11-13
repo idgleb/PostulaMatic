@@ -68,9 +68,9 @@ class CVParser:
             # ============================================================
             if file_extension == ".docx":
                 logger.info(
-                    f"🔍 CVParser: Convirtiendo DOCX a PDF para procesamiento con IA"
+                    "🔍 CVParser: Convirtiendo DOCX a PDF para procesamiento con IA"
                 )
-                print(f"🔍 CVParser: Convirtiendo DOCX a PDF para procesamiento con IA")
+                print("🔍 CVParser: Convirtiendo DOCX a PDF para procesamiento con IA")
 
                 if progress_tracker:
                     progress_tracker.update_step(
@@ -86,8 +86,8 @@ class CVParser:
                     )
 
                 # Procesar el PDF con IA
-                logger.info(f"🔍 CVParser: Usando AIPDFParser para DOCX convertido")
-                print(f"🔍 CVParser: Usando AIPDFParser para DOCX convertido")
+                logger.info("🔍 CVParser: Usando AIPDFParser para DOCX convertido")
+                print("🔍 CVParser: Usando AIPDFParser para DOCX convertido")
                 result = self.pdf_parser.parse_cv(
                     pdf_path, progress_tracker=progress_tracker
                 )
@@ -103,8 +103,8 @@ class CVParser:
                         f"🔍 CVParser: Directorio temporal eliminado: {temp_dir}"
                     )
 
-                logger.info(f"🔍 CVParser: DOCX procesado con IA exitosamente")
-                print(f"🔍 CVParser: DOCX procesado con IA exitosamente")
+                logger.info("🔍 CVParser: DOCX procesado con IA exitosamente")
+                print("🔍 CVParser: DOCX procesado con IA exitosamente")
 
             elif file_extension == ".pdf":
                 logger.info(f"🔍 CVParser: Usando AIPDFParser para {file_path}")

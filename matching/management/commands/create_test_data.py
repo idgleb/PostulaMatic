@@ -5,7 +5,6 @@ Comando para crear datos de prueba para el sistema de emails.
 from django.contrib.auth.models import User
 from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand
-from django.utils import timezone
 
 from matching.models import JobPosting, UserCV, UserProfile
 
@@ -246,7 +245,7 @@ class Command(BaseCommand):
             self.stdout.write("💼 Todos los puestos ya existen")
 
         self.stdout.write(
-            self.style.SUCCESS(f"✅ Datos de prueba creados exitosamente")
+            self.style.SUCCESS("✅ Datos de prueba creados exitosamente")
         )
         self.stdout.write(f"👤 Usuario: {user.username} (ID: {user.id})")
         self.stdout.write(f"📄 CV: {UserCV.objects.filter(user=user).count()} CV(s)")

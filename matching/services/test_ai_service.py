@@ -4,11 +4,11 @@ Tests para el servicio de IA.
 
 import os
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from django.test import TestCase
 
-from .ai_service import (AIEmailService, AnthropicProvider, EmailContent,
+from .ai_service import (AIEmailService, EmailContent,
                          OpenAIProvider)
 
 

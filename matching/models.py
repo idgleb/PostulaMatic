@@ -549,7 +549,7 @@ class AIConfiguration(models.Model):
                 # Generar clave si no existe
                 encryption_key = Fernet.generate_key().decode()
                 logger.warning(
-                    f"Nueva clave de encriptación generada y guardada en .env"
+                    "Nueva clave de encriptación generada y guardada en .env"
                 )
                 # Guardar en archivo .env
                 with open(".env", "a") as f:
@@ -563,7 +563,7 @@ class AIConfiguration(models.Model):
                 logger.error(f"Clave de encriptación inválida: {e}")
                 # Generar nueva clave válida
                 new_key = Fernet.generate_key().decode()
-                logger.warning(f"Generando nueva clave de encriptación válida")
+                logger.warning("Generando nueva clave de encriptación válida")
                 with open(".env", "a") as f:
                     f.write(f"\nENCRYPTION_KEY={new_key}\n")
                 f = Fernet(new_key.encode())
