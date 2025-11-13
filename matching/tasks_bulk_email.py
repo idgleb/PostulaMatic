@@ -413,11 +413,12 @@ def _format_cv_as_text(cv_dict):
 def _generate_cv_pdf_simple(cv_text, user_name):
     """Genera un PDF simple del CV usando ReportLab."""
     from io import BytesIO
-    from reportlab.lib.pagesizes import letter
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib.units import inch
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+
     from reportlab.lib.enums import TA_LEFT
+    from reportlab.lib.pagesizes import letter
+    from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+    from reportlab.lib.units import inch
+    from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
 
     try:
         # Crear buffer en memoria
@@ -544,9 +545,9 @@ def _send_email_with_smtp(
 ):
     """Envía email usando la configuración SMTP del usuario."""
     import smtplib
+    from email.mime.application import MIMEApplication
     from email.mime.multipart import MIMEMultipart
     from email.mime.text import MIMEText
-    from email.mime.application import MIMEApplication
 
     try:
         # Crear mensaje
@@ -607,8 +608,9 @@ def _create_email_log(
     pdf_buffer=None,
 ):
     """Crea un registro de email enviado."""
-    from django.core.files.base import ContentFile
     import os
+
+    from django.core.files.base import ContentFile
 
     try:
         email_log = EmailSentLog.objects.create(

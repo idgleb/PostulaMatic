@@ -3,9 +3,9 @@
 Script para probar la conectividad con proveedores de IA.
 """
 
+import asyncio
 import os
 import sys
-import asyncio
 from pathlib import Path
 
 # Agregar el directorio del proyecto al path

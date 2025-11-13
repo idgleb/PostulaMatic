@@ -2,19 +2,21 @@
 Vistas para personalización de CV.
 """
 
+import json
 import logging
 import os
-from django.shortcuts import render, get_object_or_404, redirect
-from django.http import JsonResponse, HttpResponse
-from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_http_methods
-from django.views.decorators.csrf import csrf_exempt
+
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db import models
-import json
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
 
-from matching.models import UserCV, JobPosting
+from matching.models import JobPosting, UserCV
+
 from .services.cv_personalizer import cv_personalization_service
 
 logger = logging.getLogger(__name__)

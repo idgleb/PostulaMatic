@@ -3,18 +3,17 @@ Comando para login manual asistido en DV Carreras.
 Permite al usuario resolver el CAPTCHA manualmente una vez y guarda la sesión para reutilizar.
 """
 
-import os
-import json
 import asyncio
-from pathlib import Path
+import json
+import os
 from datetime import datetime
+from pathlib import Path
 
-from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth import get_user_model
+from django.core.management.base import BaseCommand, CommandError
 
-from matching.clients.dvcarreras_playwright_flaresolverr import (
-    DVCarrerasPlaywrightFlareSolverr,
-)
+from matching.clients.dvcarreras_playwright_flaresolverr import \
+    DVCarrerasPlaywrightFlareSolverr
 
 User = get_user_model()
 

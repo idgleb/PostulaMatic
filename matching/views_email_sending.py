@@ -11,10 +11,11 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 
-# PDF generation será manejado en el frontend con jsPDF
-
 from .models import JobPosting, UserCV, UserProfile
 from .services.ai_service import ai_email_service
+
+# PDF generation será manejado en el frontend con jsPDF
+
 
 logger = logging.getLogger(__name__)
 
@@ -138,9 +139,9 @@ def send_email_with_smtp(
 ):
     """Envía email usando la configuración SMTP del usuario."""
     import smtplib
+    from email.mime.application import MIMEApplication
     from email.mime.multipart import MIMEMultipart
     from email.mime.text import MIMEText
-    from email.mime.application import MIMEApplication
 
     try:
         # Crear mensaje

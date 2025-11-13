@@ -3,10 +3,11 @@
 Script de prueba para el scraper stealth de DV Carreras.
 """
 
-import os
-import django
 import asyncio
 import logging
+import os
+
+import django
 
 # Configurar Django
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "postulamatic.settings")

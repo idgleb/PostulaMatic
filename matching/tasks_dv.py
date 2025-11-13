@@ -1,9 +1,10 @@
-import logging
-from celery import shared_task
-import os
-from datetime import datetime
-import threading
 import asyncio
+import logging
+import os
+import threading
+from datetime import datetime
+
+from celery import shared_task
 
 from .models import UserProfile
 
@@ -25,12 +26,12 @@ def verify_dv_login_manual_task(self, user_id: int, timeout_seconds: int = 300):
         profile.save(update_fields=["dv_connection_status"])
 
         # Ejecutar login manual con navegador visible (usando FlareSolverr)
-        from .clients.dvcarreras_playwright_flaresolverr import (
-            DVCarrerasPlaywrightFlareSolverr,
-        )
         import asyncio
         import json
         from pathlib import Path
+
+        from .clients.dvcarreras_playwright_flaresolverr import \
+            DVCarrerasPlaywrightFlareSolverr
 
         def do_manual_login():
             client = DVCarrerasPlaywrightFlareSolverr(

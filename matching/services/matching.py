@@ -9,8 +9,8 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
 from ..models import JobPosting, MatchScore, UserCV, UserProfile
-from .skills_extractor import skills_extractor
 from .ats_matcher import ats_matcher
+from .skills_extractor import skills_extractor
 
 logger = logging.getLogger(__name__)
 

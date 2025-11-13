@@ -4,12 +4,14 @@ Tests para el servicio de personalización de CV.
 
 import unittest
 from unittest.mock import Mock, patch
-from django.test import TestCase
-from django.contrib.auth.models import User
 
-from matching.models import UserCV, JobPosting
-from .cv_personalizer import CVPersonalizationService
+from django.contrib.auth.models import User
+from django.test import TestCase
+
+from matching.models import JobPosting, UserCV
+
 from .ats_matcher import KeywordExtractor
+from .cv_personalizer import CVPersonalizationService
 
 
 class TestKeywordExtractor(TestCase):

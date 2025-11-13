@@ -6,12 +6,13 @@ Maneja múltiples proveedores de IA y genera contenido personalizado.
 import logging
 import os
 from abc import ABC, abstractmethod
-from typing import Dict, Optional, Any
 from dataclasses import dataclass
+from typing import Any, Dict, Optional
 
-import openai
 import anthropic
+import openai
 from django.conf import settings
+
 from matching.utils.anthropic_model_finder import create_model_finder
 
 logger = logging.getLogger(__name__)

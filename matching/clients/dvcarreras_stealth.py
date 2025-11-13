@@ -3,27 +3,27 @@ Cliente stealth para DV Carreras usando undetected-chromedriver.
 Este cliente está diseñado para bypasear Cloudflare Turnstile usando técnicas anti-detección.
 """
 
-import os
-import time
+import asyncio
 import json
 import logging
+import os
 import random
-import subprocess
 import re
-import asyncio
-from typing import Dict, List, Any, Optional
+import subprocess
+import time
 from datetime import datetime
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 import undetected_chromedriver as uc
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.action_chains import ActionChains
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
-
-from matching.models import UserProfile, ScrapingLog
 from asgiref.sync import sync_to_async
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+
+from matching.models import ScrapingLog, UserProfile
 
 logger = logging.getLogger(__name__)
 
@@ -367,8 +367,8 @@ class DVCarrerasStealth:
 
                 # Si están encriptados, desencriptar
                 try:
-                    from django.conf import settings
                     from cryptography.fernet import Fernet
+                    from django.conf import settings
 
                     if hasattr(settings, "ENCRYPTION_KEY") and settings.ENCRYPTION_KEY:
                         fernet = Fernet(settings.ENCRYPTION_KEY.encode())

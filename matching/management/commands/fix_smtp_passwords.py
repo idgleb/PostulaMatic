@@ -3,6 +3,7 @@ Comando para detectar y limpiar contraseñas SMTP corruptas.
 """
 
 from django.core.management.base import BaseCommand
+
 from matching.models import UserProfile
 from matching.utils.encryption import credential_encryption
 

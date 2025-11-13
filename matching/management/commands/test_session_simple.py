@@ -1,10 +1,11 @@
 import asyncio
 import json
 import logging
+
 from django.core.management.base import BaseCommand
-from matching.clients.dvcarreras_playwright_flaresolverr import (
-    DVCarrerasPlaywrightFlareSolverr,
-)
+
+from matching.clients.dvcarreras_playwright_flaresolverr import \
+    DVCarrerasPlaywrightFlareSolverr
 
 logger = logging.getLogger(__name__)
 

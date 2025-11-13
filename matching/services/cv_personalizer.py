@@ -11,9 +11,10 @@ from typing import Dict, List, Optional
 from django.contrib.auth.models import User
 from django.core.files.base import ContentFile
 
-from matching.models import UserCV, JobPosting
+from matching.models import JobPosting, UserCV
+
 from .ai_service import ai_email_service
-from .ats_matcher import ats_matcher, KeywordExtractor
+from .ats_matcher import KeywordExtractor, ats_matcher
 
 logger = logging.getLogger(__name__)
 

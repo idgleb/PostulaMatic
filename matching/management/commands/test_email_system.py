@@ -2,16 +2,14 @@
 Comando para probar el sistema de envío de emails automáticos.
 """
 
-from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
+from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from matching.models import UserCV, JobPosting, EmailSentLog
-from matching.tasks_email import (
-    send_personalized_email_task,
-    send_bulk_emails_task,
-    process_matching_and_send_emails_task,
-)
+from matching.models import EmailSentLog, JobPosting, UserCV
+from matching.tasks_email import (process_matching_and_send_emails_task,
+                                  send_bulk_emails_task,
+                                  send_personalized_email_task)
 
 
 class Command(BaseCommand):

@@ -12,9 +12,11 @@ Uso:
 """
 
 import logging
-from django.core.management.base import BaseCommand
+
 from django.contrib.auth.models import User
-from matching.models import MatchScore, UserCV, JobPosting
+from django.core.management.base import BaseCommand
+
+from matching.models import JobPosting, MatchScore, UserCV
 from matching.services.matching import matching_service
 
 logger = logging.getLogger(__name__)

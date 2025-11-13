@@ -1,7 +1,7 @@
+import logging
 import os
 import time
-import logging
-from typing import Optional, Dict
+from typing import Dict, Optional
 
 try:
     from twocaptcha import TwoCaptcha

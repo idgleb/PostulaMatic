@@ -7,7 +7,7 @@ Servicio para extraer habilidades de CVs usando técnicas híbridas:
 import logging
 import re
 from collections import Counter
-from typing import Any, Dict, List, Set, Optional
+from typing import Any, Dict, List, Optional, Set
 
 logger = logging.getLogger(__name__)
 

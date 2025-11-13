@@ -4,13 +4,14 @@ Vistas para generación y prueba de emails personalizados.
 
 import json
 import logging
-from django.http import JsonResponse
-from django.shortcuts import render, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_http_methods
-from django.views.decorators.csrf import csrf_exempt
 
-from .models import UserCV, JobPosting, MatchScore, UserProfile
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, render
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+
+from .models import JobPosting, MatchScore, UserCV, UserProfile
 from .services.email_personalizer import email_personalization_service
 
 logger = logging.getLogger(__name__)

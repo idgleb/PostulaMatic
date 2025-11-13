@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 
-from .models import UserCV, JobPosting
+from .models import JobPosting, UserCV
 
 
 @login_required
@@ -145,10 +145,12 @@ def email_logs_api(request):
 def email_statistics_api(request):
     """API para obtener estadísticas de emails."""
 
-    from .models import EmailSentLog
-    from django.db.models import Count, Q
     from datetime import datetime, timedelta
+
+    from django.db.models import Count, Q
     from django.utils import timezone
+
+    from .models import EmailSentLog
 
     # Estadísticas generales
     total_emails = EmailSentLog.objects.filter(user=request.user).count()
