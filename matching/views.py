@@ -1795,6 +1795,14 @@ def register_view(request):
             messages.error(request, "Todos los campos son obligatorios.")
             return render(request, "registration/register.html")
 
+        # Validar dominio del email
+        if not email.endswith("@davinci.edu.ar"):
+            messages.error(
+                request,
+                "Solo se permiten cuentas con email institucional de @davinci.edu.ar",
+            )
+            return render(request, "registration/register.html")
+
         if password1 != password2:
             messages.error(request, "Las contraseñas no coinciden.")
             return render(request, "registration/register.html")

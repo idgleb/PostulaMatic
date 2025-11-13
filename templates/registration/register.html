@@ -56,7 +56,11 @@
                         <form method="post">
                             {% csrf_token %}
                             <div class="form-group">
-                                <input type="email" name="email" placeholder="Email" class="form-control" autofocus autocomplete="email" required>
+                                <input type="email" name="email" placeholder="Email (@davinci.edu.ar)" class="form-control" autofocus autocomplete="email" required>
+                                <small class="form-text text-muted mt-2 d-block">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Solo se permiten emails institucionales de @davinci.edu.ar
+                                </small>
                             </div>
 
                             <div class="form-group">

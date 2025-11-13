@@ -18,6 +18,15 @@ class UserRegistrationForm(UserCreationForm):
         model = User
         fields = ("username", "email", "password1", "password2")
 
+    def clean_email(self):
+        """Validar que el email sea de @davinci.edu.ar"""
+        email = self.cleaned_data.get("email")
+        if email and not email.endswith("@davinci.edu.ar"):
+            raise forms.ValidationError(
+                "Solo se permiten cuentas con email institucional de @davinci.edu.ar"
+            )
+        return email
+
     def save(self, commit=True):
         user = super().save(commit=False)
         user.email = self.cleaned_data["email"]

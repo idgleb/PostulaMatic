@@ -223,6 +223,10 @@ AUTHENTICATION_BACKENDS = [
     "allauth.account.auth_backends.AuthenticationBackend",
 ]
 
+# Adapters personalizados para restringir emails a @davinci.edu.ar
+ACCOUNT_ADAPTER = "matching.adapters.RestrictedEmailAdapter"
+SOCIALACCOUNT_ADAPTER = "matching.adapters.RestrictedSocialAccountAdapter"
+
 # allauth settings
 ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
@@ -258,13 +262,7 @@ SOCIALACCOUNT_LOGIN_ON_GET = True
 ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
 SOCIALACCOUNT_QUERY_EMAIL = True
 
-# Forzar HTTPS en producción y asegurar que Django genere URLs HTTPS
-USE_TLS = env.bool("USE_TLS", default=True)  # Por defecto True en producción
-
-if not DEBUG or USE_TLS:
+# Forzar HTTPS en producción
+if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-    # Asegurar que Django genere URLs HTTPS
-    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-    # Forzar que las URLs generadas sean HTTPS
-    USE_TLS = True
