@@ -136,9 +136,6 @@
             </div>
         </div>
 
-        <!-- Modal de información sobre SMTP - Reutilizable -->
-        {% include 'matching/partials/smtp_info_modal.html' %}
-
         <!-- Credenciales INTRANET DAVINCI -->
         <div class="card mb-5">
             <div class="card-header">
@@ -456,6 +453,8 @@
 {% endblock %}
 
 {% block extra_js %}
+<!-- Modal de información sobre SMTP - Reutilizable -->
+{% include 'matching/partials/smtp_info_modal.html' %}
 <!-- Modal de información sobre Matching - Reutilizable -->
 {% include 'matching/partials/matching_info_modal.html' %}
 <script>
