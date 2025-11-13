@@ -136,6 +136,134 @@
             </div>
         </div>
 
+        <!-- Modal: Información SMTP Gmail -->
+        <div class="modal fade" id="smtpInfoModal" tabindex="-1" aria-labelledby="smtpInfoModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="smtpInfoModalLabel">
+                            <i class="bi bi-envelope-check me-2"></i>Configuración SMTP para Gmail
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Importante:</strong> Para usar Gmail con aplicaciones externas, necesitas generar una "Contraseña de aplicación" (App Password).
+                        </div>
+
+                        <h6 class="fw-bold mt-4 mb-3">
+                            <i class="bi bi-1-circle me-2 text-primary"></i>Paso 1: Habilitar verificación en 2 pasos
+                        </h6>
+                        <ol class="mb-4">
+                            <li>Ve a tu <a href="https://myaccount.google.com/security" target="_blank" rel="noopener noreferrer">Cuenta de Google</a></li>
+                            <li>En "Iniciar sesión en Google", selecciona <strong>Verificación en 2 pasos</strong></li>
+                            <li>Sigue las instrucciones para activarla</li>
+                        </ol>
+
+                        <h6 class="fw-bold mt-4 mb-3">
+                            <i class="bi bi-2-circle me-2 text-primary"></i>Paso 2: Generar contraseña de aplicación
+                        </h6>
+                        <ol class="mb-4">
+                            <li>Ve a <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener noreferrer">Contraseñas de aplicaciones</a></li>
+                            <li>Selecciona <strong>Correo</strong> como aplicación</li>
+                            <li>Selecciona <strong>Otro (nombre personalizado)</strong> como dispositivo</li>
+                            <li>Escribe "PostulaMatic" como nombre</li>
+                            <li>Haz clic en <strong>Generar</strong></li>
+                            <li><strong>Copia la contraseña de 16 caracteres</strong> que aparece (la usarás en el campo "Contraseña SMTP")</li>
+                        </ol>
+
+                        <h6 class="fw-bold mt-4 mb-3">
+                            <i class="bi bi-3-circle me-2 text-primary"></i>Paso 3: Configurar en PostulaMatic
+                        </h6>
+                        <div class="table-responsive mb-4">
+                            <table class="table table-bordered table-sm">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Campo</th>
+                                        <th>Valor para Gmail</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><strong>Servidor SMTP</strong></td>
+                                        <td><code>smtp.gmail.com</code></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Puerto</strong></td>
+                                        <td><code>587</code> (con TLS) o <code>465</code> (con SSL)</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Usuario SMTP</strong></td>
+                                        <td>Tu dirección de Gmail completa (ej: <code>tuemail@gmail.com</code>)</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Contraseña SMTP</strong></td>
+                                        <td>La <strong>contraseña de aplicación</strong> de 16 caracteres que generaste</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Usar TLS</strong></td>
+                                        <td>✅ <strong>Sí</strong> (si usas puerto 587)</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Usar SSL</strong></td>
+                                        <td>✅ <strong>Sí</strong> (si usas puerto 465)</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            <strong>Nota:</strong> No uses tu contraseña normal de Gmail. Debes usar la <strong>contraseña de aplicación</strong> generada específicamente para PostulaMatic.
+                        </div>
+
+                        <h6 class="fw-bold mt-4 mb-3">
+                            <i class="bi bi-question-circle me-2 text-primary"></i>Otros proveedores de email
+                        </h6>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Proveedor</th>
+                                        <th>Servidor SMTP</th>
+                                        <th>Puerto</th>
+                                        <th>TLS/SSL</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><strong>Outlook/Hotmail</strong></td>
+                                        <td><code>smtp-mail.outlook.com</code></td>
+                                        <td><code>587</code></td>
+                                        <td>TLS</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Yahoo</strong></td>
+                                        <td><code>smtp.mail.yahoo.com</code></td>
+                                        <td><code>587</code></td>
+                                        <td>TLS</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>ProtonMail</strong></td>
+                                        <td><code>127.0.0.1</code></td>
+                                        <td><code>1025</code></td>
+                                        <td>Requiere configuración especial</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                        <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener noreferrer" class="btn btn-primary">
+                            <i class="bi bi-box-arrow-up-right me-2"></i>Abrir Contraseñas de aplicaciones
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Credenciales INTRANET DAVINCI -->
         <div class="card mb-5">
             <div class="card-header">
