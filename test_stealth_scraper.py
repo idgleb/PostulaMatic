@@ -4,7 +4,6 @@ Script de prueba para el scraper stealth de DV Carreras.
 """
 
 import os
-import sys
 import django
 import asyncio
 import logging
@@ -13,7 +12,7 @@ import logging
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "postulamatic.settings")
 django.setup()
 
-from matching.clients.dvcarreras_stealth import DVCarrerasStealth
+from matching.clients.dvcarreras_stealth import DVCarrerasStealth  # noqa: E402
 
 # Configurar logging
 logging.basicConfig(
@@ -77,7 +76,7 @@ async def test_stealth_scraper():
         try:
             await client.close()
             print("🔒 Navegador cerrado")
-        except:
+        except Exception:
             pass
 
 

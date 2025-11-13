@@ -15,11 +15,11 @@ sys.path.insert(0, str(project_root))
 # Configurar Django
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "postulamatic.settings")
 
-import django
+import django  # noqa: E402
 
 django.setup()
 
-from matching.services.ai_service import ai_email_service
+from matching.services.ai_service import ai_email_service  # noqa: E402
 
 
 def test_openai_connectivity():
