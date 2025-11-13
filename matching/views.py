@@ -10,10 +10,21 @@ from matching.tasks_dv import verify_dv_login_task
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
-from .forms import (CVUploadForm, DVCredentialsForm, MatchingConfigForm,
-                    SMTPConfigForm, EmailConfigForm)
-from .models import (EmailSentLog, JobPosting, MatchScore, ScrapingLog, 
-                     UserCV, UserProfile)
+from .forms import (
+    CVUploadForm,
+    DVCredentialsForm,
+    MatchingConfigForm,
+    SMTPConfigForm,
+    EmailConfigForm,
+)
+from .models import (
+    EmailSentLog,
+    JobPosting,
+    MatchScore,
+    ScrapingLog,
+    UserCV,
+    UserProfile,
+)
 from .services.cv_parser import cv_parser
 from .services.skills_extractor import skills_extractor
 from .utils.log_capture import setup_log_capture, cleanup_log_capture, log_capture
@@ -28,24 +39,22 @@ def dashboard_view(request):
     """Dashboard principal del usuario."""
     from django.utils import timezone
     from datetime import timedelta
-    
+
     user_profile = UserProfile.objects.get_or_create(user=request.user)[0]
 
     # Estadísticas básicas
     today = timezone.now().date()
-    
+
     # Contar emails enviados hoy
     emails_sent_today = EmailSentLog.objects.filter(
-        user=request.user,
-        sent_at__date=today
+        user=request.user, sent_at__date=today
     ).count()
-    
+
     # Contar emails fallidos
     emails_failed = EmailSentLog.objects.filter(
-        user=request.user,
-        status='failed'
+        user=request.user, status="failed"
     ).count()
-    
+
     stats = {
         "total_cvs": UserCV.objects.filter(user=request.user).count(),
         "total_matches": MatchScore.objects.filter(user=request.user).count(),
@@ -155,32 +164,38 @@ def profile_view(request):
         elif section == "matching":
             # Leer el valor ANTES de crear el formulario para evitar que Django lo modifique
             old_threshold = profile.match_threshold
-            logger.info(f"Matching form - old_threshold (ANTES de crear formulario): {old_threshold}")
-            
+            logger.info(
+                f"Matching form - old_threshold (ANTES de crear formulario): {old_threshold}"
+            )
+
             matching_form = MatchingConfigForm(request.POST, instance=profile)
             logger.info(f"Matching form - POST data: {request.POST}")
             logger.info(f"Matching form - Form is_valid: {matching_form.is_valid()}")
             if matching_form.errors:
                 logger.info(f"Matching form - Form errors: {matching_form.errors}")
-            
+
             if matching_form.is_valid():
                 # Leer el nuevo valor ANTES de guardar
-                new_threshold = matching_form.cleaned_data['match_threshold']
+                new_threshold = matching_form.cleaned_data["match_threshold"]
                 logger.info(f"Matching form - new_threshold: {new_threshold}")
-                logger.info(f"Matching form - ¿Cambió umbral?: {old_threshold != new_threshold}")
-                
+                logger.info(
+                    f"Matching form - ¿Cambió umbral?: {old_threshold != new_threshold}"
+                )
+
                 matching_form.save()
-                
+
                 if old_threshold != new_threshold:
                     try:
                         # Importar tarea de recálculo
                         from .tasks import recalculate_matches_for_user
-                        
+
                         # Ejecutar recálculo en background
                         task = recalculate_matches_for_user.delay(request.user.id)
-                        
-                        logger.info(f"Recálculo de matches iniciado para usuario {request.user.id} (task: {task.id})")
-                        
+
+                        logger.info(
+                            f"Recálculo de matches iniciado para usuario {request.user.id} (task: {task.id})"
+                        )
+
                         if is_ajax:
                             return JsonResponse(
                                 {
@@ -192,11 +207,13 @@ def profile_view(request):
                             )
                         else:
                             messages.success(
-                                request, 
-                                f"✅ Configuración guardada y recálculo iniciado. Umbral cambiado de {old_threshold}% a {new_threshold}%."
+                                request,
+                                f"✅ Configuración guardada y recálculo iniciado. Umbral cambiado de {old_threshold}% a {new_threshold}%.",
                             )
                     except Exception as e:
-                        logger.error(f"Error iniciando recálculo para usuario {request.user.id}: {e}")
+                        logger.error(
+                            f"Error iniciando recálculo para usuario {request.user.id}: {e}"
+                        )
                         if is_ajax:
                             return JsonResponse(
                                 {
@@ -207,8 +224,8 @@ def profile_view(request):
                             )
                         else:
                             messages.warning(
-                                request, 
-                                "✅ Configuración guardada. ⚠️ Error al iniciar recálculo automático."
+                                request,
+                                "✅ Configuración guardada. ⚠️ Error al iniciar recálculo automático.",
                             )
                 else:
                     # Umbral no cambió
@@ -222,7 +239,8 @@ def profile_view(request):
                         )
                     else:
                         messages.success(
-                            request, "✅ Configuración de matching guardada correctamente."
+                            request,
+                            "✅ Configuración de matching guardada correctamente.",
                         )
             else:
                 if is_ajax:
@@ -284,21 +302,17 @@ def profile_view(request):
 def get_cv_progress(request, progress_id):
     """Vista AJAX para consultar el progreso del procesamiento de un CV."""
     from django.core.cache import cache
-    
+
     # Leer directamente del cache sin inicializar
     cache_key = f"cv_progress_{progress_id}"
     progress_data = cache.get(cache_key)
-    
+
     if not progress_data:
-        return JsonResponse({
-            "success": False,
-            "error": "Progreso no encontrado"
-        }, status=404)
-    
-    return JsonResponse({
-        "success": True,
-        "progress": progress_data
-    })
+        return JsonResponse(
+            {"success": False, "error": "Progreso no encontrado"}, status=404
+        )
+
+    return JsonResponse({"success": True, "progress": progress_data})
 
 
 @login_required
@@ -309,55 +323,50 @@ def cancel_cv_task(request):
     from celery.result import AsyncResult
     from django.core.cache import cache
     from matching.utils.progress_tracker import ProgressTracker
-    
+
     try:
         data = json.loads(request.body)
-        task_id = data.get('task_id')
-        progress_id = data.get('progress_id')
-        
+        task_id = data.get("task_id")
+        progress_id = data.get("progress_id")
+
         if not task_id:
-            return JsonResponse({
-                "success": False,
-                "error": "task_id no proporcionado"
-            })
-        
+            return JsonResponse({"success": False, "error": "task_id no proporcionado"})
+
         logger.info(f"🛑 Cancelando tarea de CV: {task_id}")
-        
+
         # Revocar la tarea de Celery
-        AsyncResult(task_id).revoke(terminate=True, signal='SIGKILL')
-        
+        AsyncResult(task_id).revoke(terminate=True, signal="SIGKILL")
+
         # Si tenemos progress_id, actualizar el progreso para marcar como cancelado
         if progress_id:
             cache_key = f"cv_progress_{progress_id}"
             progress_data = cache.get(cache_key)
-            
+
             if progress_data:
                 # Marcar como completado con error
-                progress_data['completed'] = True
-                progress_data['error'] = 'Procesamiento cancelado por el usuario'
-                
+                progress_data["completed"] = True
+                progress_data["error"] = "Procesamiento cancelado por el usuario"
+
                 # Actualizar todos los pasos "in_progress" a "error"
-                for step in progress_data.get('steps', []):
-                    if step.get('status') == 'in_progress':
-                        step['status'] = 'error'
-                        step['message'] = 'Cancelado'
-                
+                for step in progress_data.get("steps", []):
+                    if step.get("status") == "in_progress":
+                        step["status"] = "error"
+                        step["message"] = "Cancelado"
+
                 cache.set(cache_key, progress_data, 600)
-                logger.info(f"📊 Progreso actualizado para {progress_id}: marcado como cancelado")
-        
+                logger.info(
+                    f"📊 Progreso actualizado para {progress_id}: marcado como cancelado"
+                )
+
         logger.info(f"✅ Tarea {task_id} cancelada exitosamente")
-        
-        return JsonResponse({
-            "success": True,
-            "message": "Tarea cancelada exitosamente"
-        })
-        
+
+        return JsonResponse(
+            {"success": True, "message": "Tarea cancelada exitosamente"}
+        )
+
     except Exception as e:
         logger.error(f"❌ Error cancelando tarea: {e}")
-        return JsonResponse({
-            "success": False,
-            "error": str(e)
-        })
+        return JsonResponse({"success": False, "error": str(e)})
 
 
 @login_required
@@ -374,7 +383,9 @@ def upload_cv_view(request):
 
     form = CVUploadForm(request.POST, request.FILES)
     if form.is_valid():
-        print("🔍 UPLOAD: Formulario válido, iniciando procesamiento")  # Print para debugging
+        print(
+            "🔍 UPLOAD: Formulario válido, iniciando procesamiento"
+        )  # Print para debugging
         try:
             import os
             import uuid
@@ -391,53 +402,58 @@ def upload_cv_view(request):
             file_ext = os.path.splitext(uploaded_file.name)[1].lower()
 
             # Guardar archivo en directorio temporal dentro de MEDIA_ROOT (compartido entre contenedores)
-            progress_tracker.update_step("temp_file", "in_progress", "Guardando archivo temporal")
-            temp_dir = os.path.join(settings.MEDIA_ROOT, 'temp_uploads')
+            progress_tracker.update_step(
+                "temp_file", "in_progress", "Guardando archivo temporal"
+            )
+            temp_dir = os.path.join(settings.MEDIA_ROOT, "temp_uploads")
             os.makedirs(temp_dir, exist_ok=True)
-            
+
             # Generar nombre único para el archivo temporal
             temp_filename = f"{uuid.uuid4()}{file_ext}"
             temp_file_path = os.path.join(temp_dir, temp_filename)
-            
+
             # Guardar el archivo
-            with open(temp_file_path, 'wb+') as destination:
+            with open(temp_file_path, "wb+") as destination:
                 for chunk in uploaded_file.chunks():
                     destination.write(chunk)
-            
-            progress_tracker.update_step("temp_file", "completed", f"Archivo guardado: {temp_filename}")
-            
+
+            progress_tracker.update_step(
+                "temp_file", "completed", f"Archivo guardado: {temp_filename}"
+            )
+
             # Lanzar tarea de Celery en background
-            logger.info(f"🚀 Lanzando tarea asíncrona para procesar CV: {uploaded_file.name}")
+            logger.info(
+                f"🚀 Lanzando tarea asíncrona para procesar CV: {uploaded_file.name}"
+            )
             logger.info(f"📁 Archivo temporal: {temp_file_path}")
             task = process_cv_async.delay(
                 user_id=request.user.id,
                 file_path=temp_file_path,
                 original_filename=uploaded_file.name,
-                progress_id=progress_id
+                progress_id=progress_id,
             )
-            
+
             # Devolver respuesta inmediata con progress_id y task_id
-            return JsonResponse({
-                "success": True,
-                "message": "CV recibido, procesando en background...",
-                "progress_id": progress_id,
-                "task_id": task.id,  # ID de la tarea de Celery para poder cancelarla
-                "processing": True  # Indica que el procesamiento está en curso
-            })
-            
+            return JsonResponse(
+                {
+                    "success": True,
+                    "message": "CV recibido, procesando en background...",
+                    "progress_id": progress_id,
+                    "task_id": task.id,  # ID de la tarea de Celery para poder cancelarla
+                    "processing": True,  # Indica que el procesamiento está en curso
+                }
+            )
+
         except Exception as e:
             logger.error(f"❌ Error iniciando procesamiento de CV: {e}")
-            return JsonResponse({
-                "success": False,
-                "error": f"Error iniciando procesamiento: {str(e)}"
-            })
-    
+            return JsonResponse(
+                {"success": False, "error": f"Error iniciando procesamiento: {str(e)}"}
+            )
+
     # Si el formulario no es válido
-    return JsonResponse({
-        "success": False,
-        "message": "Formulario inválido",
-        "errors": form.errors
-    })
+    return JsonResponse(
+        {"success": False, "message": "Formulario inválido", "errors": form.errors}
+    )
 
 
 @login_required
@@ -454,7 +470,9 @@ def upload_cv_view_OLD_SYNC(request):
 
     form = CVUploadForm(request.POST, request.FILES)
     if form.is_valid():
-        print("🔍 UPLOAD: Formulario válido, iniciando procesamiento")  # Print para debugging
+        print(
+            "🔍 UPLOAD: Formulario válido, iniciando procesamiento"
+        )  # Print para debugging
         # No crear registro en BD aún. Guardamos el archivo a un temporal y solo
         # creamos el `UserCV` si el parseo con IA fue exitoso.
         try:
@@ -470,33 +488,49 @@ def upload_cv_view_OLD_SYNC(request):
             file_ext = os.path.splitext(uploaded_file.name)[1].lower()
 
             # Persistir a archivo temporal para pasar ruta al parser
-            progress_tracker.update_step("temp_file", "in_progress", "Guardando archivo temporal")
+            progress_tracker.update_step(
+                "temp_file", "in_progress", "Guardando archivo temporal"
+            )
             tmp_path = None
             with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as tmp:
                 for chunk in uploaded_file.chunks():
                     tmp.write(chunk)
                 tmp_path = tmp.name
-            progress_tracker.update_step("temp_file", "completed", f"Archivo guardado: {os.path.basename(tmp_path)}")
+            progress_tracker.update_step(
+                "temp_file",
+                "completed",
+                f"Archivo guardado: {os.path.basename(tmp_path)}",
+            )
 
             file_path = tmp_path
 
             # Verificar que el formato es soportado
             if cv_parser.is_supported(file_path):
                 logger.info("Procesando CV inmediatamente (pre-guardado)")
-                print("🔍 UPLOAD: Procesando CV inmediatamente (pre-guardado)")  # Print para debugging
+                print(
+                    "🔍 UPLOAD: Procesando CV inmediatamente (pre-guardado)"
+                )  # Print para debugging
 
                 # Configurar captura de logs
                 log_capture_instance = setup_log_capture()
-                log_capture_instance.add_log("INFO", f"🚀 Iniciando procesamiento de CV: {uploaded_file.name}", "Inicio")
+                log_capture_instance.add_log(
+                    "INFO",
+                    f"🚀 Iniciando procesamiento de CV: {uploaded_file.name}",
+                    "Inicio",
+                )
                 captured_logs = []  # Inicializar variable
-                
+
                 try:
                     # Extraer texto del archivo
-                    progress_tracker.update_step("pdf_to_images", "in_progress", "Convirtiendo PDF a imágenes")
-                    parse_result = cv_parser.parse_cv(file_path, progress_tracker=progress_tracker)
+                    progress_tracker.update_step(
+                        "pdf_to_images", "in_progress", "Convirtiendo PDF a imágenes"
+                    )
+                    parse_result = cv_parser.parse_cv(
+                        file_path, progress_tracker=progress_tracker
+                    )
                     parsed_text = parse_result["text"]
                     warning_message = parse_result.get("warning_message", "")
-                    
+
                     # Obtener logs capturados
                     captured_logs = log_capture_instance.get_logs()
                     cleanup_log_capture()
@@ -505,21 +539,34 @@ def upload_cv_view_OLD_SYNC(request):
                     if not parsed_text or parsed_text.strip() == "":
                         error_msg = "❌ Error de IA: No se pudo extraer texto del CV. Verifica la configuración de IA."
                         logger.error(error_msg)
-                        return JsonResponse({
-                            'success': False,
-                            'error': error_msg,
-                            'error_type': 'ai_error',
-                            'logs': captured_logs
-                        })
+                        return JsonResponse(
+                            {
+                                "success": False,
+                                "error": error_msg,
+                                "error_type": "ai_error",
+                                "logs": captured_logs,
+                            }
+                        )
 
                     # Procesar todos los archivos sin validación previa
-                    progress_tracker.update_step("skills_extraction", "in_progress", "Extrayendo habilidades del texto")
+                    progress_tracker.update_step(
+                        "skills_extraction",
+                        "in_progress",
+                        "Extrayendo habilidades del texto",
+                    )
                     skills_data = skills_extractor.extract_skills(parsed_text)
-                    progress_tracker.update_step("skills_extraction", "completed", f"{len(skills_data.get('skills', []))} habilidades detectadas")
+                    progress_tracker.update_step(
+                        "skills_extraction",
+                        "completed",
+                        f"{len(skills_data.get('skills', []))} habilidades detectadas",
+                    )
 
                     # Crear y guardar el CV AHORA (post-éxito de IA)
-                    progress_tracker.update_step("db_save", "in_progress", "Guardando CV en base de datos")
+                    progress_tracker.update_step(
+                        "db_save", "in_progress", "Guardando CV en base de datos"
+                    )
                     from .models import UserCV
+
                     cv = UserCV(user=request.user)
                     # Resetear puntero del archivo para poder guardarlo
                     try:
@@ -530,25 +577,36 @@ def upload_cv_view_OLD_SYNC(request):
                     cv.parsed_text = parsed_text
                     cv.skills = skills_data
                     cv.save()
-                    progress_tracker.update_step("db_save", "completed", f"CV guardado con ID: {cv.id}")
+                    progress_tracker.update_step(
+                        "db_save", "completed", f"CV guardado con ID: {cv.id}"
+                    )
 
                     logger.info(f"CV procesado: {cv.skills_count} skills detectadas")
 
                     # Iniciar recálculo automático en background (sin modal)
                     try:
                         from .tasks import recalculate_matches_for_user
+
                         task = recalculate_matches_for_user.delay(request.user.id)
-                        logger.info(f"Recálculo automático iniciado en background después de subir CV para usuario {request.user.id} (task: {task.id})")
+                        logger.info(
+                            f"Recálculo automático iniciado en background después de subir CV para usuario {request.user.id} (task: {task.id})"
+                        )
                     except Exception as e:
-                        logger.error(f"Error iniciando recálculo automático después de subir CV: {e}")
+                        logger.error(
+                            f"Error iniciando recálculo automático después de subir CV: {e}"
+                        )
 
                     # Marcar progreso como completado
-                    progress_tracker.set_complete(f"CV procesado exitosamente: {cv.skills_count} habilidades")
+                    progress_tracker.set_complete(
+                        f"CV procesado exitosamente: {cv.skills_count} habilidades"
+                    )
                     if warning_message:
                         progress_tracker.set_warning(warning_message)
 
                     # Construir respuesta de éxito
-                    success_message = f'CV "{cv.original_file.name}" subido y procesado exitosamente.'
+                    success_message = (
+                        f'CV "{cv.original_file.name}" subido y procesado exitosamente.'
+                    )
                     if warning_message:
                         success_message += f"\n\n{warning_message}"
 
@@ -574,17 +632,19 @@ def upload_cv_view_OLD_SYNC(request):
                     logger.error(f"Error procesando CV: {e}")
                     logger.error(f"🔍 TIPO DE ERROR: {type(e)}")
                     logger.error(f"🔍 ERROR COMPLETO: {str(e)}")
-                    
+
                     # Marcar progreso como fallido
                     progress_tracker.set_error(str(e))
-                    
+
                     # Obtener logs capturados antes de limpiar
                     captured_logs = log_capture_instance.get_logs()
                     cleanup_log_capture()
-                    
+
                     # Si es un error de IA, devolver error específico
                     if "Error de IA" in str(e):
-                        logger.error(f"🔴 ERROR DE IA DETALLADO ENVIADO AL FRONTEND: {str(e)}")
+                        logger.error(
+                            f"🔴 ERROR DE IA DETALLADO ENVIADO AL FRONTEND: {str(e)}"
+                        )
                         # Limpiar temporal
                         try:
                             if file_path and os.path.exists(file_path):
@@ -592,13 +652,15 @@ def upload_cv_view_OLD_SYNC(request):
                         except Exception:
                             pass
 
-                        return JsonResponse({
-                            'success': False,
-                            'error': str(e),
-                            'error_type': 'ai_error',
-                            'logs': captured_logs,
-                            'progress_id': progress_tracker.progress_id,
-                        })
+                        return JsonResponse(
+                            {
+                                "success": False,
+                                "error": str(e),
+                                "error_type": "ai_error",
+                                "logs": captured_logs,
+                                "progress_id": progress_tracker.progress_id,
+                            }
+                        )
                     else:
                         logger.error(f"🔴 ERROR GENERAL ENVIADO AL FRONTEND: {str(e)}")
                         # Limpiar temporal
@@ -608,13 +670,15 @@ def upload_cv_view_OLD_SYNC(request):
                         except Exception:
                             pass
 
-                        return JsonResponse({
-                            'success': False,
-                            'error': f'Error procesando el archivo: {str(e)}',
-                            'error_type': 'processing_error',
-                            'logs': captured_logs,
-                            'progress_id': progress_tracker.progress_id,
-                        })
+                        return JsonResponse(
+                            {
+                                "success": False,
+                                "error": f"Error procesando el archivo: {str(e)}",
+                                "error_type": "processing_error",
+                                "logs": captured_logs,
+                                "progress_id": progress_tracker.progress_id,
+                            }
+                        )
             else:
                 logger.warning("Formato no soportado en subida")
                 try:
@@ -625,7 +689,7 @@ def upload_cv_view_OLD_SYNC(request):
                 return JsonResponse(
                     {
                         "success": False,
-                        "message": 'CV subido, pero el formato no es soportado para parsing automático.',
+                        "message": "CV subido, pero el formato no es soportado para parsing automático.",
                     }
                 )
 
@@ -696,7 +760,7 @@ def delete_cv_view(request, cv_id):
     """Eliminar CV (AJAX)."""
     cv = get_object_or_404(UserCV, id=cv_id, user=request.user)
     cv_name = cv.original_file.name
-    
+
     # Eliminar archivo físico antes de eliminar el registro
     try:
         if cv.original_file and cv.original_file.path:
@@ -707,21 +771,26 @@ def delete_cv_view(request, cv_id):
                 logger.warning(f"Archivo físico no encontrado: {cv.original_file.path}")
     except Exception as e:
         logger.error(f"Error eliminando archivo físico {cv.original_file.path}: {e}")
-    
+
     # Eliminar registro de la base de datos
     cv.delete()
 
     # Iniciar recálculo automático en background (sin modal)
     try:
         from .tasks import recalculate_matches_for_user
+
         task = recalculate_matches_for_user.delay(request.user.id)
-        logger.info(f"Recálculo automático iniciado en background después de eliminar CV para usuario {request.user.id} (task: {task.id})")
+        logger.info(
+            f"Recálculo automático iniciado en background después de eliminar CV para usuario {request.user.id} (task: {task.id})"
+        )
     except Exception as e:
-        logger.error(f"Error iniciando recálculo automático después de eliminar CV: {e}")
+        logger.error(
+            f"Error iniciando recálculo automático después de eliminar CV: {e}"
+        )
 
     return JsonResponse(
         {
-            "success": True, 
+            "success": True,
             "message": f'CV "{cv_name}" eliminado correctamente.',
         }
     )
@@ -735,13 +804,12 @@ def delete_all_cvs_view(request):
         # Obtener todos los CVs del usuario
         user_cvs = UserCV.objects.filter(user=request.user)
         cv_count = user_cvs.count()
-        
+
         if cv_count == 0:
-            return JsonResponse({
-                "success": False, 
-                "message": "No tienes CVs para eliminar"
-            })
-        
+            return JsonResponse(
+                {"success": False, "message": "No tienes CVs para eliminar"}
+            )
+
         # Eliminar archivos físicos antes de eliminar registros
         files_deleted = 0
         for cv in user_cvs:
@@ -750,36 +818,49 @@ def delete_all_cvs_view(request):
                     if os.path.exists(cv.original_file.path):
                         os.remove(cv.original_file.path)
                         files_deleted += 1
-                        logger.info(f"Archivo físico eliminado: {cv.original_file.path}")
+                        logger.info(
+                            f"Archivo físico eliminado: {cv.original_file.path}"
+                        )
                     else:
-                        logger.warning(f"Archivo físico no encontrado: {cv.original_file.path}")
+                        logger.warning(
+                            f"Archivo físico no encontrado: {cv.original_file.path}"
+                        )
             except Exception as e:
-                logger.error(f"Error eliminando archivo físico {cv.original_file.path}: {e}")
-        
+                logger.error(
+                    f"Error eliminando archivo físico {cv.original_file.path}: {e}"
+                )
+
         # Eliminar todos los CVs de la base de datos
         user_cvs.delete()
-        
+
         # Iniciar recálculo automático en background (sin modal)
         try:
             from .tasks import recalculate_matches_for_user
+
             task = recalculate_matches_for_user.delay(request.user.id)
-            logger.info(f"Recálculo automático iniciado en background después de eliminar todos los CVs para usuario {request.user.id} (task: {task.id})")
+            logger.info(
+                f"Recálculo automático iniciado en background después de eliminar todos los CVs para usuario {request.user.id} (task: {task.id})"
+            )
         except Exception as e:
-            logger.error(f"Error iniciando recálculo automático después de eliminar todos los CVs: {e}")
-        
-        return JsonResponse({
-            "success": True,
-            "message": f"Todos los CVs eliminados correctamente ({cv_count} registros, {files_deleted} archivos).",
-        })
-        
+            logger.error(
+                f"Error iniciando recálculo automático después de eliminar todos los CVs: {e}"
+            )
+
+        return JsonResponse(
+            {
+                "success": True,
+                "message": f"Todos los CVs eliminados correctamente ({cv_count} registros, {files_deleted} archivos).",
+            }
+        )
+
     except Exception as e:
-        logger.error(f"Error eliminando todos los CVs del usuario {request.user.id}: {e}")
-        return JsonResponse({
-            "success": False, 
-            "message": "Error interno al eliminar los CVs"
-        }, status=500)
-
-
+        logger.error(
+            f"Error eliminando todos los CVs del usuario {request.user.id}: {e}"
+        )
+        return JsonResponse(
+            {"success": False, "message": "Error interno al eliminar los CVs"},
+            status=500,
+        )
 
 
 @login_required
@@ -792,30 +873,38 @@ def recalculation_modal_partial_view(request):
 def start_recalculation_view(request):
     """Vista AJAX para iniciar recálculo manual de matches."""
     if request.method != "POST":
-        return JsonResponse({"success": False, "message": "Método no permitido"}, status=405)
-    
+        return JsonResponse(
+            {"success": False, "message": "Método no permitido"}, status=405
+        )
+
     try:
         from .tasks import recalculate_matches_for_user
-        
+
         # Obtener razón del recálculo
-        reason = request.POST.get('reason', 'manual')
-        
+        reason = request.POST.get("reason", "manual")
+
         # Ejecutar recálculo en background
         task = recalculate_matches_for_user.delay(request.user.id)
-        
-        logger.info(f"Recálculo manual iniciado para usuario {request.user.id} (task: {task.id}, reason: {reason})")
-        
-        return JsonResponse({
-            "success": True,
-            "message": f"Recálculo iniciado ({reason})",
-            "task_id": task.id,
-        })
+
+        logger.info(
+            f"Recálculo manual iniciado para usuario {request.user.id} (task: {task.id}, reason: {reason})"
+        )
+
+        return JsonResponse(
+            {
+                "success": True,
+                "message": f"Recálculo iniciado ({reason})",
+                "task_id": task.id,
+            }
+        )
     except Exception as e:
-        logger.error(f"Error iniciando recálculo manual para usuario {request.user.id}: {e}")
-        return JsonResponse({
-            "success": False,
-            "message": f"Error iniciando recálculo: {str(e)}"
-        }, status=500)
+        logger.error(
+            f"Error iniciando recálculo manual para usuario {request.user.id}: {e}"
+        )
+        return JsonResponse(
+            {"success": False, "message": f"Error iniciando recálculo: {str(e)}"},
+            status=500,
+        )
 
 
 @login_required
@@ -823,61 +912,62 @@ def matching_recalculation_status_view(request, task_id):
     """Vista AJAX para verificar el estado del recálculo de matches."""
     try:
         from celery.result import AsyncResult
-        
+
         # Obtener resultado de la tarea
         task_result = AsyncResult(task_id)
-        
-        if task_result.state == 'PENDING':
+
+        if task_result.state == "PENDING":
             response = {
-                'success': True,
-                'state': task_result.state,
-                'status': 'Esperando...',
-                'progress': 0
+                "success": True,
+                "state": task_result.state,
+                "status": "Esperando...",
+                "progress": 0,
             }
-        elif task_result.state == 'PROGRESS':
+        elif task_result.state == "PROGRESS":
             response = {
-                'success': True,
-                'state': task_result.state,
-                'status': task_result.info.get('current_step', 'Procesando...'),
-                'progress_info': task_result.info.get('progress_info', ''),
-                'progress': task_result.info.get('progress_percentage', 0)
+                "success": True,
+                "state": task_result.state,
+                "status": task_result.info.get("current_step", "Procesando..."),
+                "progress_info": task_result.info.get("progress_info", ""),
+                "progress": task_result.info.get("progress_percentage", 0),
             }
-        elif task_result.state == 'SUCCESS':
+        elif task_result.state == "SUCCESS":
             result = task_result.result
-            logger.info(f"Matching recalculation status - task_id: {task_id}, result: {result}")
+            logger.info(
+                f"Matching recalculation status - task_id: {task_id}, result: {result}"
+            )
             response = {
-                'success': True,
-                'state': task_result.state,
-                'status': 'Recálculo completado',
-                'progress': 100,
-                'result': result
+                "success": True,
+                "state": task_result.state,
+                "status": "Recálculo completado",
+                "progress": 100,
+                "result": result,
             }
-        elif task_result.state == 'FAILURE':
+        elif task_result.state == "FAILURE":
             response = {
-                'success': False,
-                'state': task_result.state,
-                'status': 'Error en recálculo',
-                'error': str(task_result.info)
+                "success": False,
+                "state": task_result.state,
+                "status": "Error en recálculo",
+                "error": str(task_result.info),
             }
         else:
             response = {
-                'success': False,
-                'state': task_result.state,
-                'status': f'Estado desconocido: {task_result.state}'
+                "success": False,
+                "state": task_result.state,
+                "status": f"Estado desconocido: {task_result.state}",
             }
-            
+
         return JsonResponse(response)
-        
+
     except Exception as e:
         logger.error(f"Error verificando estado de recálculo {task_id}: {e}")
-        return JsonResponse({
-            'success': False,
-            'error': f'Error verificando estado: {str(e)}'
-        })
+        return JsonResponse(
+            {"success": False, "error": f"Error verificando estado: {str(e)}"}
+        )
 
 
 @login_required
-@user_passes_test(lambda u: u.is_staff, login_url='dashboard')
+@user_passes_test(lambda u: u.is_staff, login_url="dashboard")
 def test_scraper_view(request):
     """Vista para probar el scraper de dvcarreras. Solo accesible para administradores."""
     if request.method == "POST":
@@ -901,15 +991,15 @@ def test_scraper_view(request):
             # 🔒 LOCK GLOBAL: Verificar si ya hay un scraping en curso
             # ============================================================
             from .services.scraping_lock import scraping_lock
-            
+
             active_scraping = scraping_lock.get_active_scraping()
             if active_scraping:
-                task_id = active_scraping.get('task_id')
-                source = active_scraping.get('source', 'unknown')
-                started_at = active_scraping.get('started_at', 'desconocido')
-                
+                task_id = active_scraping.get("task_id")
+                source = active_scraping.get("source", "unknown")
+                started_at = active_scraping.get("started_at", "desconocido")
+
                 message = f"Ya hay un scraping en curso (iniciado {source} a las {started_at})"
-                
+
                 if request.headers.get("X-Requested-With") == "XMLHttpRequest":
                     return JsonResponse(
                         {
@@ -928,10 +1018,12 @@ def test_scraper_view(request):
 
             # Llamar sin user_id para usar rotación automática de credenciales
             # Pasar requesting_user_id para que los logs se guarden también para el usuario actual
-            task = scrape_dvcarreras_jobs_stealth.delay(user_id=None, requesting_user_id=request.user.id)
+            task = scrape_dvcarreras_jobs_stealth.delay(
+                user_id=None, requesting_user_id=request.user.id
+            )
 
             # Guardar task_id en cache para que todos los admins lo vean (legacy, ahora usa lock)
-            cache.set('current_scraping_task_id', task.id, timeout=3600)  # 1 hora
+            cache.set("current_scraping_task_id", task.id, timeout=3600)  # 1 hora
 
             # Solo devolver el task_id, sin mensajes
             return JsonResponse(
@@ -992,24 +1084,26 @@ def test_scraper_view(request):
     # Obtener información de rotación de credenciales
     from django.contrib.auth.models import User
     from django.core.cache import cache
-    
-    verified_users = UserProfile.objects.filter(
-        dv_username__isnull=False,
-        dv_password__isnull=False,
-        dv_connection_status='verified'
-    ).exclude(
-        dv_username='',
-        dv_password=''
-    ).select_related('user').order_by('user_id')
-    
+
+    verified_users = (
+        UserProfile.objects.filter(
+            dv_username__isnull=False,
+            dv_password__isnull=False,
+            dv_connection_status="verified",
+        )
+        .exclude(dv_username="", dv_password="")
+        .select_related("user")
+        .order_by("user_id")
+    )
+
     # Calcular el próximo usuario en rotación
     next_user = None
     total_verified = verified_users.count()
-    
+
     if total_verified > 0:
-        last_used_id = cache.get('scraper_last_user_id')
+        last_used_id = cache.get("scraper_last_user_id")
         user_ids = [u.user_id for u in verified_users]
-        
+
         if last_used_id and last_used_id in user_ids:
             # Encontrar el índice del último usuario usado
             current_index = user_ids.index(last_used_id)
@@ -1019,22 +1113,24 @@ def test_scraper_view(request):
         else:
             # Si no hay último usado, el próximo es el primero
             next_user_profile = verified_users[0]
-        
+
         next_user = {
-            'name': next_user_profile.user.get_full_name() or next_user_profile.user.username,
-            'email': next_user_profile.user.email,
-            'dv_username': next_user_profile.dv_username,
+            "name": next_user_profile.user.get_full_name()
+            or next_user_profile.user.username,
+            "email": next_user_profile.user.email,
+            "dv_username": next_user_profile.dv_username,
         }
-    
+
     rotation_info = {
-        'total_verified': total_verified,
-        'next_user': next_user,
+        "total_verified": total_verified,
+        "next_user": next_user,
     }
 
     # Obtener información del scraping programado
     from .models import ScheduledScraping
+
     scheduled_config = ScheduledScraping.objects.first()
-    
+
     context = {
         "title": "Probar Scraper",
         "stats": stats,
@@ -1054,142 +1150,153 @@ def scheduled_scraping_config(request):
     from .models import ScheduledScraping
     from django.utils import timezone
     import json
-    
+
     if request.method == "POST":
         try:
             data = json.loads(request.body)
-            is_enabled = data.get('is_enabled', False)
-            scheduled_time_str = data.get('scheduled_time')  # formato "HH:MM"
-            
+            is_enabled = data.get("is_enabled", False)
+            scheduled_time_str = data.get("scheduled_time")  # formato "HH:MM"
+
             if not scheduled_time_str:
-                return JsonResponse({
-                    'success': False,
-                    'message': 'Hora no proporcionada'
-                }, status=400)
-            
+                return JsonResponse(
+                    {"success": False, "message": "Hora no proporcionada"}, status=400
+                )
+
             # Parsear la hora
             from datetime import datetime
-            scheduled_time = datetime.strptime(scheduled_time_str, '%H:%M').time()
-            
+
+            scheduled_time = datetime.strptime(scheduled_time_str, "%H:%M").time()
+
             # Obtener o crear la configuración (solo debe haber una)
             config, created = ScheduledScraping.objects.get_or_create(
                 pk=1,
-                defaults={
-                    'is_enabled': is_enabled,
-                    'scheduled_time': scheduled_time
-                }
+                defaults={"is_enabled": is_enabled, "scheduled_time": scheduled_time},
             )
-            
+
             if not created:
                 config.is_enabled = is_enabled
                 config.scheduled_time = scheduled_time
                 config.save()
-            
+
             # ============================================================
             # Actualizar el CrontabSchedule de la tarea periódica
             # ============================================================
             from django_celery_beat.models import PeriodicTask, CrontabSchedule
-            
+
             # Crear o obtener el CrontabSchedule específico para esta hora
             crontab, _ = CrontabSchedule.objects.get_or_create(
                 minute=str(scheduled_time.minute),
                 hour=str(scheduled_time.hour),
-                day_of_week='*',
-                day_of_month='*',
-                month_of_year='*',
-                timezone='America/Argentina/Buenos_Aires'
+                day_of_week="*",
+                day_of_month="*",
+                month_of_year="*",
+                timezone="America/Argentina/Buenos_Aires",
             )
-            
+
             # Buscar y actualizar la tarea periódica
             task = PeriodicTask.objects.filter(
-                task='matching.tasks_stealth.check_and_run_scheduled_scraping'
+                task="matching.tasks_stealth.check_and_run_scheduled_scraping"
             ).first()
-            
+
             if task:
                 task.crontab = crontab
                 task.enabled = is_enabled
                 task.save()
-                logger.info(f"✅ Tarea periódica actualizada: {task.name} - Schedule: {crontab} - Enabled: {is_enabled}")
+                logger.info(
+                    f"✅ Tarea periódica actualizada: {task.name} - Schedule: {crontab} - Enabled: {is_enabled}"
+                )
             else:
                 # Si no existe, crearla
                 task = PeriodicTask.objects.create(
-                    name='check-scheduled-scraping',
+                    name="check-scheduled-scraping",
                     crontab=crontab,
-                    task='matching.tasks_stealth.check_and_run_scheduled_scraping',
-                    enabled=is_enabled
+                    task="matching.tasks_stealth.check_and_run_scheduled_scraping",
+                    enabled=is_enabled,
                 )
-                logger.info(f"✅ Tarea periódica creada: {task.name} - Schedule: {crontab}")
-            
+                logger.info(
+                    f"✅ Tarea periódica creada: {task.name} - Schedule: {crontab}"
+                )
+
             # ============================================================
             # 🔄 FORZAR RECARGA: Hacer que el beat detecte el cambio inmediatamente
             # ============================================================
             try:
                 from django.core.cache import cache
-                
+
                 # Limpiar el cache del scheduler de django-celery-beat
                 # Esto fuerza al beat a recargar el schedule desde la BD
                 cache_keys = [
-                    'celery-beat-schedule',
-                    'celery-beat-last-run',
-                    f'celery-beat-task-{task.id}',
+                    "celery-beat-schedule",
+                    "celery-beat-last-run",
+                    f"celery-beat-task-{task.id}",
                 ]
                 for key in cache_keys:
                     cache.delete(key)
-                
+
                 # Actualizar last_run_at a NULL para forzar recalcular el próximo run
                 # Esto hace que el beat recalcule inmediatamente cuándo debe ejecutarse
                 task.last_run_at = None
-                task.save(update_fields=['last_run_at'])
-                
-                logger.info(f"🔄 Cache del scheduler limpiado, beat recargará el schedule inmediatamente")
+                task.save(update_fields=["last_run_at"])
+
+                logger.info(
+                    f"🔄 Cache del scheduler limpiado, beat recargará el schedule inmediatamente"
+                )
             except Exception as e:
                 # No fallar si la limpieza de cache falla
                 logger.warning(f"⚠️ No se pudo limpiar el cache del scheduler: {e}")
-            
-            return JsonResponse({
-                'success': True,
-                'message': f'Configuración guardada exitosamente. El scraping se ejecutará diariamente a las {scheduled_time.strftime("%H:%M")}.',
-                'config': {
-                    'is_enabled': config.is_enabled,
-                    'scheduled_time': config.scheduled_time.strftime('%H:%M'),
-                    'last_run': config.last_run.isoformat() if config.last_run else None
+
+            return JsonResponse(
+                {
+                    "success": True,
+                    "message": f'Configuración guardada exitosamente. El scraping se ejecutará diariamente a las {scheduled_time.strftime("%H:%M")}.',
+                    "config": {
+                        "is_enabled": config.is_enabled,
+                        "scheduled_time": config.scheduled_time.strftime("%H:%M"),
+                        "last_run": (
+                            config.last_run.isoformat() if config.last_run else None
+                        ),
+                    },
                 }
-            })
-            
+            )
+
         except Exception as e:
             logger.error(f"Error guardando configuración de scraping programado: {e}")
-            return JsonResponse({
-                'success': False,
-                'message': f'Error: {str(e)}'
-            }, status=500)
-    
+            return JsonResponse(
+                {"success": False, "message": f"Error: {str(e)}"}, status=500
+            )
+
     # GET: Obtener configuración actual
     try:
         config = ScheduledScraping.objects.first()
         if config:
-            return JsonResponse({
-                'success': True,
-                'config': {
-                    'is_enabled': config.is_enabled,
-                    'scheduled_time': config.scheduled_time.strftime('%H:%M'),
-                    'last_run': config.last_run.isoformat() if config.last_run else None
+            return JsonResponse(
+                {
+                    "success": True,
+                    "config": {
+                        "is_enabled": config.is_enabled,
+                        "scheduled_time": config.scheduled_time.strftime("%H:%M"),
+                        "last_run": (
+                            config.last_run.isoformat() if config.last_run else None
+                        ),
+                    },
                 }
-            })
+            )
         else:
-            return JsonResponse({
-                'success': True,
-                'config': {
-                    'is_enabled': False,
-                    'scheduled_time': '09:00',
-                    'last_run': None
+            return JsonResponse(
+                {
+                    "success": True,
+                    "config": {
+                        "is_enabled": False,
+                        "scheduled_time": "09:00",
+                        "last_run": None,
+                    },
                 }
-            })
+            )
     except Exception as e:
         logger.error(f"Error obteniendo configuración de scraping programado: {e}")
-        return JsonResponse({
-            'success': False,
-            'message': f'Error: {str(e)}'
-        }, status=500)
+        return JsonResponse(
+            {"success": False, "message": f"Error: {str(e)}"}, status=500
+        )
 
 
 @login_required
@@ -1198,34 +1305,27 @@ def scheduled_scraping_config(request):
 def get_current_scraping_task(request):
     """Vista AJAX para obtener el task_id del scraping activo."""
     from django.core.cache import cache
-    
-    task_id = cache.get('current_scraping_task_id')
-    
+
+    task_id = cache.get("current_scraping_task_id")
+
     if task_id:
         # Verificar si la tarea aún está activa
         from celery.result import AsyncResult
+
         result = AsyncResult(task_id)
-        
+
         # Si la tarea terminó, limpiar el cache
-        if result.state in ['SUCCESS', 'FAILURE', 'REVOKED']:
-            cache.delete('current_scraping_task_id')
-            return JsonResponse({
-                'success': True,
-                'has_active_task': False,
-                'task_id': None
-            })
-        
-        return JsonResponse({
-            'success': True,
-            'has_active_task': True,
-            'task_id': task_id
-        })
-    
-    return JsonResponse({
-        'success': True,
-        'has_active_task': False,
-        'task_id': None
-    })
+        if result.state in ["SUCCESS", "FAILURE", "REVOKED"]:
+            cache.delete("current_scraping_task_id")
+            return JsonResponse(
+                {"success": True, "has_active_task": False, "task_id": None}
+            )
+
+        return JsonResponse(
+            {"success": True, "has_active_task": True, "task_id": task_id}
+        )
+
+    return JsonResponse({"success": True, "has_active_task": False, "task_id": None})
 
 
 @login_required
@@ -1234,46 +1334,43 @@ def get_current_scraping_task(request):
 def get_next_user_in_rotation(request):
     """Vista AJAX para obtener el próximo usuario en rotación."""
     from django.core.cache import cache
-    
-    verified_users = UserProfile.objects.filter(
-        dv_username__isnull=False,
-        dv_password__isnull=False,
-        dv_connection_status='verified'
-    ).exclude(
-        dv_username='',
-        dv_password=''
-    ).select_related('user').order_by('user_id')
-    
+
+    verified_users = (
+        UserProfile.objects.filter(
+            dv_username__isnull=False,
+            dv_password__isnull=False,
+            dv_connection_status="verified",
+        )
+        .exclude(dv_username="", dv_password="")
+        .select_related("user")
+        .order_by("user_id")
+    )
+
     total_verified = verified_users.count()
-    
+
     if total_verified == 0:
-        return JsonResponse({
-            'success': True,
-            'total_verified': 0,
-            'next_user': None
-        })
-    
-    last_used_id = cache.get('scraper_last_user_id')
+        return JsonResponse({"success": True, "total_verified": 0, "next_user": None})
+
+    last_used_id = cache.get("scraper_last_user_id")
     user_ids = [u.user_id for u in verified_users]
-    
+
     if last_used_id and last_used_id in user_ids:
         current_index = user_ids.index(last_used_id)
         next_index = (current_index + 1) % len(user_ids)
         next_user_profile = verified_users[next_index]
     else:
         next_user_profile = verified_users[0]
-    
+
     next_user = {
-        'name': next_user_profile.user.get_full_name() or next_user_profile.user.username,
-        'email': next_user_profile.user.email,
-        'dv_username': next_user_profile.dv_username,
+        "name": next_user_profile.user.get_full_name()
+        or next_user_profile.user.username,
+        "email": next_user_profile.user.email,
+        "dv_username": next_user_profile.dv_username,
     }
-    
-    return JsonResponse({
-        'success': True,
-        'total_verified': total_verified,
-        'next_user': next_user
-    })
+
+    return JsonResponse(
+        {"success": True, "total_verified": total_verified, "next_user": next_user}
+    )
 
 
 @login_required
@@ -1305,7 +1402,7 @@ def dv_connection_status_view(request):
 
 
 @login_required
-@user_passes_test(lambda u: u.is_staff, login_url='dashboard')
+@user_passes_test(lambda u: u.is_staff, login_url="dashboard")
 def scraper_status_view(request, task_id):
     """Vista para obtener el estado real de una tarea de scraping (solo admins)."""
     from celery.result import AsyncResult
@@ -1585,10 +1682,10 @@ def logout_view(request):
     from django.contrib.auth import logout
     from django.shortcuts import redirect
     from django.contrib import messages
-    
+
     logout(request)
     messages.success(request, "Has cerrado sesión correctamente.")
-    return redirect('login')
+    return redirect("login")
 
 
 def custom_404_view(request, exception):
@@ -1674,6 +1771,7 @@ def login_view(request):
 
         # Buscar usuario por email (ya que usamos email como username)
         from django.contrib.auth.models import User
+
         try:
             user = User.objects.get(email=email)
             # Autenticar usando el username (que es el email)
@@ -1715,6 +1813,7 @@ def register_view(request):
 
         # Verificar si el email ya está registrado
         from django.contrib.auth.models import User
+
         if User.objects.filter(email=email).exists():
             messages.error(request, "El email ya está registrado.")
             return render(request, "registration/register.html")
@@ -1723,17 +1822,17 @@ def register_view(request):
             # Usar email como username (Django requiere username único)
             username = email  # Usar email como username
             user = User.objects.create_user(
-                username=username,
-                email=email,
-                password=password1
+                username=username, email=email, password=password1
             )
-            
+
             # Crear perfil de usuario
             UserProfile.objects.create(user=user)
-            
-            messages.success(request, "¡Cuenta creada exitosamente! Ahora puedes iniciar sesión.")
+
+            messages.success(
+                request, "¡Cuenta creada exitosamente! Ahora puedes iniciar sesión."
+            )
             return redirect("login")
-            
+
         except Exception as e:
             messages.error(request, f"Error al crear la cuenta: {str(e)}")
             return render(request, "registration/register.html")
@@ -1744,10 +1843,12 @@ def register_view(request):
 @login_required
 def test_smtp_email_view(request):
     """Vista para probar el envío de email SMTP."""
-    
+
     # Log del request para debugging
-    request_id = request.POST.get('request_id', 'no-id')
-    print(f"SMTP Test request received - ID: {request_id}, User: {request.user.username}")
+    request_id = request.POST.get("request_id", "no-id")
+    print(
+        f"SMTP Test request received - ID: {request_id}, User: {request.user.username}"
+    )
 
     try:
         user_profile = UserProfile.objects.get(user=request.user)
@@ -1775,19 +1876,27 @@ def test_smtp_email_view(request):
         smtp_server = user_profile.smtp_host
         smtp_port = user_profile.smtp_port
         smtp_username = user_profile.smtp_username
-        
+
         # Obtener contraseña SMTP de forma segura
         try:
             smtp_password = user_profile.get_smtp_password()
-            logger.info(f"Contraseña SMTP obtenida exitosamente para {request.user.username}")
+            logger.info(
+                f"Contraseña SMTP obtenida exitosamente para {request.user.username}"
+            )
         except Exception as e:
             # Si falla la desencriptación, puede ser texto plano
-            logger.warning(f"Error obteniendo contraseña SMTP para {request.user.username}: {e}")
+            logger.warning(
+                f"Error obteniendo contraseña SMTP para {request.user.username}: {e}"
+            )
             # Intentar usar la contraseña tal como está (texto plano)
             smtp_password = user_profile.smtp_password
-            logger.info(f"Usando contraseña SMTP como texto plano para {request.user.username}")
-        
-        logger.info(f"Iniciando conexión SMTP: {smtp_server}:{smtp_port}, usuario: {smtp_username}")
+            logger.info(
+                f"Usando contraseña SMTP como texto plano para {request.user.username}"
+            )
+
+        logger.info(
+            f"Iniciando conexión SMTP: {smtp_server}:{smtp_port}, usuario: {smtp_username}"
+        )
 
         # Crear el mensaje de prueba
         msg = MIMEMultipart()
@@ -1820,8 +1929,10 @@ def test_smtp_email_view(request):
         msg.attach(MIMEText(body, "html"))
 
         # Configurar conexión SMTP
-        logger.info(f"Configurando conexión SMTP: SSL={user_profile.smtp_use_ssl}, TLS={user_profile.smtp_use_tls}")
-        
+        logger.info(
+            f"Configurando conexión SMTP: SSL={user_profile.smtp_use_ssl}, TLS={user_profile.smtp_use_tls}"
+        )
+
         try:
             if user_profile.smtp_use_ssl:
                 server = smtplib.SMTP_SSL(smtp_server, smtp_port)
@@ -1837,14 +1948,14 @@ def test_smtp_email_view(request):
             logger.info("Intentando autenticación SMTP...")
             server.login(smtp_username, smtp_password)
             logger.info("Autenticación SMTP exitosa")
-            
+
             logger.info("Enviando mensaje...")
             server.send_message(msg)
             logger.info("Mensaje enviado exitosamente")
-            
+
             server.quit()
             logger.info("Conexión SMTP cerrada")
-            
+
         except Exception as smtp_error:
             logger.error(f"Error en conexión SMTP: {smtp_error}")
             raise
@@ -1878,7 +1989,7 @@ def test_smtp_email_view(request):
         else:
             message = "❌ Error de autenticación SMTP. Verifica usuario y contraseña."
         return JsonResponse({"success": False, "message": message})
-        
+
     except smtplib.SMTPConnectError as e:
         return JsonResponse(
             {
@@ -1889,13 +2000,23 @@ def test_smtp_email_view(request):
     except smtplib.SMTPException as e:
         error_msg = str(e)
         if "535" in error_msg:
-            return JsonResponse({"success": False, "message": "❌ Credenciales SMTP rechazadas. Para Gmail, asegúrate de usar una contraseña de aplicación."})
+            return JsonResponse(
+                {
+                    "success": False,
+                    "message": "❌ Credenciales SMTP rechazadas. Para Gmail, asegúrate de usar una contraseña de aplicación.",
+                }
+            )
         else:
-            return JsonResponse({"success": False, "message": f"❌ Error SMTP: {error_msg}"})
+            return JsonResponse(
+                {"success": False, "message": f"❌ Error SMTP: {error_msg}"}
+            )
     except Exception as e:
         logger.error(f"Error inesperado en test SMTP: {e}")
         return JsonResponse(
-            {"success": False, "message": "❌ Error inesperado del servidor. Intenta nuevamente."}
+            {
+                "success": False,
+                "message": "❌ Error inesperado del servidor. Intenta nuevamente.",
+            }
         )
 
 
@@ -1919,36 +2040,39 @@ def test_dv_login_view(request):
         # PROTECCIÓN: Cancelar tareas anteriores de verificación DV para este usuario
         try:
             from celery import current_app
+
             inspect = current_app.control.inspect()
             active_tasks = inspect.active() or {}
             reserved_tasks = inspect.reserved() or {}
-            
+
             tasks_to_revoke = []
-            
+
             # Buscar en tareas activas
             for worker, tasks in active_tasks.items():
                 for task in tasks:
-                    if 'verify_dv_login_task' in task.get('name', ''):
-                        task_args = str(task.get('args', ''))
+                    if "verify_dv_login_task" in task.get("name", ""):
+                        task_args = str(task.get("args", ""))
                         if str(request.user.id) in task_args:
-                            tasks_to_revoke.append(task.get('id'))
-            
+                            tasks_to_revoke.append(task.get("id"))
+
             # Buscar en tareas reservadas
             for worker, tasks in reserved_tasks.items():
                 for task in tasks:
-                    if 'verify_dv_login_task' in task.get('name', ''):
-                        task_args = str(task.get('args', ''))
+                    if "verify_dv_login_task" in task.get("name", ""):
+                        task_args = str(task.get("args", ""))
                         if str(request.user.id) in task_args:
-                            tasks_to_revoke.append(task.get('id'))
-            
+                            tasks_to_revoke.append(task.get("id"))
+
             # Revocar tareas encontradas
             if tasks_to_revoke:
                 for task_id in tasks_to_revoke:
                     current_app.control.revoke(task_id, terminate=True)
-                logger.info(f"🛡️ Revocadas {len(tasks_to_revoke)} tareas previas de verificación DV para usuario {request.user.id}")
+                logger.info(
+                    f"🛡️ Revocadas {len(tasks_to_revoke)} tareas previas de verificación DV para usuario {request.user.id}"
+                )
         except Exception as e:
             logger.warning(f"⚠️ No se pudieron cancelar tareas previas: {e}")
-        
+
         # Marcar estado en progreso inmediatamente
         user_profile.set_dv_connection_verified(None)
         user_profile.save(update_fields=["dv_connection_status"])
@@ -1995,45 +2119,54 @@ def test_dv_login_task_view(request):
     try:
         # Obtener credenciales del usuario actual
         user_profile = UserProfile.objects.get(user=request.user)
-        
+
         if not user_profile.dv_username or not user_profile.dv_password:
-            return JsonResponse({"success": False, "message": "Credenciales DV no configuradas"})
-        
+            return JsonResponse(
+                {"success": False, "message": "Credenciales DV no configuradas"}
+            )
+
         # PROTECCIÓN: Cancelar tareas anteriores
         try:
             from celery import current_app
+
             inspect = current_app.control.inspect()
             active_tasks = inspect.active() or {}
             reserved_tasks = inspect.reserved() or {}
-            
+
             tasks_to_revoke = []
             for worker, tasks in {**active_tasks, **reserved_tasks}.items():
                 for task in tasks:
-                    if 'verify_dv_login_task' in task.get('name', '') and str(request.user.id) in str(task.get('args', '')):
-                        tasks_to_revoke.append(task.get('id'))
-            
+                    if "verify_dv_login_task" in task.get("name", "") and str(
+                        request.user.id
+                    ) in str(task.get("args", "")):
+                        tasks_to_revoke.append(task.get("id"))
+
             if tasks_to_revoke:
                 for task_id in tasks_to_revoke:
                     current_app.control.revoke(task_id, terminate=True)
-                logger.info(f"🛡️ Revocadas {len(tasks_to_revoke)} tareas previas para usuario {request.user.id}")
+                logger.info(
+                    f"🛡️ Revocadas {len(tasks_to_revoke)} tareas previas para usuario {request.user.id}"
+                )
         except Exception as e:
             logger.warning(f"⚠️ No se pudieron cancelar tareas previas: {e}")
-        
+
         # Marcar estado en progreso inmediatamente
         user_profile.set_dv_connection_verified(None)
         user_profile.save(update_fields=["dv_connection_status"])
-        
+
         # Encolar tarea Celery
         async_result = verify_dv_login_task.delay(request.user.id)
-        
+
         logger.info(f"Tarea DV encolada desde GET: {async_result.id}")
-        
-        return JsonResponse({
-            "success": True, 
-            "message": "Verificación iniciada",
-            "task_id": async_result.id
-        })
-        
+
+        return JsonResponse(
+            {
+                "success": True,
+                "message": "Verificación iniciada",
+                "task_id": async_result.id,
+            }
+        )
+
     except Exception as e:
         logger.error(f"Error encolando tarea DV: {e}")
         return JsonResponse({"success": False, "message": str(e)})
@@ -2045,66 +2178,75 @@ def dv_login_manual_view(request):
     if request.method == "POST":
         try:
             user_profile = UserProfile.objects.get(user=request.user)
-            
+
             if not user_profile.dv_username or not user_profile.dv_password:
-                return JsonResponse({
-                    "success": False, 
-                    "message": "Configura primero usuario y contraseña de INTRANET DAVINCI"
-                })
-            
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "message": "Configura primero usuario y contraseña de INTRANET DAVINCI",
+                    }
+                )
+
             # PROTECCIÓN: Cancelar tareas anteriores
             try:
                 from celery import current_app
+
                 inspect = current_app.control.inspect()
                 active_tasks = inspect.active() or {}
                 reserved_tasks = inspect.reserved() or {}
-                
+
                 tasks_to_revoke = []
                 for worker, tasks in {**active_tasks, **reserved_tasks}.items():
                     for task in tasks:
-                        if 'verify_dv_login' in task.get('name', '') and str(request.user.id) in str(task.get('args', '')):
-                            tasks_to_revoke.append(task.get('id'))
-                
+                        if "verify_dv_login" in task.get("name", "") and str(
+                            request.user.id
+                        ) in str(task.get("args", "")):
+                            tasks_to_revoke.append(task.get("id"))
+
                 if tasks_to_revoke:
                     for task_id in tasks_to_revoke:
                         current_app.control.revoke(task_id, terminate=True)
-                    logger.info(f"🛡️ Revocadas {len(tasks_to_revoke)} tareas previas para usuario {request.user.id}")
+                    logger.info(
+                        f"🛡️ Revocadas {len(tasks_to_revoke)} tareas previas para usuario {request.user.id}"
+                    )
             except Exception as e:
                 logger.warning(f"⚠️ No se pudieron cancelar tareas previas: {e}")
-            
+
             # Marcar estado en progreso
             user_profile.set_dv_connection_verified(None)
             user_profile.save(update_fields=["dv_connection_status"])
-            
+
             # Encolar tarea de login manual
             from .tasks_dv import verify_dv_login_manual_task
+
             async_result = verify_dv_login_manual_task.delay(request.user.id)
-            
+
             logger.info(f"Tarea DV login manual encolada: {async_result.id}")
-            
-            return JsonResponse({
-                "success": True,
-                "message": "Login manual iniciado - se abrirá un navegador",
-                "task_id": async_result.id
-            })
-            
+
+            return JsonResponse(
+                {
+                    "success": True,
+                    "message": "Login manual iniciado - se abrirá un navegador",
+                    "task_id": async_result.id,
+                }
+            )
+
         except Exception as e:
             logger.error(f"Error iniciando login manual DV: {e}")
-            return JsonResponse({
-                "success": False,
-                "message": f"Error iniciando login manual: {str(e)}"
-            })
-    
+            return JsonResponse(
+                {"success": False, "message": f"Error iniciando login manual: {str(e)}"}
+            )
+
     return JsonResponse({"success": False, "message": "Método no permitido"})
 
 
 @login_required
-@user_passes_test(lambda u: u.is_staff, login_url='dashboard')
+@user_passes_test(lambda u: u.is_staff, login_url="dashboard")
 def scraping_logs_view(request, task_id):
     """Vista para obtener los logs GLOBALES de un scraping específico (solo admins)."""
     try:
         from django.utils import timezone as django_timezone
-        
+
         # Obtener logs del scraping SIN filtrar por usuario (global para admins)
         logs = ScrapingLog.objects.filter(task_id=task_id).order_by("timestamp")
 
@@ -2132,25 +2274,27 @@ def scraping_logs_view(request, task_id):
 
 
 @login_required
-@user_passes_test(lambda u: u.is_staff, login_url='dashboard')
+@user_passes_test(lambda u: u.is_staff, login_url="dashboard")
 def scraping_logs_general_view(request):
     """Vista para obtener TODOS los logs GLOBALES (solo admins)"""
     try:
         from django.utils import timezone as django_timezone
-        
+
         # Obtener TODOS los logs SIN filtrar por usuario (global para admins)
-        logs = ScrapingLog.objects.all().order_by('timestamp')
-        
+        logs = ScrapingLog.objects.all().order_by("timestamp")
+
         logs_data = []
         for log in logs:
             # Convertir timestamp a zona horaria local (Buenos Aires)
             local_timestamp = django_timezone.localtime(log.timestamp)
-            logs_data.append({
-                "message": log.message,
-                "type": log.log_type,
-                "timestamp": local_timestamp.strftime("%H:%M:%S"),
-                "task_id": log.task_id
-            })
+            logs_data.append(
+                {
+                    "message": log.message,
+                    "type": log.log_type,
+                    "timestamp": local_timestamp.strftime("%H:%M:%S"),
+                    "task_id": log.task_id,
+                }
+            )
 
         return JsonResponse({"success": True, "logs": logs_data})
 
@@ -2160,64 +2304,65 @@ def scraping_logs_general_view(request):
 
 
 @login_required
-@user_passes_test(lambda u: u.is_staff, login_url='dashboard')
+@user_passes_test(lambda u: u.is_staff, login_url="dashboard")
 def latest_screenshot_view(request, task_id):
     """Vista para obtener el screenshot más reciente de una tarea (solo admins)"""
     try:
         import glob
         import os
-        
+
         # Buscar screenshots por task_id (sin filtrar por user_id específico)
         # Esto permite ver screenshots de cualquier usuario que ejecutó esta tarea
         screenshots_pattern = f"media/screenshots/user_*_{task_id}_*.png"
         screenshots = glob.glob(screenshots_pattern)
-        
+
         if screenshots:
             # Obtener el más reciente
             latest_screenshot = max(screenshots, key=os.path.getctime)
-            screenshot_url = latest_screenshot.replace('media/', '/media/')
-            
-            return JsonResponse({
-                "success": True, 
-                "screenshot_url": screenshot_url,
-                "timestamp": os.path.getctime(latest_screenshot)
-            })
+            screenshot_url = latest_screenshot.replace("media/", "/media/")
+
+            return JsonResponse(
+                {
+                    "success": True,
+                    "screenshot_url": screenshot_url,
+                    "timestamp": os.path.getctime(latest_screenshot),
+                }
+            )
         else:
-            return JsonResponse({
-                "success": False, 
-                "message": "No hay screenshots disponibles"
-            })
-            
+            return JsonResponse(
+                {"success": False, "message": "No hay screenshots disponibles"}
+            )
+
     except Exception as e:
         logger.error(f"Error obteniendo screenshot: {e}")
         return JsonResponse({"success": False, "error": str(e)})
 
 
 @login_required
-@user_passes_test(lambda u: u.is_staff, login_url='dashboard')
+@user_passes_test(lambda u: u.is_staff, login_url="dashboard")
 def clear_session_view(request):
     """Vista para limpiar TODAS las sesiones guardadas del scraper (solo admins)"""
-    if request.method != 'POST':
+    if request.method != "POST":
         return JsonResponse({"success": False, "message": "Método no permitido"})
-    
+
     try:
         import os
         from pathlib import Path
         import glob
-        
+
         # Buscar TODOS los archivos de sesión en el directorio
         sessions_dir = Path("media/sessions")
         session_files = glob.glob(str(sessions_dir / "user_*_stealth_session.json"))
-        
+
         deleted_count = 0
         deleted_users = []
-        
+
         for session_file in session_files:
             try:
                 # Extraer user_id del nombre del archivo
                 filename = os.path.basename(session_file)
-                user_id = filename.split('_')[1]
-                
+                user_id = filename.split("_")[1]
+
                 # Eliminar archivo
                 os.remove(session_file)
                 deleted_count += 1
@@ -2225,29 +2370,34 @@ def clear_session_view(request):
                 logger.info(f"✅ Sesión eliminada: {filename}")
             except Exception as e:
                 logger.error(f"Error eliminando {session_file}: {e}")
-        
+
         if deleted_count > 0:
-            logger.info(f"🧹 Total de sesiones eliminadas: {deleted_count} (usuarios: {', '.join(deleted_users)})")
-            return JsonResponse({
-                "success": True, 
-                "message": f"✅ {deleted_count} sesión(es) eliminada(s) exitosamente",
-                "deleted_count": deleted_count,
-                "deleted_users": deleted_users
-            })
+            logger.info(
+                f"🧹 Total de sesiones eliminadas: {deleted_count} (usuarios: {', '.join(deleted_users)})"
+            )
+            return JsonResponse(
+                {
+                    "success": True,
+                    "message": f"✅ {deleted_count} sesión(es) eliminada(s) exitosamente",
+                    "deleted_count": deleted_count,
+                    "deleted_users": deleted_users,
+                }
+            )
         else:
             logger.info(f"ℹ️ No había sesiones guardadas para eliminar")
-            return JsonResponse({
-                "success": True, 
-                "message": "No había sesiones guardadas",
-                "deleted_count": 0
-            })
-            
+            return JsonResponse(
+                {
+                    "success": True,
+                    "message": "No había sesiones guardadas",
+                    "deleted_count": 0,
+                }
+            )
+
     except Exception as e:
         logger.error(f"Error limpiando sesiones: {e}")
-        return JsonResponse({
-            "success": False, 
-            "message": f"Error limpiando sesión: {str(e)}"
-        })
+        return JsonResponse(
+            {"success": False, "message": f"Error limpiando sesión: {str(e)}"}
+        )
 
 
 @login_required
@@ -2286,7 +2436,7 @@ def add_scraping_log_view(request):
 
 
 @login_required
-@user_passes_test(lambda u: u.is_staff, login_url='dashboard')
+@user_passes_test(lambda u: u.is_staff, login_url="dashboard")
 def clear_scraping_logs_view(request, task_id):
     """Vista para limpiar los logs GLOBALES de un scraping específico (solo admins)."""
     try:
@@ -2307,7 +2457,7 @@ def clear_scraping_logs_view(request, task_id):
 
 
 @login_required
-@user_passes_test(lambda u: u.is_staff, login_url='dashboard')
+@user_passes_test(lambda u: u.is_staff, login_url="dashboard")
 def clear_user_scraping_logs_view(request):
     """Elimina TODOS los logs de scraping GLOBALES (solo admins)."""
     if request.method != "POST":
@@ -2334,37 +2484,35 @@ def cv_parsed_text_view(request, cv_id):
     try:
         # Obtener el CV del usuario autenticado
         cv = get_object_or_404(UserCV, id=cv_id, user=request.user)
-        
+
         # Verificar si tiene texto parseado
         if cv.parsed_text:
-            return JsonResponse({
-                "success": True,
-                "parsed_text": cv.parsed_text,
-                "is_processed": cv.is_processed,
-                "skills_count": cv.skills_count,
-                "skills_list": cv.skills_list
-            })
+            return JsonResponse(
+                {
+                    "success": True,
+                    "parsed_text": cv.parsed_text,
+                    "is_processed": cv.is_processed,
+                    "skills_count": cv.skills_count,
+                    "skills_list": cv.skills_list,
+                }
+            )
         else:
-            return JsonResponse({
-                "success": False,
-                "parsed_text": None,
-                "is_processed": cv.is_processed,
-                "skills_count": cv.skills_count,
-                "skills_list": cv.skills_list,
-                "message": "No hay texto parseado disponible"
-            })
-            
+            return JsonResponse(
+                {
+                    "success": False,
+                    "parsed_text": None,
+                    "is_processed": cv.is_processed,
+                    "skills_count": cv.skills_count,
+                    "skills_list": cv.skills_list,
+                    "message": "No hay texto parseado disponible",
+                }
+            )
+
     except UserCV.DoesNotExist:
-        return JsonResponse({
-            "success": False,
-            "error": "CV no encontrado"
-        })
+        return JsonResponse({"success": False, "error": "CV no encontrado"})
     except Exception as e:
         logger.error(f"Error obteniendo texto parseado del CV {cv_id}: {e}")
-        return JsonResponse({
-            "success": False,
-            "error": "Error interno del servidor"
-        })
+        return JsonResponse({"success": False, "error": "Error interno del servidor"})
 
 
 @login_required
@@ -2373,66 +2521,75 @@ def download_cv_view(request, cv_id):
     try:
         # Obtener el CV del usuario actual
         cv = get_object_or_404(UserCV, id=cv_id, user=request.user)
-        
+
         # Verificar que el archivo existe
         if not cv.original_file:
             raise Http404("Archivo no encontrado")
-        
+
         # Obtener la ruta del archivo
         file_path = cv.original_file.path
-        
+
         # Verificar que el archivo existe físicamente
         if not os.path.exists(file_path):
             raise Http404("Archivo no encontrado en el servidor")
-        
+
         # Leer el archivo
-        with open(file_path, 'rb') as file:
+        with open(file_path, "rb") as file:
             file_content = file.read()
-        
+
         # Determinar el content-type basado en la extensión del archivo
-        if file_path.lower().endswith('.pdf'):
-            content_type = 'application/pdf'
-        elif file_path.lower().endswith('.docx'):
-            content_type = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-        elif file_path.lower().endswith('.doc'):
-            content_type = 'application/msword'
+        if file_path.lower().endswith(".pdf"):
+            content_type = "application/pdf"
+        elif file_path.lower().endswith(".docx"):
+            content_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        elif file_path.lower().endswith(".doc"):
+            content_type = "application/msword"
         else:
-            content_type = 'application/octet-stream'
-        
+            content_type = "application/octet-stream"
+
         # Crear respuesta HTTP con el archivo
         response = HttpResponse(file_content, content_type=content_type)
-        
+
         # Configurar headers para descarga
         # Obtener el nombre original del archivo de manera más robusta
         original_filename = os.path.basename(cv.original_file.name)
-        
+
         # Si no tiene extensión, intentar detectarla del content-type
-        if not original_filename or '.' not in original_filename:
+        if not original_filename or "." not in original_filename:
             # Crear un nombre por defecto con extensión basada en el archivo
-            if file_path.lower().endswith('.pdf'):
+            if file_path.lower().endswith(".pdf"):
                 original_filename = f"cv_{cv_id}.pdf"
-            elif file_path.lower().endswith('.docx'):
+            elif file_path.lower().endswith(".docx"):
                 original_filename = f"cv_{cv_id}.docx"
-            elif file_path.lower().endswith('.doc'):
+            elif file_path.lower().endswith(".doc"):
                 original_filename = f"cv_{cv_id}.doc"
             else:
                 original_filename = f"cv_{cv_id}.pdf"  # Por defecto PDF
-        
+
         # Usar quote para manejar caracteres especiales en el nombre
         from urllib.parse import quote
+
         safe_filename = quote(original_filename)
-        response['Content-Disposition'] = f'attachment; filename="{safe_filename}"; filename*=UTF-8\'\'{safe_filename}'
-        response['Content-Length'] = len(file_content)
-        
-        logger.info(f"CV descargado: {original_filename} por usuario {request.user.email}")
-        
+        response["Content-Disposition"] = (
+            f"attachment; filename=\"{safe_filename}\"; filename*=UTF-8''{safe_filename}"
+        )
+        response["Content-Length"] = len(file_content)
+
+        logger.info(
+            f"CV descargado: {original_filename} por usuario {request.user.email}"
+        )
+
         return response
-        
+
     except UserCV.DoesNotExist:
-        logger.warning(f"Usuario {request.user.email} intentó descargar CV inexistente: {cv_id}")
+        logger.warning(
+            f"Usuario {request.user.email} intentó descargar CV inexistente: {cv_id}"
+        )
         raise Http404("CV no encontrado o no tienes permisos para acceder a él")
     except Exception as e:
-        logger.error(f"Error descargando CV {cv_id} para usuario {request.user.email}: {e}")
+        logger.error(
+            f"Error descargando CV {cv_id} para usuario {request.user.email}: {e}"
+        )
         raise Http404("Error al descargar el archivo")
 
 
@@ -2440,59 +2597,71 @@ def download_cv_view(request, cv_id):
 def calculate_matches_view(request):
     """Vista para calcular matches entre CVs y ofertas de trabajo (usando Celery)."""
     logger.info(f"🧮 calculate_matches_view llamada por usuario {request.user.id}")
-    
+
     if request.method != "POST":
         logger.warning(f"⚠️ Método no permitido: {request.method}")
         return JsonResponse({"success": False, "message": "Método no permitido"})
-    
+
     try:
         logger.info("📦 Importando recalculate_matches_for_user...")
         from .tasks import recalculate_matches_for_user
+
         logger.info("✅ Tarea importada correctamente")
-        
+
         # Verificar que el usuario tenga CVs
         user_cvs = UserCV.objects.filter(
-            user=request.user, 
-            parsed_text__isnull=False
+            user=request.user, parsed_text__isnull=False
         ).exclude(parsed_text="")
-        
+
         if not user_cvs.exists():
-            return JsonResponse({
-                "success": False,
-                "message": "No tienes CVs procesados para calcular matches"
-            })
-        
+            return JsonResponse(
+                {
+                    "success": False,
+                    "message": "No tienes CVs procesados para calcular matches",
+                }
+            )
+
         # Verificar que haya ofertas de trabajo
         jobs = JobPosting.objects.all()
         if not jobs.exists():
-            return JsonResponse({
-                "success": False,
-                "message": "No hay ofertas de trabajo para calcular matches"
-            })
-        
+            return JsonResponse(
+                {
+                    "success": False,
+                    "message": "No hay ofertas de trabajo para calcular matches",
+                }
+            )
+
         # Iniciar tarea en background
         task = recalculate_matches_for_user.delay(request.user.id)
-        
-        logger.info(f"Cálculo de matches iniciado en background para usuario {request.user.id} (task: {task.id})")
-        
-        return JsonResponse({
-            "success": True,
-            "message": "Cálculo de matches iniciado en background",
-            "task_id": task.id,
-            "jobs_to_process": jobs.count(),
-            "cvs_to_process": user_cvs.count()
-        })
-        
+
+        logger.info(
+            f"Cálculo de matches iniciado en background para usuario {request.user.id} (task: {task.id})"
+        )
+
+        return JsonResponse(
+            {
+                "success": True,
+                "message": "Cálculo de matches iniciado en background",
+                "task_id": task.id,
+                "jobs_to_process": jobs.count(),
+                "cvs_to_process": user_cvs.count(),
+            }
+        )
+
     except Exception as e:
-        logger.error(f"Error iniciando cálculo de matches para usuario {request.user.id}: {e}")
-        return JsonResponse({
-            "success": False,
-            "message": f"Error iniciando cálculo de matches: {str(e)}"
-        })
+        logger.error(
+            f"Error iniciando cálculo de matches para usuario {request.user.id}: {e}"
+        )
+        return JsonResponse(
+            {
+                "success": False,
+                "message": f"Error iniciando cálculo de matches: {str(e)}",
+            }
+        )
 
 
 @login_required
-@user_passes_test(lambda u: u.is_staff, login_url='dashboard')
+@user_passes_test(lambda u: u.is_staff, login_url="dashboard")
 def get_global_scraping_status(request):
     """
     Vista para obtener el estado del scraping GLOBAL activo (si existe).
@@ -2500,37 +2669,44 @@ def get_global_scraping_status(request):
     """
     try:
         from .services.scraping_lock import scraping_lock
-        
+
         # Verificar si hay un scraping activo globalmente
         active_scraping = scraping_lock.get_active_scraping()
-        
+
         if active_scraping:
-            task_id = active_scraping.get('task_id')
-            
+            task_id = active_scraping.get("task_id")
+
             # Verificar el estado real de la tarea en Celery
             from celery.result import AsyncResult
+
             task_result = AsyncResult(task_id)
-            
-            return JsonResponse({
-                'success': True,
-                'has_active_scraping': True,
-                'task_id': task_id,
-                'user_id': active_scraping.get('user_id'),
-                'source': active_scraping.get('source'),
-                'started_at': active_scraping.get('started_at'),
-                'celery_status': task_result.state,
-            })
+
+            return JsonResponse(
+                {
+                    "success": True,
+                    "has_active_scraping": True,
+                    "task_id": task_id,
+                    "user_id": active_scraping.get("user_id"),
+                    "source": active_scraping.get("source"),
+                    "started_at": active_scraping.get("started_at"),
+                    "celery_status": task_result.state,
+                }
+            )
         else:
-            return JsonResponse({
-                'success': True,
-                'has_active_scraping': False,
-                'task_id': None,
-            })
-            
+            return JsonResponse(
+                {
+                    "success": True,
+                    "has_active_scraping": False,
+                    "task_id": None,
+                }
+            )
+
     except Exception as e:
         logger.error(f"Error obteniendo estado de scraping global: {e}")
-        return JsonResponse({
-            'success': False,
-            'error': str(e),
-            'has_active_scraping': False,
-        })
+        return JsonResponse(
+            {
+                "success": False,
+                "error": str(e),
+                "has_active_scraping": False,
+            }
+        )

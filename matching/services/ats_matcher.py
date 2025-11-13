@@ -148,7 +148,9 @@ class KeywordExtractor:
     }
 
     @classmethod
-    def extract_keywords(cls, job_description: str, max_keywords: int = 15) -> List[str]:
+    def extract_keywords(
+        cls, job_description: str, max_keywords: int = 15
+    ) -> List[str]:
         """
         Extrae keywords del puesto sin IA - rápido y gratis.
 
@@ -217,11 +219,13 @@ class ATSMatcher:
                 cv_text = cv_text.lower()
 
             # 1. KEYWORD COVERAGE (35%) - MEJORADO: Matching más flexible
-            keywords_found_count, partial_matches = self._flexible_keyword_matching(cv_text, job_keywords)
+            keywords_found_count, partial_matches = self._flexible_keyword_matching(
+                cv_text, job_keywords
+            )
             keyword_score = (
                 (keywords_found_count / len(job_keywords)) * 35 if job_keywords else 0
             )
-            
+
             # BONUS: +5% por matches parciales (sinónimos, variaciones)
             bonus_score = min(5, len(partial_matches) * 0.5)
             keyword_score += bonus_score
@@ -229,7 +233,9 @@ class ATSMatcher:
             # 2. KEYWORD DENSITY (15%) - MEJORADO: Rango óptimo más amplio
             keyword_density = sum(cv_text.count(kw) for kw in job_keywords)
             optimal_density = len(job_keywords) * 2.5
-            density_ratio = keyword_density / optimal_density if optimal_density > 0 else 0
+            density_ratio = (
+                keyword_density / optimal_density if optimal_density > 0 else 0
+            )
             # Rango óptimo: 0.5 - 2.0 (antes era muy estricto)
             if 0.5 <= density_ratio <= 2.0:
                 density_score = 15 * (1 - abs(density_ratio - 1.25) / 0.75)
@@ -241,11 +247,19 @@ class ATSMatcher:
             structure_score = self._calculate_structure_score(cv_text, cv_structured)
 
             # 4. QUANTIFIABLE ACHIEVEMENTS (25%) - MEJORADO: Más puntos por logros
-            achievement_score = self._calculate_achievement_score(cv_text, cv_structured)
+            achievement_score = self._calculate_achievement_score(
+                cv_text, cv_structured
+            )
 
-            total_score = keyword_score + density_score + structure_score + achievement_score
+            total_score = (
+                keyword_score + density_score + structure_score + achievement_score
+            )
 
-            missing_keywords = [kw for kw in job_keywords if kw not in cv_text and kw not in partial_matches]
+            missing_keywords = [
+                kw
+                for kw in job_keywords
+                if kw not in cv_text and kw not in partial_matches
+            ]
 
             logger.info(
                 f"📊 Score ATS: {int(total_score)}% "
@@ -282,47 +296,49 @@ class ATSMatcher:
                 "job_keywords": [],
                 "partial_matches": [],
             }
-    
-    def _flexible_keyword_matching(self, cv_text: str, job_keywords: List[str]) -> tuple:
+
+    def _flexible_keyword_matching(
+        self, cv_text: str, job_keywords: List[str]
+    ) -> tuple:
         """
         Matching flexible de keywords con sinónimos y variaciones.
-        
+
         Returns:
             (exact_matches_count, partial_matches_list)
         """
         exact_matches = 0
         partial_matches = []
-        
+
         # Diccionario de sinónimos y variaciones
         synonyms = {
-            'javascript': ['js', 'ecmascript', 'node', 'nodejs'],
-            'typescript': ['ts'],
-            'python': ['py'],
-            'postgresql': ['postgres', 'psql'],
-            'mongodb': ['mongo'],
-            'kubernetes': ['k8s'],
-            'docker': ['container', 'containerization'],
-            'react': ['reactjs', 'react.js'],
-            'angular': ['angularjs'],
-            'vue': ['vuejs', 'vue.js'],
-            'django': ['python web', 'python framework'],
-            'flask': ['python web', 'python framework'],
-            'spring': ['spring boot', 'java framework'],
-            'android': ['mobile', 'kotlin', 'java mobile'],
-            'ios': ['mobile', 'swift', 'objective-c'],
-            'machine learning': ['ml', 'ai', 'artificial intelligence'],
-            'deep learning': ['dl', 'neural network'],
-            'data science': ['data analysis', 'analytics'],
-            'rest api': ['api', 'restful', 'web service'],
-            'graphql': ['api', 'query language'],
-            'ci/cd': ['continuous integration', 'continuous deployment', 'devops'],
-            'agile': ['scrum', 'kanban', 'metodologías ágiles'],
-            'git': ['version control', 'github', 'gitlab', 'bitbucket'],
-            'aws': ['amazon web services', 'cloud', 'ec2', 'lambda', 's3'],
-            'azure': ['microsoft azure', 'cloud'],
-            'gcp': ['google cloud', 'cloud'],
+            "javascript": ["js", "ecmascript", "node", "nodejs"],
+            "typescript": ["ts"],
+            "python": ["py"],
+            "postgresql": ["postgres", "psql"],
+            "mongodb": ["mongo"],
+            "kubernetes": ["k8s"],
+            "docker": ["container", "containerization"],
+            "react": ["reactjs", "react.js"],
+            "angular": ["angularjs"],
+            "vue": ["vuejs", "vue.js"],
+            "django": ["python web", "python framework"],
+            "flask": ["python web", "python framework"],
+            "spring": ["spring boot", "java framework"],
+            "android": ["mobile", "kotlin", "java mobile"],
+            "ios": ["mobile", "swift", "objective-c"],
+            "machine learning": ["ml", "ai", "artificial intelligence"],
+            "deep learning": ["dl", "neural network"],
+            "data science": ["data analysis", "analytics"],
+            "rest api": ["api", "restful", "web service"],
+            "graphql": ["api", "query language"],
+            "ci/cd": ["continuous integration", "continuous deployment", "devops"],
+            "agile": ["scrum", "kanban", "metodologías ágiles"],
+            "git": ["version control", "github", "gitlab", "bitbucket"],
+            "aws": ["amazon web services", "cloud", "ec2", "lambda", "s3"],
+            "azure": ["microsoft azure", "cloud"],
+            "gcp": ["google cloud", "cloud"],
         }
-        
+
         for keyword in job_keywords:
             # Exact match
             if keyword in cv_text:
@@ -333,10 +349,12 @@ class ATSMatcher:
                     if synonym in cv_text:
                         partial_matches.append(f"{keyword} (via {synonym})")
                         break
-        
+
         return exact_matches, partial_matches
 
-    def _calculate_structure_score(self, cv_text: str, cv_structured: Dict = None) -> int:
+    def _calculate_structure_score(
+        self, cv_text: str, cv_structured: Dict = None
+    ) -> int:
         """
         Calcula el score de estructura del CV (0-25 puntos) - MEJORADO.
 
@@ -362,7 +380,11 @@ class ATSMatcher:
                 structure_score += 6
         else:
             # Fallback: análisis de texto plano (MÁS FLEXIBLE)
-            if "experiencia" in cv_text or "experience" in cv_text or "trabajo" in cv_text:
+            if (
+                "experiencia" in cv_text
+                or "experience" in cv_text
+                or "trabajo" in cv_text
+            ):
                 structure_score += 7
             # Contar palabras únicas que parecen skills (más de 5, antes 10)
             words = set(cv_text.split())
@@ -370,15 +392,27 @@ class ATSMatcher:
             if len(tech_words) >= 5:
                 structure_score += 6
             # Buscar sección de resumen/objetivo (más flexible)
-            if ("resumen" in cv_text or "summary" in cv_text or "objetivo" in cv_text or "perfil" in cv_text) and len(cv_text) > 300:
+            if (
+                "resumen" in cv_text
+                or "summary" in cv_text
+                or "objetivo" in cv_text
+                or "perfil" in cv_text
+            ) and len(cv_text) > 300:
                 structure_score += 6
             # Buscar proyectos (más flexible)
-            if "proyecto" in cv_text or "project" in cv_text or "desarrollé" in cv_text or "desarrolle" in cv_text:
+            if (
+                "proyecto" in cv_text
+                or "project" in cv_text
+                or "desarrollé" in cv_text
+                or "desarrolle" in cv_text
+            ):
                 structure_score += 6
 
         return structure_score
 
-    def _calculate_achievement_score(self, cv_text: str, cv_structured: Dict = None) -> int:
+    def _calculate_achievement_score(
+        self, cv_text: str, cv_structured: Dict = None
+    ) -> int:
         """
         Calcula el score de logros cuantificables (0-25 puntos) - MEJORADO.
 
@@ -393,13 +427,13 @@ class ATSMatcher:
 
         # Patrones más amplios y flexibles
         achievement_patterns = [
-            r'\d+%',  # Porcentajes
-            r'\d+x',  # Multiplicadores
-            r'[\$€£]\d+',  # Dinero
-            r'\d+ (usuarios|clientes|proyectos|millones|miles|días|semanas|meses|años)',  # Números con contexto (español)
-            r'\d+ (users|clients|projects|millions|thousands|days|weeks|months|years)',  # Números con contexto (inglés)
-            r'(implementé|desarrollé|optimicé|reduje|aumenté|mejoré|logré|conseguí)\s+\w+',  # Verbos de logro (español)
-            r'(implemented|developed|optimized|reduced|increased|improved|achieved|delivered)\s+\w+',  # Verbos de logro (inglés)
+            r"\d+%",  # Porcentajes
+            r"\d+x",  # Multiplicadores
+            r"[\$€£]\d+",  # Dinero
+            r"\d+ (usuarios|clientes|proyectos|millones|miles|días|semanas|meses|años)",  # Números con contexto (español)
+            r"\d+ (users|clients|projects|millions|thousands|days|weeks|months|years)",  # Números con contexto (inglés)
+            r"(implementé|desarrollé|optimicé|reduje|aumenté|mejoré|logré|conseguí)\s+\w+",  # Verbos de logro (español)
+            r"(implemented|developed|optimized|reduced|increased|improved|achieved|delivered)\s+\w+",  # Verbos de logro (inglés)
         ]
 
         if cv_structured and cv_structured.get("experience"):
@@ -443,4 +477,3 @@ def calculate_ats_score(
         Dict con score total y desglose
     """
     return ats_matcher.calculate_score(cv_text, job_description, cv_structured)
-

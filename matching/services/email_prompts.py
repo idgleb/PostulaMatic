@@ -7,7 +7,7 @@ from typing import Dict, List
 
 class EmailPromptTemplates:
     """Templates de prompts para diferentes tipos de emails."""
-    
+
     @staticmethod
     def get_base_template() -> str:
         """Template base para generación de emails."""
@@ -174,26 +174,28 @@ Requisitos específicos:
     def get_template(cls, template_type: str) -> str:
         """Obtiene un template específico por tipo."""
         templates = {
-            'base': cls.get_base_template(),
-            'formal': cls.get_formal_template(),
-            'creative': cls.get_creative_template(),
-            'technical': cls.get_technical_template(),
-            'startup': cls.get_startup_template(),
-            'corporate': cls.get_corporate_template()
+            "base": cls.get_base_template(),
+            "formal": cls.get_formal_template(),
+            "creative": cls.get_creative_template(),
+            "technical": cls.get_technical_template(),
+            "startup": cls.get_startup_template(),
+            "corporate": cls.get_corporate_template(),
         }
         return templates.get(template_type, cls.get_base_template())
-    
+
     @classmethod
     def get_available_templates(cls) -> List[str]:
         """Retorna lista de templates disponibles."""
-        return ['base', 'formal', 'creative', 'technical', 'startup', 'corporate']
+        return ["base", "formal", "creative", "technical", "startup", "corporate"]
 
 
 class PromptCustomizer:
     """Utilidades para personalizar prompts."""
-    
+
     @staticmethod
-    def add_company_info(prompt: str, company_name: str = "", industry: str = "") -> str:
+    def add_company_info(
+        prompt: str, company_name: str = "", industry: str = ""
+    ) -> str:
         """Agrega información de la empresa al prompt."""
         if company_name or industry:
             company_info = f"\nInformación de la empresa:\n"
@@ -203,21 +205,21 @@ class PromptCustomizer:
                 company_info += f"- Industria: {industry}\n"
             return prompt + company_info
         return prompt
-    
+
     @staticmethod
     def add_urgency(prompt: str, is_urgent: bool = False) -> str:
         """Agrega urgencia al prompt si es necesario."""
         if is_urgent:
             return prompt + "\n- Menciona disponibilidad inmediata si es relevante"
         return prompt
-    
+
     @staticmethod
     def add_location(prompt: str, location: str = "") -> str:
         """Agrega información de ubicación al prompt."""
         if location:
             return prompt + f"\n- Ubicación del puesto: {location}"
         return prompt
-    
+
     @staticmethod
     def add_salary_expectation(prompt: str, salary_range: str = "") -> str:
         """Agrega expectativas salariales al prompt si es apropiado."""
@@ -228,7 +230,7 @@ class PromptCustomizer:
 
 class EmailPersonalizationData:
     """Estructura para datos de personalización de emails."""
-    
+
     def __init__(
         self,
         job_description: str,
@@ -237,7 +239,7 @@ class EmailPersonalizationData:
         template_type: str = "base",
         custom_instructions: str = "",
         company_info: Dict = None,
-        job_metadata: Dict = None
+        job_metadata: Dict = None,
     ):
         self.job_description = job_description
         self.cv_skills = cv_skills
@@ -246,42 +248,39 @@ class EmailPersonalizationData:
         self.custom_instructions = custom_instructions
         self.company_info = company_info or {}
         self.job_metadata = job_metadata or {}
-    
+
     def build_prompt(self) -> str:
         """Construye el prompt final personalizado."""
         # Obtener template base
         prompt = EmailPromptTemplates.get_template(self.template_type)
-        
+
         # Agregar información de empresa
         prompt = PromptCustomizer.add_company_info(
-            prompt, 
-            self.company_info.get('name', ''),
-            self.company_info.get('industry', '')
+            prompt,
+            self.company_info.get("name", ""),
+            self.company_info.get("industry", ""),
         )
-        
+
         # Agregar ubicación
         prompt = PromptCustomizer.add_location(
-            prompt,
-            self.job_metadata.get('location', '')
+            prompt, self.job_metadata.get("location", "")
         )
-        
+
         # Agregar urgencia
         prompt = PromptCustomizer.add_urgency(
-            prompt,
-            self.job_metadata.get('urgent', False)
+            prompt, self.job_metadata.get("urgent", False)
         )
-        
+
         # Agregar instrucciones personalizadas
         if self.custom_instructions:
             prompt += f"\nInstrucciones personalizadas: {self.custom_instructions}"
-        
+
         # Formatear con datos
-        skills_text = ", ".join(self.cv_skills.get('skills', []))
-        display_name = self.user_profile.get('display_name', '')
-        
+        skills_text = ", ".join(self.cv_skills.get("skills", []))
+        display_name = self.user_profile.get("display_name", "")
+
         return prompt.format(
             job_description=self.job_description,
             cv_skills=skills_text,
-            display_name=display_name
+            display_name=display_name,
         )
-

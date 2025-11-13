@@ -11,13 +11,13 @@ from .models import UserProfile, UserCV, AIConfiguration
 
 class UserRegistrationForm(UserCreationForm):
     """Formulario de registro de usuario."""
-    
+
     email = forms.EmailField(required=True)
-    
+
     class Meta:
         model = User
         fields = ("username", "email", "password1", "password2")
-    
+
     def save(self, commit=True):
         user = super().save(commit=False)
         user.email = self.cleaned_data["email"]
@@ -28,27 +28,22 @@ class UserRegistrationForm(UserCreationForm):
 
 class CVUploadForm(forms.ModelForm):
     """Formulario para subir CV."""
-    
+
     class Meta:
         model = UserCV
-        fields = ['original_file']
+        fields = ["original_file"]
         widgets = {
-            'original_file': forms.FileInput(attrs={
-                'class': 'form-control',
-                'accept': '.pdf,.doc,.docx'
-            })
+            "original_file": forms.FileInput(
+                attrs={"class": "form-control", "accept": ".pdf,.doc,.docx"}
+            )
         }
-        labels = {
-            'original_file': 'Archivo CV'
-        }
-        help_texts = {
-            'original_file': 'Sube tu CV en formato PDF, DOC o DOCX'
-        }
+        labels = {"original_file": "Archivo CV"}
+        help_texts = {"original_file": "Sube tu CV en formato PDF, DOC o DOCX"}
 
 
 class UserProfileForm(forms.ModelForm):
     """Formulario para editar perfil de usuario."""
-    
+
     class Meta:
         model = UserProfile
         fields = [
@@ -209,9 +204,7 @@ class MatchingConfigForm(forms.ModelForm):
                     "required": True,
                 }
             ),
-            "is_active": forms.CheckboxInput(
-                attrs={"class": "form-check-input"}
-            ),
+            "is_active": forms.CheckboxInput(attrs={"class": "form-check-input"}),
         }
         labels = {
             "match_threshold": "Umbral de Coincidencia (%)",
@@ -236,9 +229,7 @@ class MatchingConfigForm(forms.ModelForm):
     def clean_match_threshold(self):
         threshold = self.cleaned_data.get("match_threshold")
         if threshold is not None and (threshold < 0 or threshold > 100):
-            raise forms.ValidationError(
-                "El umbral debe estar entre 0 y 100"
-            )
+            raise forms.ValidationError("El umbral debe estar entre 0 y 100")
         return threshold
 
 
@@ -248,22 +239,21 @@ class EmailConfigForm(forms.ModelForm):
     class Meta:
         model = UserProfile
         fields = [
-            "daily_limit", 
-            "min_pause_seconds", 
+            "daily_limit",
+            "min_pause_seconds",
             "max_pause_seconds",
             "auto_send_enabled",
-            "auto_send_time"
+            "auto_send_time",
         ]
         widgets = {
             "daily_limit": forms.NumberInput(attrs={"class": "form-control"}),
             "min_pause_seconds": forms.NumberInput(attrs={"class": "form-control"}),
             "max_pause_seconds": forms.NumberInput(attrs={"class": "form-control"}),
-            "auto_send_enabled": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "auto_send_enabled": forms.CheckboxInput(
+                attrs={"class": "form-check-input"}
+            ),
             "auto_send_time": forms.TimeInput(
-                attrs={
-                    "class": "form-control",
-                    "type": "time"
-                }
+                attrs={"class": "form-control", "type": "time"}
             ),
         }
         labels = {
@@ -295,181 +285,230 @@ class EmailConfigForm(forms.ModelForm):
 
 class AIConfigurationForm(forms.ModelForm):
     """Formulario para configuración de IA."""
-    
+
     # Campos adicionales para las API keys (no se guardan en el modelo)
     openai_api_key_input = forms.CharField(
         max_length=255,
         required=False,
-        widget=forms.PasswordInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'sk-...',
-            'autocomplete': 'new-password'
-        }),
-        help_text="API Key de OpenAI (se encripta automáticamente)"
+        widget=forms.PasswordInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "sk-...",
+                "autocomplete": "new-password",
+            }
+        ),
+        help_text="API Key de OpenAI (se encripta automáticamente)",
     )
-    
+
     anthropic_api_key_input = forms.CharField(
         max_length=255,
         required=False,
-        widget=forms.PasswordInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'sk-ant-...',
-            'autocomplete': 'new-password'
-        }),
-        help_text="API Key de Anthropic (se encripta automáticamente)"
+        widget=forms.PasswordInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "sk-ant-...",
+                "autocomplete": "new-password",
+            }
+        ),
+        help_text="API Key de Anthropic (se encripta automáticamente)",
     )
-    
+
     # Definir campos de selección explícitamente
     # NOTA: Usamos CharField en lugar de ChoiceField para permitir modelos dinámicos
     # Los modelos se cargan dinámicamente desde las APIs en el frontend
     openai_model = forms.CharField(
         max_length=100,
         required=False,
-        widget=forms.Select(attrs={
-            'class': 'modern-select',
-            'data-placeholder': 'Selecciona un modelo de OpenAI...'
-        }),
-        label='Modelo de OpenAI',
-        help_text="Selecciona el modelo de OpenAI a utilizar"
+        widget=forms.Select(
+            attrs={
+                "class": "modern-select",
+                "data-placeholder": "Selecciona un modelo de OpenAI...",
+            }
+        ),
+        label="Modelo de OpenAI",
+        help_text="Selecciona el modelo de OpenAI a utilizar",
     )
-    
+
     anthropic_model = forms.CharField(
         max_length=100,
         required=False,
-        widget=forms.Select(attrs={
-            'class': 'modern-select',
-            'data-placeholder': 'Selecciona un modelo de Anthropic...'
-        }),
-        label='Modelo de Anthropic',
-        help_text="Selecciona el modelo de Anthropic a utilizar"
+        widget=forms.Select(
+            attrs={
+                "class": "modern-select",
+                "data-placeholder": "Selecciona un modelo de Anthropic...",
+            }
+        ),
+        label="Modelo de Anthropic",
+        help_text="Selecciona el modelo de Anthropic a utilizar",
     )
-    
+
     default_provider = forms.ChoiceField(
         choices=[],  # Se llena en __init__
         required=True,
-        widget=forms.Select(attrs={
-            'class': 'modern-select',
-            'data-placeholder': 'Selecciona el proveedor por defecto...'
-        }),
-        label='Proveedor por Defecto',
-        help_text="Proveedor de IA que se usará por defecto"
+        widget=forms.Select(
+            attrs={
+                "class": "modern-select",
+                "data-placeholder": "Selecciona el proveedor por defecto...",
+            }
+        ),
+        label="Proveedor por Defecto",
+        help_text="Proveedor de IA que se usará por defecto",
     )
 
     class Meta:
         model = AIConfiguration
         fields = [
-            'openai_enabled',
-            'anthropic_enabled',
+            "openai_enabled",
+            "anthropic_enabled",
         ]
         widgets = {
-            'openai_enabled': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'anthropic_enabled': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            "openai_enabled": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "anthropic_enabled": forms.CheckboxInput(
+                attrs={"class": "form-check-input"}
+            ),
         }
         labels = {
-            'openai_enabled': 'Habilitar OpenAI',
-            'anthropic_enabled': 'Habilitar Anthropic',
+            "openai_enabled": "Habilitar OpenAI",
+            "anthropic_enabled": "Habilitar Anthropic",
         }
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
+
         # NOTA: Los modelos de OpenAI y Anthropic se cargan dinámicamente desde el frontend
         # No necesitamos llenar las opciones aquí porque usamos CharField
-        
+
         # Agregar opciones de proveedor por defecto
-        self.fields['default_provider'].choices = [
-            ('openai', 'OpenAI'),
-            ('anthropic', 'Anthropic'),
+        self.fields["default_provider"].choices = [
+            ("openai", "OpenAI"),
+            ("anthropic", "Anthropic"),
         ]
-        
+
         # Hacer campos opcionales inicialmente
-        self.fields['openai_model'].required = False
-        self.fields['anthropic_model'].required = False
-        
+        self.fields["openai_model"].required = False
+        self.fields["anthropic_model"].required = False
+
         # Si es una instancia existente, mostrar preview de las keys
         if self.instance.pk:
             if self.instance.openai_api_key:
-                self.fields['openai_api_key_input'].help_text = "Deja vacío para mantener la clave actual"
+                self.fields["openai_api_key_input"].help_text = (
+                    "Deja vacío para mantener la clave actual"
+                )
             if self.instance.anthropic_api_key:
-                self.fields['anthropic_api_key_input'].help_text = "Deja vacío para mantener la clave actual"
-    
+                self.fields["anthropic_api_key_input"].help_text = (
+                    "Deja vacío para mantener la clave actual"
+                )
+
     def clean(self):
         """Validación personalizada del formulario."""
         cleaned_data = super().clean()
-        
-        openai_enabled = cleaned_data.get('openai_enabled', False)
-        anthropic_enabled = cleaned_data.get('anthropic_enabled', False)
-        
+
+        openai_enabled = cleaned_data.get("openai_enabled", False)
+        anthropic_enabled = cleaned_data.get("anthropic_enabled", False)
+
         # Limpiar valores temporales (usados cuando no hay API key configurada aún)
-        openai_model = cleaned_data.get('openai_model', '')
-        if openai_model == '_temp_no_model':
-            cleaned_data['openai_model'] = ''
-        
+        openai_model = cleaned_data.get("openai_model", "")
+        if openai_model == "_temp_no_model":
+            cleaned_data["openai_model"] = ""
+
         # Si OpenAI está habilitado, validar que tenga modelo (excepto si es valor temporal)
         if openai_enabled:
-            if not cleaned_data.get('openai_model') or cleaned_data.get('openai_model') == '_temp_no_model':
+            if (
+                not cleaned_data.get("openai_model")
+                or cleaned_data.get("openai_model") == "_temp_no_model"
+            ):
                 # Solo dar error si ya hay una API key configurada
                 if self.instance.pk and self.instance.openai_api_key:
-                    self.add_error('openai_model', 'Debes seleccionar un modelo si habilitas OpenAI.')
+                    self.add_error(
+                        "openai_model",
+                        "Debes seleccionar un modelo si habilitas OpenAI.",
+                    )
             # Solo validar API key si no hay una configurada previamente
-            if not cleaned_data.get('openai_api_key_input') and not self.instance.openai_api_key:
-                self.add_error('openai_api_key_input', 'Debes ingresar una API key si habilitas OpenAI.')
-        
+            if (
+                not cleaned_data.get("openai_api_key_input")
+                and not self.instance.openai_api_key
+            ):
+                self.add_error(
+                    "openai_api_key_input",
+                    "Debes ingresar una API key si habilitas OpenAI.",
+                )
+
         # Limpiar valores temporales de Anthropic
-        anthropic_model = cleaned_data.get('anthropic_model', '')
-        if anthropic_model == '_temp_no_model':
-            cleaned_data['anthropic_model'] = ''
-        
+        anthropic_model = cleaned_data.get("anthropic_model", "")
+        if anthropic_model == "_temp_no_model":
+            cleaned_data["anthropic_model"] = ""
+
         # Si Anthropic está habilitado, validar que tenga modelo (excepto si es valor temporal)
         if anthropic_enabled:
-            if not cleaned_data.get('anthropic_model') or cleaned_data.get('anthropic_model') == '_temp_no_model':
+            if (
+                not cleaned_data.get("anthropic_model")
+                or cleaned_data.get("anthropic_model") == "_temp_no_model"
+            ):
                 # Solo dar error si ya hay una API key configurada
                 if self.instance.pk and self.instance.anthropic_api_key:
-                    self.add_error('anthropic_model', 'Debes seleccionar un modelo si habilitas Anthropic.')
+                    self.add_error(
+                        "anthropic_model",
+                        "Debes seleccionar un modelo si habilitas Anthropic.",
+                    )
             # Solo validar API key si no hay una configurada previamente
-            if not cleaned_data.get('anthropic_api_key_input') and not self.instance.anthropic_api_key:
-                self.add_error('anthropic_api_key_input', 'Debes ingresar una API key si habilitas Anthropic.')
-        
+            if (
+                not cleaned_data.get("anthropic_api_key_input")
+                and not self.instance.anthropic_api_key
+            ):
+                self.add_error(
+                    "anthropic_api_key_input",
+                    "Debes ingresar una API key si habilitas Anthropic.",
+                )
+
         # Validar que al menos un proveedor esté habilitado
         if not openai_enabled and not anthropic_enabled:
-            raise forms.ValidationError('Debes habilitar al menos un proveedor de IA (OpenAI o Anthropic).')
-        
+            raise forms.ValidationError(
+                "Debes habilitar al menos un proveedor de IA (OpenAI o Anthropic)."
+            )
+
         return cleaned_data
-    
+
     def save(self, commit=True):
         """Guarda la configuración y procesa las API keys."""
         import logging
+
         logger = logging.getLogger(__name__)
-        
+
         # Log datos antes de guardar
-        logger.info(f"🔍 Formulario - OpenAI model: {self.cleaned_data.get('openai_model')}, Enabled: {self.cleaned_data.get('openai_enabled')}")
-        
+        logger.info(
+            f"🔍 Formulario - OpenAI model: {self.cleaned_data.get('openai_model')}, Enabled: {self.cleaned_data.get('openai_enabled')}"
+        )
+
         instance = super().save(commit=False)
-        
+
         # Log datos de la instancia antes de procesar
-        logger.info(f"🔍 Instancia antes - OpenAI model: {instance.openai_model}, Enabled: {instance.openai_enabled}")
-        
+        logger.info(
+            f"🔍 Instancia antes - OpenAI model: {instance.openai_model}, Enabled: {instance.openai_enabled}"
+        )
+
         # ARREGLAR: Aplicar manualmente los datos del formulario a la instancia
-        if 'openai_model' in self.cleaned_data:
-            instance.openai_model = self.cleaned_data['openai_model']
-        if 'openai_enabled' in self.cleaned_data:
-            instance.openai_enabled = self.cleaned_data['openai_enabled']
-        if 'anthropic_model' in self.cleaned_data:
-            instance.anthropic_model = self.cleaned_data['anthropic_model']
-        if 'anthropic_enabled' in self.cleaned_data:
-            instance.anthropic_enabled = self.cleaned_data['anthropic_enabled']
-        if 'default_provider' in self.cleaned_data:
-            instance.default_provider = self.cleaned_data['default_provider']
-        
+        if "openai_model" in self.cleaned_data:
+            instance.openai_model = self.cleaned_data["openai_model"]
+        if "openai_enabled" in self.cleaned_data:
+            instance.openai_enabled = self.cleaned_data["openai_enabled"]
+        if "anthropic_model" in self.cleaned_data:
+            instance.anthropic_model = self.cleaned_data["anthropic_model"]
+        if "anthropic_enabled" in self.cleaned_data:
+            instance.anthropic_enabled = self.cleaned_data["anthropic_enabled"]
+        if "default_provider" in self.cleaned_data:
+            instance.default_provider = self.cleaned_data["default_provider"]
+
         # Procesar API keys si se proporcionaron
-        if self.cleaned_data.get('openai_api_key_input'):
-            instance.set_openai_key(self.cleaned_data['openai_api_key_input'])
-        
-        if self.cleaned_data.get('anthropic_api_key_input'):
-            instance.set_anthropic_key(self.cleaned_data['anthropic_api_key_input'])
-        
+        if self.cleaned_data.get("openai_api_key_input"):
+            instance.set_openai_key(self.cleaned_data["openai_api_key_input"])
+
+        if self.cleaned_data.get("anthropic_api_key_input"):
+            instance.set_anthropic_key(self.cleaned_data["anthropic_api_key_input"])
+
         if commit:
             instance.save()
-            logger.info(f"🔍 Instancia guardada - OpenAI model: {instance.openai_model}, Enabled: {instance.openai_enabled}")
-        
+            logger.info(
+                f"🔍 Instancia guardada - OpenAI model: {instance.openai_model}, Enabled: {instance.openai_enabled}"
+            )
+
         return instance

@@ -14,7 +14,9 @@ class Command(BaseCommand):
     help = "Abre un navegador Playwright (modo visible) para que el usuario resuelva Cloudflare/CAPTCHA y guardamos storage_state."
 
     def add_arguments(self, parser):
-        parser.add_argument("username", type=str, help="Usuario Django (dueño del perfil)")
+        parser.add_argument(
+            "username", type=str, help="Usuario Django (dueño del perfil)"
+        )
         parser.add_argument(
             "--output",
             type=str,
@@ -48,14 +50,18 @@ class Command(BaseCommand):
             # Para simplicidad, usamos el contexto ya creado y navegamos al login.
             await client.page.context.tracing.start(screenshots=True)
             await client.page.goto(client.LOGIN_URL)
-            self.stdout.write(self.style.WARNING("Resuelve el CAPTCHA y logueate manualmente. Cierra la pestaña cuando termine."))
+            self.stdout.write(
+                self.style.WARNING(
+                    "Resuelve el CAPTCHA y logueate manualmente. Cierra la pestaña cuando termine."
+                )
+            )
             # Esperar hasta que cambie de URL fuera de login
-            await client.page.wait_for_function("() => !window.location.href.includes('login')", timeout=0)
+            await client.page.wait_for_function(
+                "() => !window.location.href.includes('login')", timeout=0
+            )
             await client.save_storage_state(out_path)
             await client.close()
 
         asyncio.run(run())
 
         self.stdout.write(self.style.SUCCESS(f"storage_state guardado en {out_path}"))
-
-

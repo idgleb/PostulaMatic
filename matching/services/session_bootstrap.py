@@ -36,7 +36,9 @@ def _default_headers() -> Dict[str, str]:
     }
 
 
-def bootstrap_dv_session(max_attempts: int = 5, sleep_seconds: float = 1.5) -> List[Dict]:
+def bootstrap_dv_session(
+    max_attempts: int = 5, sleep_seconds: float = 1.5
+) -> List[Dict]:
     """Intenta obtener cookies iniciales del portal usando requests.
 
     Devuelve una lista de cookies compatibles con Playwright storage_state.
@@ -52,7 +54,9 @@ def bootstrap_dv_session(max_attempts: int = 5, sleep_seconds: float = 1.5) -> L
 
     for attempt in range(1, max_attempts + 1):
         try:
-            resp = session.get(LOGIN_URL, timeout=20, proxies=proxies, allow_redirects=True)
+            resp = session.get(
+                LOGIN_URL, timeout=20, proxies=proxies, allow_redirects=True
+            )
             logger.info(
                 f"Bootstrap intento {attempt}: status={resp.status_code} url={resp.url} set_cookies={len(resp.cookies)}"
             )
@@ -94,6 +98,3 @@ def build_playwright_proxy() -> Optional[Dict[str, str]]:
         result["username"] = os.getenv("PROXY_USERNAME")
         result["password"] = os.getenv("PROXY_PASSWORD")
     return result
-
-
-

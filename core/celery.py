@@ -9,12 +9,12 @@ app = Celery("postulamatic")
 app.config_from_object("django.conf:settings", namespace="CELERY")
 
 # Especificar paquetes donde buscar tareas
-app.autodiscover_tasks(['matching'], related_name='tasks')
-app.autodiscover_tasks(['matching'], related_name='tasks_dv')
-app.autodiscover_tasks(['matching'], related_name='tasks_email')
-app.autodiscover_tasks(['matching'], related_name='tasks_stealth')
-app.autodiscover_tasks(['matching'], related_name='tasks_bulk_email')
-app.autodiscover_tasks(['matching'], related_name='tasks_auto_send')
+app.autodiscover_tasks(["matching"], related_name="tasks")
+app.autodiscover_tasks(["matching"], related_name="tasks_dv")
+app.autodiscover_tasks(["matching"], related_name="tasks_email")
+app.autodiscover_tasks(["matching"], related_name="tasks_stealth")
+app.autodiscover_tasks(["matching"], related_name="tasks_bulk_email")
+app.autodiscover_tasks(["matching"], related_name="tasks_auto_send")
 
 # Configuración de tareas periódicas
 app.conf.beat_schedule = {

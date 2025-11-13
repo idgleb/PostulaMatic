@@ -6,13 +6,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('matching', '0009_alter_emailsentlog_cv_alter_emailsentlog_job_posting'),
+        ("matching", "0009_alter_emailsentlog_cv_alter_emailsentlog_job_posting"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='emailsentlog',
-            name='personalized_cv_file',
-            field=models.FileField(blank=True, help_text='CV personalizado que se adjuntó al email', null=True, upload_to='personalized_cvs/%Y/%m/%d/'),
+            model_name="emailsentlog",
+            name="personalized_cv_file",
+            field=models.FileField(
+                blank=True,
+                help_text="CV personalizado que se adjuntó al email",
+                null=True,
+                upload_to="personalized_cvs/%Y/%m/%d/",
+            ),
         ),
     ]

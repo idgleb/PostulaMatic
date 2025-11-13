@@ -6,23 +6,49 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('matching', '0007_add_source_to_jobposting'),
+        ("matching", "0007_add_source_to_jobposting"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='ScheduledScraping',
+            name="ScheduledScraping",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('is_enabled', models.BooleanField(default=False, help_text='Activar/desactivar scraping automático')),
-                ('scheduled_time', models.TimeField(help_text='Hora del día para ejecutar el scraping (formato 24h)')),
-                ('last_run', models.DateTimeField(blank=True, help_text='Última vez que se ejecutó el scraping programado', null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "is_enabled",
+                    models.BooleanField(
+                        default=False,
+                        help_text="Activar/desactivar scraping automático",
+                    ),
+                ),
+                (
+                    "scheduled_time",
+                    models.TimeField(
+                        help_text="Hora del día para ejecutar el scraping (formato 24h)"
+                    ),
+                ),
+                (
+                    "last_run",
+                    models.DateTimeField(
+                        blank=True,
+                        help_text="Última vez que se ejecutó el scraping programado",
+                        null=True,
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
             ],
             options={
-                'verbose_name': 'Scraping Programado',
-                'verbose_name_plural': 'Scrapings Programados',
+                "verbose_name": "Scraping Programado",
+                "verbose_name_plural": "Scrapings Programados",
             },
         ),
     ]

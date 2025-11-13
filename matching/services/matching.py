@@ -172,7 +172,7 @@ class BasicSkillsMatchingStrategy(MatchingStrategy):
 class ATSMatchingStrategy(MatchingStrategy):
     """
     Estrategia de matching basada en el algoritmo ATS unificado.
-    
+
     Esta es la estrategia RECOMENDADA y por defecto.
     Usa el mismo algoritmo que la personalización de CV para consistencia.
     """
@@ -205,7 +205,7 @@ class ATSMatchingStrategy(MatchingStrategy):
         ats_result = ats_matcher.calculate_score(
             cv_text=cv_text,
             job_description=job_description,
-            cv_structured=None  # No tenemos CV estructurado en este punto
+            cv_structured=None,  # No tenemos CV estructurado en este punto
         )
 
         # Convertir resultado ATS a MatchResult
@@ -218,8 +218,10 @@ class ATSMatchingStrategy(MatchingStrategy):
                 "keywords_total": ats_result["keywords_total"],
                 "job_keywords": ats_result["job_keywords"],
             },
-            confidence=min(ats_result["keywords_found"] / max(ats_result["keywords_total"], 1), 1.0),
-            matched_skills=ats_result["job_keywords"][:ats_result["keywords_found"]],
+            confidence=min(
+                ats_result["keywords_found"] / max(ats_result["keywords_total"], 1), 1.0
+            ),
+            matched_skills=ats_result["job_keywords"][: ats_result["keywords_found"]],
             missing_skills=ats_result["missing_keywords"],
             extra_skills=[],  # El algoritmo ATS no calcula extra skills
         )

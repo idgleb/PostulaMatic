@@ -43,10 +43,12 @@ def scrape_dvcarreras_jobs_advanced(self, user_id: int):
             raise Exception("Credenciales de dvcarreras no configuradas")
 
         # Cliente avanzado eliminado - usar FlareSolverr
-        logger.warning(f"scrape_dvcarreras_jobs_advanced está deprecada para usuario {user_id}")
+        logger.warning(
+            f"scrape_dvcarreras_jobs_advanced está deprecada para usuario {user_id}"
+        )
         return {
             "error": "Esta función está deprecada. Usar scrape_dvcarreras_jobs_playwright en su lugar.",
-            "redirect_to": "scrape_dvcarreras_jobs_playwright"
+            "redirect_to": "scrape_dvcarreras_jobs_playwright",
         }
         # Código deprecado eliminado - todo comentado
         # ) as client:

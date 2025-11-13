@@ -1,6 +1,7 @@
 """
 Tareas de Celery limpias - solo con FlareSolverr
 """
+
 import asyncio
 import logging
 from datetime import datetime
@@ -59,8 +60,9 @@ def scrape_dvcarreras_jobs_playwright(self, user_id: int):
         async def run_playwright_scraping():
             import asyncio
 
-            from .clients.dvcarreras_playwright_flaresolverr import \
-                DVCarrerasPlaywrightFlareSolverr
+            from .clients.dvcarreras_playwright_flaresolverr import (
+                DVCarrerasPlaywrightFlareSolverr,
+            )
 
             # Actualizar estado: Iniciando navegador
             logger.info("Enviando actualización de estado: Iniciando navegador")
@@ -74,7 +76,9 @@ def scrape_dvcarreras_jobs_playwright(self, user_id: int):
             )
 
             # Función async para guardar logs
-            async def async_save_scraping_log(user_id, task_id, message, log_type="info"):
+            async def async_save_scraping_log(
+                user_id, task_id, message, log_type="info"
+            ):
                 await sync_to_async(ScrapingLog.objects.create)(
                     user_id=user_id,
                     task_id=task_id,
@@ -123,7 +127,7 @@ def scrape_dvcarreras_jobs_playwright(self, user_id: int):
                 await async_save_scraping_log(
                     user_id, self.request.id, "🔍 Iniciando scraping de ofertas"
                 )
-                
+
                 job_postings_data = await client.scrape_job_board(max_pages=3)
 
                 logger.info(
@@ -178,14 +182,17 @@ def scrape_dvcarreras_jobs_playwright(self, user_id: int):
                         user_cvs = await sync_to_async(list)(
                             UserCV.objects.filter(user_id=user_id, is_processed=True)
                         )
-                        
+
                         if user_cvs:
                             cv = user_cvs[0]  # Usar el primer CV
                             match_result = await sync_to_async(
                                 matching_service.calculate_matching_for_job
                             )(job_posting, cv)
-                            
-                            if match_result and match_result.score >= user_profile.match_threshold:
+
+                            if (
+                                match_result
+                                and match_result.score >= user_profile.match_threshold
+                            ):
                                 await sync_to_async(matching_service.save_match_score)(
                                     user_profile.user, cv, job_posting, match_result
                                 )
@@ -231,4 +238,3 @@ def scrape_dvcarreras_jobs_playwright(self, user_id: int):
     except Exception as e:
         logger.error(f"Error en scraping con PLAYWRIGHT para usuario {user_id}: {e}")
         return {"error": str(e)}
-

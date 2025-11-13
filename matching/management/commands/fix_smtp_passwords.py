@@ -49,17 +49,17 @@ class Command(BaseCommand):
         for profile in profiles_with_smtp:
             try:
                 # Intentar desencriptar la contraseña
-                decrypted_password = credential_encryption.decrypt(profile.smtp_password)
-                
-                # Si llegamos aquí, la contraseña está bien
-                self.stdout.write(
-                    f"✅ {profile.user.username}: Contraseña OK"
+                decrypted_password = credential_encryption.decrypt(
+                    profile.smtp_password
                 )
-                
+
+                # Si llegamos aquí, la contraseña está bien
+                self.stdout.write(f"✅ {profile.user.username}: Contraseña OK")
+
             except Exception as e:
                 # Contraseña corrupta
                 corrupted_count += 1
-                
+
                 self.stdout.write(
                     self.style.WARNING(
                         f"❌ {profile.user.username}: Contraseña corrupta - {str(e)}"
@@ -71,7 +71,7 @@ class Command(BaseCommand):
                     profile.smtp_password = ""
                     profile.save()
                     fixed_count += 1
-                    
+
                     self.stdout.write(
                         self.style.SUCCESS(
                             f"🔧 {profile.user.username}: Contraseña limpiada"
@@ -79,13 +79,11 @@ class Command(BaseCommand):
                     )
 
         # Resumen
-        self.stdout.write("\n" + "="*50)
+        self.stdout.write("\n" + "=" * 50)
         if dry_run:
             self.stdout.write(f"Contraseñas corruptas encontradas: {corrupted_count}")
             self.stdout.write(
-                self.style.WARNING(
-                    "Usa --fix para limpiar las contraseñas corruptas"
-                )
+                self.style.WARNING("Usa --fix para limpiar las contraseñas corruptas")
             )
         else:
             self.stdout.write(f"Contraseñas corruptas encontradas: {corrupted_count}")
