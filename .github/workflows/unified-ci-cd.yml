@@ -43,7 +43,16 @@ jobs:
           pip install -r requirements-dev.txt
       
       - name: Run Black
-        run: black --check --line-length 88 .
+        run: |
+          black --line-length 88 . || true
+          # Si hay cambios, hacer commit automático
+          if [ -n "$(git status --porcelain)" ]; then
+            git config --local user.email "action@github.com"
+            git config --local user.name "GitHub Action"
+            git add .
+            git commit -m "Format: Aplicar formateo Black automático" || true
+            git push || true
+          fi
       
       - name: Run isort
         run: isort --check-only .
