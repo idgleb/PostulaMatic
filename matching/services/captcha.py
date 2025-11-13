@@ -5,6 +5,7 @@ from typing import Optional, Dict
 
 try:
     from twocaptcha import TwoCaptcha
+
     TWOCAPTCHA_AVAILABLE = True
 except ImportError:
     TWOCAPTCHA_AVAILABLE = False
@@ -23,15 +24,15 @@ class CaptchaSolver:
         self.provider = (os.getenv("CAPTCHA_PROVIDER") or "").lower().strip()
         self.api_key = os.getenv("CAPTCHA_API_KEY")
         self.solver = None
-        
+
         if self.is_configured() and TWOCAPTCHA_AVAILABLE:
             try:
                 # Configuración optimizada según la documentación oficial
                 config = {
-                    'apiKey': self.api_key,
-                    'defaultTimeout': 120,
-                    'recaptchaTimeout': 600,
-                    'pollingInterval': 10,
+                    "apiKey": self.api_key,
+                    "defaultTimeout": 120,
+                    "recaptchaTimeout": 600,
+                    "pollingInterval": 10,
                 }
                 self.solver = TwoCaptcha(**config)
                 logger.info("2Captcha solver inicializado con librería oficial")
@@ -40,31 +41,34 @@ class CaptchaSolver:
                 self.solver = None
 
     def is_configured(self) -> bool:
-        return bool(self.provider == "2captcha" and self.api_key and TWOCAPTCHA_AVAILABLE)
+        return bool(
+            self.provider == "2captcha" and self.api_key and TWOCAPTCHA_AVAILABLE
+        )
 
     # --- API públicas -----------------------------------------------------
     def solve_turnstile(self, page_url: str, site_key: str, **kwargs) -> Optional[str]:
         """Resuelve Cloudflare Turnstile usando la librería oficial de 2Captcha."""
         if not self.is_configured() or not self.solver:
-            logger.info("CaptchaSolver no configurado; omitiendo resolución de Turnstile")
-            return None
-        
-        try:
-            logger.info(f"2Captcha: iniciando resolución Turnstile sitekey={site_key} url={page_url}")
-            
-            # Usar el método oficial de la librería
-            result = self.solver.turnstile(
-                sitekey=site_key,
-                url=page_url
+            logger.info(
+                "CaptchaSolver no configurado; omitiendo resolución de Turnstile"
             )
-            
-            if result and result.get('code'):
+            return None
+
+        try:
+            logger.info(
+                f"2Captcha: iniciando resolución Turnstile sitekey={site_key} url={page_url}"
+            )
+
+            # Usar el método oficial de la librería
+            result = self.solver.turnstile(sitekey=site_key, url=page_url)
+
+            if result and result.get("code"):
                 logger.info(f"2Captcha: Turnstile resuelto exitosamente")
-                return result['code']
+                return result["code"]
             else:
                 logger.warning(f"2Captcha: respuesta inesperada: {result}")
                 return None
-                
+
         except Exception as e:
             logger.error(f"2Captcha: error resolviendo Turnstile: {e}")
             return None
@@ -72,36 +76,41 @@ class CaptchaSolver:
     def solve_hcaptcha(self, page_url: str, site_key: str, **kwargs) -> Optional[str]:
         """Resuelve hCaptcha usando la librería oficial de 2Captcha."""
         if not self.is_configured() or not self.solver:
-            logger.info("CaptchaSolver no configurado; omitiendo resolución de hCaptcha")
-            return None
-        
-        try:
-            logger.info(f"2Captcha: iniciando resolución hCaptcha sitekey={site_key} url={page_url}")
-            
-            # Usar el método oficial de la librería
-            result = self.solver.hcaptcha(
-                sitekey=site_key,
-                url=page_url
+            logger.info(
+                "CaptchaSolver no configurado; omitiendo resolución de hCaptcha"
             )
-            
-            if result and result.get('code'):
+            return None
+
+        try:
+            logger.info(
+                f"2Captcha: iniciando resolución hCaptcha sitekey={site_key} url={page_url}"
+            )
+
+            # Usar el método oficial de la librería
+            result = self.solver.hcaptcha(sitekey=site_key, url=page_url)
+
+            if result and result.get("code"):
                 logger.info(f"2Captcha: hCaptcha resuelto exitosamente")
-                return result['code']
+                return result["code"]
             else:
                 logger.warning(f"2Captcha: respuesta inesperada: {result}")
                 return None
-                
+
         except Exception as e:
             logger.error(f"2Captcha: error resolviendo hCaptcha: {e}")
             return None
 
     # --- Implementación 2Captcha -----------------------------------------
-    def _solve_2captcha(self, method: str, page_url: str, site_key: str) -> Optional[str]:
+    def _solve_2captcha(
+        self, method: str, page_url: str, site_key: str
+    ) -> Optional[str]:
         """Resuelve usando 2Captcha. Retorna token o None.
         Aumenta timeout de polling a ~90s y registra pasos clave en logs.
         """
         try:
-            logger.info(f"2Captcha: iniciando resolución ({method}) sitekey={site_key} url={page_url}")
+            logger.info(
+                f"2Captcha: iniciando resolución ({method}) sitekey={site_key} url={page_url}"
+            )
             in_payload: Dict[str, str] = {
                 "key": self.api_key,
                 "method": method,  # "turnstile" | "hcaptcha"
@@ -110,7 +119,9 @@ class CaptchaSolver:
                 "json": "1",
             }
             # Enviar solicitud de captcha
-            res = requests.post("https://2captcha.com/in.php", data=in_payload, timeout=30)
+            res = requests.post(
+                "https://2captcha.com/in.php", data=in_payload, timeout=30
+            )
             res.raise_for_status()
             data = res.json()
             if int(data.get("status", 0)) != 1:
@@ -147,5 +158,3 @@ class CaptchaSolver:
 
 
 captcha_solver = CaptchaSolver()
-
-

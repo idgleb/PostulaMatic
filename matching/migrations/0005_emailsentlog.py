@@ -8,35 +8,89 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('matching', '0004_userprofile_dv_connection_status'),
+        ("matching", "0004_userprofile_dv_connection_status"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='EmailSentLog',
+            name="EmailSentLog",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('email_subject', models.CharField(max_length=500)),
-                ('email_body', models.TextField()),
-                ('sent_to', models.EmailField(max_length=254)),
-                ('message_id', models.CharField(blank=True, max_length=500, null=True)),
-                ('status', models.CharField(choices=[('sent', 'Enviado'), ('failed', 'Fallido'), ('queued', 'En Cola'), ('retry', 'Reintento')], default='sent', max_length=10)),
-                ('error_message', models.TextField(blank=True, null=True)),
-                ('task_id', models.CharField(blank=True, max_length=255, null=True)),
-                ('email_template', models.CharField(default='base', max_length=50)),
-                ('ai_provider', models.CharField(default='openai', max_length=50)),
-                ('sent_at', models.DateTimeField(auto_now_add=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('cv', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='email_logs', to='matching.usercv')),
-                ('job_posting', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='email_logs', to='matching.jobposting')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='email_logs', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("email_subject", models.CharField(max_length=500)),
+                ("email_body", models.TextField()),
+                ("sent_to", models.EmailField(max_length=254)),
+                ("message_id", models.CharField(blank=True, max_length=500, null=True)),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("sent", "Enviado"),
+                            ("failed", "Fallido"),
+                            ("queued", "En Cola"),
+                            ("retry", "Reintento"),
+                        ],
+                        default="sent",
+                        max_length=10,
+                    ),
+                ),
+                ("error_message", models.TextField(blank=True, null=True)),
+                ("task_id", models.CharField(blank=True, max_length=255, null=True)),
+                ("email_template", models.CharField(default="base", max_length=50)),
+                ("ai_provider", models.CharField(default="openai", max_length=50)),
+                ("sent_at", models.DateTimeField(auto_now_add=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "cv",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="email_logs",
+                        to="matching.usercv",
+                    ),
+                ),
+                (
+                    "job_posting",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="email_logs",
+                        to="matching.jobposting",
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="email_logs",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Log de Email Enviado',
-                'verbose_name_plural': 'Logs de Emails Enviados',
-                'ordering': ['-sent_at'],
-                'indexes': [models.Index(fields=['user', 'status'], name='matching_em_user_id_1785e5_idx'), models.Index(fields=['sent_at'], name='matching_em_sent_at_97f8ae_idx'), models.Index(fields=['status'], name='matching_em_status_eeec28_idx'), models.Index(fields=['task_id'], name='matching_em_task_id_c54d50_idx')],
+                "verbose_name": "Log de Email Enviado",
+                "verbose_name_plural": "Logs de Emails Enviados",
+                "ordering": ["-sent_at"],
+                "indexes": [
+                    models.Index(
+                        fields=["user", "status"], name="matching_em_user_id_1785e5_idx"
+                    ),
+                    models.Index(
+                        fields=["sent_at"], name="matching_em_sent_at_97f8ae_idx"
+                    ),
+                    models.Index(
+                        fields=["status"], name="matching_em_status_eeec28_idx"
+                    ),
+                    models.Index(
+                        fields=["task_id"], name="matching_em_task_id_c54d50_idx"
+                    ),
+                ],
             },
         ),
     ]

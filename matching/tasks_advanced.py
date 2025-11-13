@@ -1,6 +1,7 @@
 """
 Tareas avanzadas de Celery - DEPRECADAS
 """
+
 import logging
 from celery import shared_task
 
@@ -19,8 +20,10 @@ def scrape_dvcarreras_jobs_advanced(self, user_id: int):
     Returns:
         Dict con mensaje de redirección
     """
-    logger.warning(f"scrape_dvcarreras_jobs_advanced está deprecada para usuario {user_id}")
+    logger.warning(
+        f"scrape_dvcarreras_jobs_advanced está deprecada para usuario {user_id}"
+    )
     return {
         "error": "Esta función está deprecada. Usar scrape_dvcarreras_jobs_playwright en su lugar.",
-        "redirect_to": "scrape_dvcarreras_jobs_playwright"
+        "redirect_to": "scrape_dvcarreras_jobs_playwright",
     }

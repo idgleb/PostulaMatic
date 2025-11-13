@@ -7,18 +7,30 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('matching', '0008_scheduledscraping'),
+        ("matching", "0008_scheduledscraping"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='emailsentlog',
-            name='cv',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='email_logs', to='matching.usercv'),
+            model_name="emailsentlog",
+            name="cv",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="email_logs",
+                to="matching.usercv",
+            ),
         ),
         migrations.AlterField(
-            model_name='emailsentlog',
-            name='job_posting',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='email_logs', to='matching.jobposting'),
+            model_name="emailsentlog",
+            name="job_posting",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="email_logs",
+                to="matching.jobposting",
+            ),
         ),
     ]

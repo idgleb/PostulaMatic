@@ -22,7 +22,7 @@ env = environ.Env(
 )
 
 # reading .env file
-environ.Env.read_env(Path(__file__).resolve().parent.parent / '.env')
+environ.Env.read_env(Path(__file__).resolve().parent.parent / ".env")
 
 # Force DEBUG=False to enable custom error pages
 DEBUG = False
@@ -180,18 +180,18 @@ AI_PROVIDER = os.environ.get("AI_PROVIDER", "openai")
 
 # Logging configuration (temporal para debugging)
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
         },
     },
-    'loggers': {
-        'matching': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': True,
+    "loggers": {
+        "matching": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": True,
         },
     },
 }
@@ -219,40 +219,42 @@ DATA_UPLOAD_MAX_NUMBER_FIELDS = 1000
 SITE_ID = 1
 
 AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend',
-    'allauth.account.auth_backends.AuthenticationBackend',
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend",
 ]
 
 # allauth settings
-ACCOUNT_LOGIN_METHODS = {'email'}
-ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
-ACCOUNT_EMAIL_VERIFICATION = 'none'  # Para desarrollo, cambiar a 'mandatory' en producción
+ACCOUNT_LOGIN_METHODS = {"email"}
+ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
+ACCOUNT_EMAIL_VERIFICATION = (
+    "none"  # Para desarrollo, cambiar a 'mandatory' en producción
+)
 ACCOUNT_UNIQUE_EMAIL = True  # Requerido cuando usamos email como login
-ACCOUNT_USER_MODEL_USERNAME_FIELD = 'username'  # Usar username normal
-ACCOUNT_USER_MODEL_EMAIL_FIELD = 'email'
+ACCOUNT_USER_MODEL_USERNAME_FIELD = "username"  # Usar username normal
+ACCOUNT_USER_MODEL_EMAIL_FIELD = "email"
 ACCOUNT_USERNAME_REQUIRED = True  # Requerir username
 ACCOUNT_USERNAME_BLACKLIST = []  # Lista de usernames prohibidos
 
 # Google OAuth settings
 SOCIALACCOUNT_PROVIDERS = {
-    'google': {
-        'SCOPE': [
-            'profile',
-            'email',
+    "google": {
+        "SCOPE": [
+            "profile",
+            "email",
         ],
-        'AUTH_PARAMS': {
-            'access_type': 'online',
+        "AUTH_PARAMS": {
+            "access_type": "online",
         },
-        'OAUTH_PKCE_ENABLED': True,
+        "OAUTH_PKCE_ENABLED": True,
     }
 }
 
 # Redirect URLs para allauth
-LOGIN_REDIRECT_URL = '/matching/'
-ACCOUNT_LOGOUT_REDIRECT_URL = '/'
+LOGIN_REDIRECT_URL = "/matching/"
+ACCOUNT_LOGOUT_REDIRECT_URL = "/"
 SOCIALACCOUNT_LOGIN_ON_GET = True
 
 # Forzar HTTPS solo en producción
 if not DEBUG:
     SECURE_SSL_REDIRECT = True
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

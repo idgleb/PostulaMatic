@@ -46,10 +46,10 @@ async_save_scraping_log = sync_to_async(save_scraping_log)
 def _recalculate_matches_for_user_core(user_id: int):
     """
     Función core para recalcular matches (sin dependencias de Celery).
-    
+
     Args:
         user_id: ID del usuario
-        
+
     Returns:
         Dict con estadísticas del recálculo
     """
@@ -119,10 +119,10 @@ def _recalculate_matches_for_user_core(user_id: int):
 def recalculate_matches_for_user(self, user_id: int):
     """
     Tarea Celery para recalcular matches con progreso.
-    
+
     Args:
         user_id: ID del usuario
-        
+
     Returns:
         Dict con estadísticas del recálculo
     """
@@ -139,7 +139,7 @@ def recalculate_matches_for_user(self, user_id: int):
 
         # Llamar función core
         result = _recalculate_matches_for_user_core(user_id)
-        
+
         if result.get("success"):
             # No actualizar el estado final - dejar que Celery use el resultado real
             # El resultado ya contiene toda la información necesaria
@@ -154,7 +154,7 @@ def recalculate_matches_for_user(self, user_id: int):
                     "progress_percentage": 0,
                 },
             )
-        
+
         return result
 
     except Exception as e:
@@ -199,7 +199,9 @@ def scrape_dvcarreras_jobs(self, user_id: int):
             return {"error": "Credenciales de INTRANET DAVINCI no configuradas"}
 
         # Cliente básico eliminado - usar FlareSolverr en su lugar
-        raise Exception("Cliente básico eliminado - usar scrape_dvcarreras_jobs_playwright")
+        raise Exception(
+            "Cliente básico eliminado - usar scrape_dvcarreras_jobs_playwright"
+        )
         # Código deprecado eliminado - todo comentado
         # # Login
         # if not client.login():
@@ -717,8 +719,9 @@ def scrape_dvcarreras_jobs_playwright(self, user_id: int):
         async def run_playwright_scraping():
             import asyncio
 
-            from .clients.dvcarreras_playwright_flaresolverr import \
-                DVCarrerasPlaywrightFlareSolverr
+            from .clients.dvcarreras_playwright_flaresolverr import (
+                DVCarrerasPlaywrightFlareSolverr,
+            )
 
             # Actualizar estado: Iniciando navegador
             logger.info("Enviando actualización de estado: Iniciando navegador")

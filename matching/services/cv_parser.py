@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Dict
 
 from .docx_parser import DOCXParser
+
 # Importar parsers especializados
 from .ai_pdf_parser import AIPDFParser
 
@@ -46,7 +47,9 @@ class CVParser:
             CVParserError: Si el archivo no se puede procesar
         """
         logger.info(f"🔍 CVParser: Iniciando parse_cv para {file_path}")
-        print(f"🔍 CVParser: Iniciando parse_cv para {file_path}")  # Print para debugging
+        print(
+            f"🔍 CVParser: Iniciando parse_cv para {file_path}"
+        )  # Print para debugging
         file_path = Path(file_path)
 
         if not file_path.exists():
@@ -65,37 +68,50 @@ class CVParser:
             # 🆕 NUEVO: Procesar DOCX con IA (convertir a PDF primero)
             # ============================================================
             if file_extension == ".docx":
-                logger.info(f"🔍 CVParser: Convirtiendo DOCX a PDF para procesamiento con IA")
+                logger.info(
+                    f"🔍 CVParser: Convirtiendo DOCX a PDF para procesamiento con IA"
+                )
                 print(f"🔍 CVParser: Convirtiendo DOCX a PDF para procesamiento con IA")
-                
+
                 if progress_tracker:
-                    progress_tracker.update_step("docx_to_pdf", "in_progress", "Convirtiendo DOCX a PDF")
-                
+                    progress_tracker.update_step(
+                        "docx_to_pdf", "in_progress", "Convirtiendo DOCX a PDF"
+                    )
+
                 # Convertir DOCX a PDF temporal
                 pdf_path = self._convert_docx_to_pdf(str(file_path))
-                
+
                 if progress_tracker:
-                    progress_tracker.update_step("docx_to_pdf", "completed", "DOCX convertido a PDF")
-                
+                    progress_tracker.update_step(
+                        "docx_to_pdf", "completed", "DOCX convertido a PDF"
+                    )
+
                 # Procesar el PDF con IA
                 logger.info(f"🔍 CVParser: Usando AIPDFParser para DOCX convertido")
                 print(f"🔍 CVParser: Usando AIPDFParser para DOCX convertido")
-                result = self.pdf_parser.parse_cv(pdf_path, progress_tracker=progress_tracker)
-                
+                result = self.pdf_parser.parse_cv(
+                    pdf_path, progress_tracker=progress_tracker
+                )
+
                 # Limpiar archivo temporal y directorio
                 import os
                 import shutil
+
                 temp_dir = os.path.dirname(pdf_path)
                 if os.path.exists(temp_dir):
                     shutil.rmtree(temp_dir)
-                    logger.info(f"🔍 CVParser: Directorio temporal eliminado: {temp_dir}")
-                
+                    logger.info(
+                        f"🔍 CVParser: Directorio temporal eliminado: {temp_dir}"
+                    )
+
                 logger.info(f"🔍 CVParser: DOCX procesado con IA exitosamente")
                 print(f"🔍 CVParser: DOCX procesado con IA exitosamente")
-                
+
             elif file_extension == ".pdf":
                 logger.info(f"🔍 CVParser: Usando AIPDFParser para {file_path}")
-                result = self.pdf_parser.parse_cv(str(file_path), progress_tracker=progress_tracker)
+                result = self.pdf_parser.parse_cv(
+                    str(file_path), progress_tracker=progress_tracker
+                )
                 logger.info(f"🔍 CVParser: Resultado del AIPDFParser: {type(result)}")
             else:
                 raise CVParserError(f"Parser no implementado para {file_extension}")
@@ -112,11 +128,18 @@ class CVParser:
             if "solo se permiten CVs de máximo" in str(e):
                 logger.warning(f"⚠️ VALIDACIÓN: {str(e)}")
                 raise CVParserError(str(e))
-            
+
             # Si es un error de IA, propagar el mensaje original COMPLETO
-            if ("IA no disponible" in str(e) or "Cuota agotada" in str(e) or "API keys inválidas" in str(e) or
-                "Error crítico en extracción con IA" in str(e) or "Error con OpenAI" in str(e) or
-                "Anthropic no soporta" in str(e) or "Error de IA" in str(e) or "IA_DETALLADO" in str(e)):
+            if (
+                "IA no disponible" in str(e)
+                or "Cuota agotada" in str(e)
+                or "API keys inválidas" in str(e)
+                or "Error crítico en extracción con IA" in str(e)
+                or "Error con OpenAI" in str(e)
+                or "Anthropic no soporta" in str(e)
+                or "Error de IA" in str(e)
+                or "IA_DETALLADO" in str(e)
+            ):
                 logger.error(f"🔴 DETECTADO ERROR DE IA EN CVPARSER: {str(e)}")
 
                 # Si el error viene con el prefijo especial IA_DETALLADO, extraer solo el contenido
@@ -127,8 +150,10 @@ class CVParser:
                     raise CVParserError(detailed_error)
                 # Si el error ya viene con formato detallado de IA (contiene OpenAI o Anthropic),
                 # propagarlo tal cual sin agregar prefijo
-                elif ("Error con OpenAI" in str(e) or "Anthropic no soporta" in str(e)):
-                    logger.error(f"🔴 PROPAGANDO ERROR DETALLADO SIN MODIFICAR: {str(e)}")
+                elif "Error con OpenAI" in str(e) or "Anthropic no soporta" in str(e):
+                    logger.error(
+                        f"🔴 PROPAGANDO ERROR DETALLADO SIN MODIFICAR: {str(e)}"
+                    )
                     raise CVParserError(str(e))
                 else:
                     # Si no tiene detalles específicos, agregar el prefijo
@@ -141,13 +166,13 @@ class CVParser:
     def _convert_docx_to_pdf(self, docx_path: str) -> str:
         """
         Convierte un archivo DOCX a PDF temporal para procesamiento con IA usando LibreOffice.
-        
+
         Args:
             docx_path: Ruta al archivo DOCX
-            
+
         Returns:
             Ruta al archivo PDF temporal
-            
+
         Raises:
             CVParserError: Si la conversión falla
         """
@@ -156,42 +181,39 @@ class CVParser:
             import tempfile
             import subprocess
             import time
-            
-            logger.info(f"🔄 Iniciando conversión de DOCX a PDF con LibreOffice: {docx_path}")
-            
+
+            logger.info(
+                f"🔄 Iniciando conversión de DOCX a PDF con LibreOffice: {docx_path}"
+            )
+
             # Verificar que el archivo DOCX existe
             if not os.path.exists(docx_path):
                 raise CVParserError(f"El archivo DOCX no existe: {docx_path}")
-            
+
             # Crear directorio temporal para el PDF
             temp_dir = tempfile.mkdtemp()
-            
+
             logger.info(f"🔄 Directorio temporal: {temp_dir}")
-            
+
             # Comando de LibreOffice para convertir DOCX a PDF
             # --headless: sin interfaz gráfica
             # --convert-to pdf: formato de salida
             # --outdir: directorio de salida
             cmd = [
-                'libreoffice',
-                '--headless',
-                '--convert-to',
-                'pdf',
-                '--outdir',
+                "libreoffice",
+                "--headless",
+                "--convert-to",
+                "pdf",
+                "--outdir",
                 temp_dir,
-                docx_path
+                docx_path,
             ]
-            
+
             logger.info(f"🔄 Ejecutando comando: {' '.join(cmd)}")
-            
+
             # Ejecutar LibreOffice con timeout de 60 segundos
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=60
-            )
-            
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+
             # Verificar el resultado
             if result.returncode != 0:
                 error_msg = f"LibreOffice falló con código {result.returncode}"
@@ -199,26 +221,28 @@ class CVParser:
                     error_msg += f"\nError: {result.stderr}"
                 logger.error(error_msg)
                 raise CVParserError(error_msg)
-            
+
             # El PDF generado tendrá el mismo nombre que el DOCX pero con extensión .pdf
-            base_name = os.path.basename(docx_path).replace('.docx', '.pdf')
+            base_name = os.path.basename(docx_path).replace(".docx", ".pdf")
             pdf_path = os.path.join(temp_dir, base_name)
-            
+
             # Esperar un poco para asegurar que el archivo se escribió completamente
             time.sleep(0.5)
-            
+
             # Verificar que el PDF se creó correctamente
             if not os.path.exists(pdf_path):
                 raise CVParserError(
                     f"El archivo PDF no se generó. Esperado en: {pdf_path}\n"
                     f"Archivos en {temp_dir}: {os.listdir(temp_dir)}"
                 )
-            
+
             file_size = os.path.getsize(pdf_path)
-            logger.info(f"✅ DOCX convertido a PDF exitosamente: {pdf_path} ({file_size} bytes)")
-            
+            logger.info(
+                f"✅ DOCX convertido a PDF exitosamente: {pdf_path} ({file_size} bytes)"
+            )
+
             return pdf_path
-            
+
         except subprocess.TimeoutExpired:
             error_msg = "❌ La conversión de DOCX a PDF excedió el tiempo límite (60s)"
             logger.error(error_msg)

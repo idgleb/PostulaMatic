@@ -46,21 +46,11 @@ class Command(BaseCommand):
         user_id = options.get("user_id")
         batch_size = options["batch_size"]
 
+        self.stdout.write(self.style.SUCCESS("=" * 80))
         self.stdout.write(
-            self.style.SUCCESS(
-                "=" * 80
-            )
+            self.style.SUCCESS("🔄 RECALCULANDO SCORES CON ALGORITMO ATS UNIFICADO")
         )
-        self.stdout.write(
-            self.style.SUCCESS(
-                "🔄 RECALCULANDO SCORES CON ALGORITMO ATS UNIFICADO"
-            )
-        )
-        self.stdout.write(
-            self.style.SUCCESS(
-                "=" * 80
-            )
-        )
+        self.stdout.write(self.style.SUCCESS("=" * 80))
 
         if dry_run:
             self.stdout.write(
@@ -83,9 +73,7 @@ class Command(BaseCommand):
         )
 
         if total_scores == 0:
-            self.stdout.write(
-                self.style.WARNING("⚠️  No hay scores para recalcular")
-            )
+            self.stdout.write(self.style.WARNING("⚠️  No hay scores para recalcular"))
             return
 
         # Estadísticas
@@ -138,11 +126,7 @@ class Command(BaseCommand):
                     # Mostrar progreso
                     if diff != 0:
                         diff_str = f"{diff:+d}"
-                        color = (
-                            self.style.SUCCESS
-                            if diff > 0
-                            else self.style.ERROR
-                        )
+                        color = self.style.SUCCESS if diff > 0 else self.style.ERROR
                         self.stdout.write(
                             color(
                                 f"  ✅ Score {match_score.id}: "
@@ -167,21 +151,9 @@ class Command(BaseCommand):
                     )
 
         # Resumen final
-        self.stdout.write(
-            self.style.SUCCESS(
-                "\n" + "=" * 80
-            )
-        )
-        self.stdout.write(
-            self.style.SUCCESS(
-                "📊 RESUMEN DE RECALCULACIÓN"
-            )
-        )
-        self.stdout.write(
-            self.style.SUCCESS(
-                "=" * 80
-            )
-        )
+        self.stdout.write(self.style.SUCCESS("\n" + "=" * 80))
+        self.stdout.write(self.style.SUCCESS("📊 RESUMEN DE RECALCULACIÓN"))
+        self.stdout.write(self.style.SUCCESS("=" * 80))
         self.stdout.write(f"Total procesados: {processed}")
         self.stdout.write(self.style.SUCCESS(f"✅ Actualizados: {updated}"))
         self.stdout.write(self.style.WARNING(f"⏭️  Omitidos: {skipped}"))
@@ -199,4 +171,3 @@ class Command(BaseCommand):
                     "\n✅ Recalculación completada y guardada en la base de datos"
                 )
             )
-

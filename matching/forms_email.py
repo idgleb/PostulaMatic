@@ -8,7 +8,7 @@ class EmailConfigFormOLD_DEPRECATED(forms.ModelForm):
     """
     OBSOLETO: Este formulario está deprecado.
     Usar EmailConfigForm de matching/forms.py en su lugar.
-    
+
     Formulario para configuración de envíos de emails (versión antigua sin auto_send).
     """
 

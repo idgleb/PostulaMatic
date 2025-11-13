@@ -6,13 +6,17 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('matching', '0006_aiconfiguration'),
+        ("matching", "0006_aiconfiguration"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='jobposting',
-            name='source',
-            field=models.CharField(default='dvcarreras', help_text='Fuente de la oferta (dvcarreras, dvcarreras_stealth, etc.)', max_length=50),
+            model_name="jobposting",
+            name="source",
+            field=models.CharField(
+                default="dvcarreras",
+                help_text="Fuente de la oferta (dvcarreras, dvcarreras_stealth, etc.)",
+                max_length=50,
+            ),
         ),
     ]

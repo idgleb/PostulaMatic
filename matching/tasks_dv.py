@@ -25,7 +25,9 @@ def verify_dv_login_manual_task(self, user_id: int, timeout_seconds: int = 300):
         profile.save(update_fields=["dv_connection_status"])
 
         # Ejecutar login manual con navegador visible (usando FlareSolverr)
-        from .clients.dvcarreras_playwright_flaresolverr import DVCarrerasPlaywrightFlareSolverr
+        from .clients.dvcarreras_playwright_flaresolverr import (
+            DVCarrerasPlaywrightFlareSolverr,
+        )
         import asyncio
         import json
         from pathlib import Path
@@ -36,11 +38,11 @@ def verify_dv_login_manual_task(self, user_id: int, timeout_seconds: int = 300):
                 password=profile.get_dv_password(),
                 headless=False,  # Navegador visible para login manual
             )
-            
+
             # Ejecutar login manual
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-            
+
             try:
                 return loop.run_until_complete(client.test_login())
             finally:
@@ -115,7 +117,9 @@ def verify_dv_login_task(self, user_id: int, timeout_seconds: int = 90):
 
         # Ejecutar verificación con STEALTH (undetected-chromedriver) de forma SINCRÓNICA
         from .clients.dvcarreras_stealth import DVCarrerasStealth
+
         debug_paths = {}
+
         def do_sync_login():
             """Ejecuta el flujo async del cliente Stealth en un event loop propio."""
             import asyncio as _asyncio
@@ -169,7 +173,9 @@ def verify_dv_login_task(self, user_id: int, timeout_seconds: int = 90):
             profile = UserProfile.objects.get(user_id=user_id)
             profile.set_dv_connection_verified(True if success else False)
             profile.save(update_fields=["dv_connection_status"])
-            logger.info(f"Estado DV actualizado para usuario {user_id}: {'verified' if success else 'failed'}")
+            logger.info(
+                f"Estado DV actualizado para usuario {user_id}: {'verified' if success else 'failed'}"
+            )
         except Exception as save_error:
             logger.error(f"Error guardando estado DV: {save_error}")
 
@@ -180,7 +186,7 @@ def verify_dv_login_task(self, user_id: int, timeout_seconds: int = 90):
             message = "Timeout en la verificación. Intenta nuevamente."
         else:
             message = "No se pudo verificar la conexión. Verifica tus credenciales."
-        
+
         result = {
             "success": bool(success),
             "message": message,
@@ -199,5 +205,3 @@ def verify_dv_login_task(self, user_id: int, timeout_seconds: int = 90):
         except Exception:
             pass
         return {"success": False, "message": str(e)}
-
-
