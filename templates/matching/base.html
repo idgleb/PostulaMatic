@@ -595,6 +595,16 @@
         color: white !important;
     }
     
+    /* Asegurar que el backdrop sea clickeable */
+    .modal-backdrop {
+        z-index: 1040 !important;
+        pointer-events: auto !important;
+    }
+    
+    .modal {
+        z-index: 1055 !important;
+    }
+    
     .matching-modal .btn-custom-danger {
         background: linear-gradient(135deg, #dc3545 0%, #c82333 100%) !important;
         border: none !important;
