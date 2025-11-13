@@ -13,6 +13,8 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     
     services:
       postgres:
@@ -44,14 +46,16 @@ jobs:
       
       - name: Run Black
         run: |
-          black --line-length 88 . || true
+          # Formatear archivos
+          black --line-length 88 .
+          
           # Si hay cambios, hacer commit automático
           if [ -n "$(git status --porcelain)" ]; then
             git config --local user.email "action@github.com"
             git config --local user.name "GitHub Action"
             git add .
-            git commit -m "Format: Aplicar formateo Black automático" || true
-            git push || true
+            git commit -m "Format: Aplicar formateo Black automático [skip ci]" || exit 0
+            git push origin HEAD:master || exit 0
           fi
       
       - name: Run isort
