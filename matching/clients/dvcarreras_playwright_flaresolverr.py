@@ -13,7 +13,7 @@ from typing import Any, Dict, List
 
 from playwright.async_api import async_playwright
 
-from ..services.flaresolverr_client import (get_flaresolverr_client)
+from ..services.flaresolverr_client import get_flaresolverr_client
 
 logger = logging.getLogger(__name__)
 

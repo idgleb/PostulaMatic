@@ -11,13 +11,24 @@ from django.views.decorators.http import require_http_methods
 
 from matching.tasks_dv import verify_dv_login_task
 
-from .forms import (CVUploadForm, DVCredentialsForm, EmailConfigForm,
-                    MatchingConfigForm, SMTPConfigForm)
-from .models import (EmailSentLog, JobPosting, MatchScore, ScrapingLog, UserCV,
-                     UserProfile)
+from .forms import (
+    CVUploadForm,
+    DVCredentialsForm,
+    EmailConfigForm,
+    MatchingConfigForm,
+    SMTPConfigForm,
+)
+from .models import (
+    EmailSentLog,
+    JobPosting,
+    MatchScore,
+    ScrapingLog,
+    UserCV,
+    UserProfile,
+)
 from .services.cv_parser import cv_parser
 from .services.skills_extractor import skills_extractor
-from .utils.log_capture import (cleanup_log_capture, setup_log_capture)
+from .utils.log_capture import cleanup_log_capture, setup_log_capture
 
 # from .tasks import scrape_dvcarreras_jobs  # Comentado para usar Playwright
 
@@ -313,7 +324,6 @@ def cancel_cv_task(request):
 
     from celery.result import AsyncResult
     from django.core.cache import cache
-
 
     try:
         data = json.loads(request.body)
@@ -1142,7 +1152,6 @@ def test_scraper_view(request):
 def scheduled_scraping_config(request):
     """Vista para configurar el scraping programado."""
     import json
-
 
     from .models import ScheduledScraping
 

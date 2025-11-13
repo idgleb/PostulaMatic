@@ -8,8 +8,7 @@ from unittest.mock import patch
 
 from django.test import TestCase
 
-from .ai_service import (AIEmailService, EmailContent,
-                         OpenAIProvider)
+from .ai_service import AIEmailService, EmailContent, OpenAIProvider
 
 
 class TestAIEmailService(TestCase):

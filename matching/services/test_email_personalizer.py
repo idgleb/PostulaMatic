@@ -8,8 +8,11 @@ from unittest.mock import Mock, patch
 from django.test import TestCase
 
 
-from .email_personalizer import (CVDataExtractor, EmailPersonalizationService,
-                                 JobDataExtractor)
+from .email_personalizer import (
+    CVDataExtractor,
+    EmailPersonalizationService,
+    JobDataExtractor,
+)
 
 
 class TestCVDataExtractor(TestCase):
