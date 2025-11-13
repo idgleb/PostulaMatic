@@ -16,8 +16,7 @@ from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils import timezone
 
-from matching.models import (EmailSentLog, JobPosting, MatchScore, UserCV,
-                             UserProfile)
+from matching.models import EmailSentLog, JobPosting, MatchScore, UserCV, UserProfile
 
 from .services.ai_service import ai_email_service
 from .services.cv_personalizer import cv_personalization_service

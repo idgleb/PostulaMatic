@@ -10,8 +10,11 @@ from django.test import TestCase
 
 from matching.models import JobPosting, MatchScore, UserCV, UserProfile
 
-from .email_personalizer import (CVDataExtractor, EmailPersonalizationService,
-                                 JobDataExtractor)
+from .email_personalizer import (
+    CVDataExtractor,
+    EmailPersonalizationService,
+    JobDataExtractor,
+)
 
 
 class TestCVDataExtractor(TestCase):

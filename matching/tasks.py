@@ -61,8 +61,9 @@ def scrape_dvcarreras_jobs_playwright(self, user_id: int):
         async def run_playwright_scraping():
             import asyncio
 
-            from .clients.dvcarreras_playwright_flaresolverr import \
-                DVCarrerasPlaywrightFlareSolverr
+            from .clients.dvcarreras_playwright_flaresolverr import (
+                DVCarrerasPlaywrightFlareSolverr,
+            )
 
             # Actualizar estado: Iniciando navegador
             logger.info("Enviando actualización de estado: Iniciando navegador")

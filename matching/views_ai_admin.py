@@ -320,8 +320,7 @@ def get_available_models(request):
         # Consultar modelos de Anthropic
         if config.anthropic_api_key:
             try:
-                from matching.utils.anthropic_model_finder import \
-                    AnthropicModelFinder
+                from matching.utils.anthropic_model_finder import AnthropicModelFinder
 
                 finder = AnthropicModelFinder(api_key=config.get_anthropic_key())
                 available_models = finder.get_available_models()

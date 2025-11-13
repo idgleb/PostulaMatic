@@ -8,8 +8,7 @@ from unittest.mock import MagicMock, patch
 
 from django.test import TestCase
 
-from .ai_service import (AIEmailService, AnthropicProvider, EmailContent,
-                         OpenAIProvider)
+from .ai_service import AIEmailService, AnthropicProvider, EmailContent, OpenAIProvider
 
 
 class TestAIEmailService(TestCase):
