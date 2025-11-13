@@ -595,7 +595,7 @@
         color: white !important;
     }
     
-    /* Asegurar que el backdrop sea clickeable */
+    /* Asegurar que el backdrop sea clickeable y que los modales estén por encima */
     .modal-backdrop {
         z-index: 1040 !important;
         pointer-events: auto !important;
@@ -603,6 +603,21 @@
     
     .modal {
         z-index: 1055 !important;
+    }
+    
+    .modal.show {
+        z-index: 1055 !important;
+        display: block !important;
+    }
+    
+    /* Asegurar que el modal SMTP tenga el mismo z-index */
+    #smtpInfoModal {
+        z-index: 1055 !important;
+    }
+    
+    #smtpInfoModal.show {
+        z-index: 1055 !important;
+        display: block !important;
     }
     
     .matching-modal .btn-custom-danger {
