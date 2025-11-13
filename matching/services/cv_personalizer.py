@@ -8,7 +8,6 @@ import logging
 import re
 from typing import Dict, List, Optional
 
-
 from matching.models import JobPosting, UserCV
 
 from .ai_service import ai_email_service

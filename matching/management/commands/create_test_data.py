@@ -244,9 +244,7 @@ class Command(BaseCommand):
         if created_jobs == 0:
             self.stdout.write("💼 Todos los puestos ya existen")
 
-        self.stdout.write(
-            self.style.SUCCESS("✅ Datos de prueba creados exitosamente")
-        )
+        self.stdout.write(self.style.SUCCESS("✅ Datos de prueba creados exitosamente"))
         self.stdout.write(f"👤 Usuario: {user.username} (ID: {user.id})")
         self.stdout.write(f"📄 CV: {UserCV.objects.filter(user=user).count()} CV(s)")
         self.stdout.write(f"💼 Puestos: {JobPosting.objects.count()} puestos")

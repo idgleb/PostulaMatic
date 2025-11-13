@@ -6,7 +6,6 @@ from unittest.mock import Mock, patch
 
 from django.test import TestCase
 
-
 from .ats_matcher import KeywordExtractor
 from .cv_personalizer import CVPersonalizationService
 
