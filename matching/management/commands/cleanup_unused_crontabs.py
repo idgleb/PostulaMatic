@@ -39,7 +39,7 @@ class Command(BaseCommand):
 
         unused_count = len(unused_crontabs)
 
-        self.stdout.write(f"\n📊 Estadísticas:")
+        self.stdout.write("\n📊 Estadísticas:")
         self.stdout.write(f"   Total de crontabs: {total_crontabs}")
         self.stdout.write(f"   Crontabs en uso: {len(used_crontab_ids)}")
         self.stdout.write(f"   Crontabs no utilizados: {unused_count}")
