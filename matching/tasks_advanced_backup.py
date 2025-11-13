@@ -48,83 +48,83 @@ def scrape_dvcarreras_jobs_advanced(self, user_id: int):
             "error": "Esta función está deprecada. Usar scrape_dvcarreras_jobs_playwright en su lugar.",
             "redirect_to": "scrape_dvcarreras_jobs_playwright"
         }
-        # Código deprecado eliminado
+        # Código deprecado eliminado - todo comentado
         # ) as client:
         #
         #     # Login con técnicas avanzadas
         #     if not client.login():
-                logger.error(f"Login AVANZADO fallido para usuario {user_id}")
-                raise Exception("Login fallido en dvcarreras (método avanzado)")
-
-            # Scrapear ofertas
-            job_postings_data = client.scrape_job_board(max_pages=3)
-
-            logger.info(
-                f"Encontradas {len(job_postings_data)} ofertas para usuario {user_id}"
-            )
-
-            # Procesar y guardar ofertas
-            saved_jobs = 0
-            new_jobs = 0
-            matches_found = 0
-
-            for job_data in job_postings_data:
-                try:
-                    # Crear o actualizar JobPosting
-                    job_posting, created = JobPosting.objects.update_or_create(
-                        external_id=job_data.external_id,
-                        defaults={
-                            "title": job_data.title,
-                            "company": job_data.company,
-                            "location": job_data.location,
-                            "description": job_data.description,
-                            "url": job_data.url,
-                            "source": "dvcarreras_advanced",
-                            "posted_at": job_data.posted_at,
-                            "raw_html": job_data.raw_html,
-                        },
-                    )
-
-                    saved_jobs += 1
-                    if created:
-                        new_jobs += 1
-                        logger.info(
-                            f"Nueva oferta guardada: {job_posting.title} en {job_posting.company}"
-                        )
-
-                    # Calcular matches con CVs del usuario
-                    matches = matching_service.calculate_user_job_matches(
-                        user_profile, job_posting
-                    )
-
-                    for cv, match_result in matches:
-                        # Solo guardar si supera el umbral
-                        if match_result.score >= user_profile.match_threshold:
-                            matching_service.save_match_score(
-                                user_profile.user, cv, job_posting, match_result
-                            )
-                            matches_found += 1
-                            logger.info(
-                                f"Match encontrado: {match_result.score}% para {job_posting.title}"
-                            )
-
-                except Exception as e:
-                    logger.error(f"Error procesando oferta {job_data.external_id}: {e}")
-                    continue
-
-        result = {
-            "success": True,
-            "user_id": user_id,
-            "total_jobs": len(job_postings_data),
-            "saved_jobs": saved_jobs,
-            "new_jobs": new_jobs,
-            "matches_found": matches_found,
-            "method": "advanced",
-            "message": "Scraping avanzado completado exitosamente",
-        }
-
-        logger.info(f"Scraping AVANZADO completado para usuario {user_id}: {result}")
-        return result
+        #         logger.error(f"Login AVANZADO fallido para usuario {user_id}")
+        #         raise Exception("Login fallido en dvcarreras (método avanzado)")
+        #
+        #     # Scrapear ofertas
+        #     job_postings_data = client.scrape_job_board(max_pages=3)
+        #
+        #     logger.info(
+        #         f"Encontradas {len(job_postings_data)} ofertas para usuario {user_id}"
+        #     )
+        #
+        #     # Procesar y guardar ofertas
+        #     saved_jobs = 0
+        #     new_jobs = 0
+        #     matches_found = 0
+        #
+        #     for job_data in job_postings_data:
+        #         try:
+        #             # Crear o actualizar JobPosting
+        #             job_posting, created = JobPosting.objects.update_or_create(
+        #                 external_id=job_data.external_id,
+        #                 defaults={
+        #                     "title": job_data.title,
+        #                     "company": job_data.company,
+        #                     "location": job_data.location,
+        #                     "description": job_data.description,
+        #                     "url": job_data.url,
+        #                     "source": "dvcarreras_advanced",
+        #                     "posted_at": job_data.posted_at,
+        #                     "raw_html": job_data.raw_html,
+        #                 },
+        #             )
+        #
+        #             saved_jobs += 1
+        #             if created:
+        #                 new_jobs += 1
+        #                 logger.info(
+        #                     f"Nueva oferta guardada: {job_posting.title} en {job_posting.company}"
+        #                 )
+        #
+        #             # Calcular matches con CVs del usuario
+        #             matches = matching_service.calculate_user_job_matches(
+        #                 user_profile, job_posting
+        #             )
+        #
+        #             for cv, match_result in matches:
+        #                 # Solo guardar si supera el umbral
+        #                 if match_result.score >= user_profile.match_threshold:
+        #                     matching_service.save_match_score(
+        #                         user_profile.user, cv, job_posting, match_result
+        #                     )
+        #                     matches_found += 1
+        #                     logger.info(
+        #                         f"Match encontrado: {match_result.score}% para {job_posting.title}"
+        #                     )
+        #
+        #         except Exception as e:
+        #             logger.error(f"Error procesando oferta {job_data.external_id}: {e}")
+        #             continue
+        #
+        # result = {
+        #     "success": True,
+        #     "user_id": user_id,
+        #     "total_jobs": len(job_postings_data),
+        #     "saved_jobs": saved_jobs,
+        #     "new_jobs": new_jobs,
+        #     "matches_found": matches_found,
+        #     "method": "advanced",
+        #     "message": "Scraping avanzado completado exitosamente",
+        # }
+        #
+        # logger.info(f"Scraping AVANZADO completado para usuario {user_id}: {result}")
+        # return result
 
     except Exception as e:
         logger.error(f"Error en scraping AVANZADO para usuario {user_id}: {e}")

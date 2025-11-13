@@ -200,7 +200,7 @@ def scrape_dvcarreras_jobs(self, user_id: int):
 
         # Cliente básico eliminado - usar FlareSolverr en su lugar
         raise Exception("Cliente básico eliminado - usar scrape_dvcarreras_jobs_playwright")
-        # Código deprecado eliminado
+        # Código deprecado eliminado - todo comentado
         # # Login
         # if not client.login():
         #     logger.error(f"Login fallido para usuario {user_id}")
@@ -208,65 +208,65 @@ def scrape_dvcarreras_jobs(self, user_id: int):
         #
         # # Scrapear ofertas
         # job_postings_data = client.scrape_job_board(max_pages=3)
-
-            logger.info(
-                f"Encontradas {len(job_postings_data)} ofertas para usuario {user_id}"
-            )
-
-            # Procesar y guardar ofertas
-            saved_jobs = 0
-            new_jobs = 0
-
-            for job_data in job_postings_data:
-                try:
-                    # Crear o actualizar JobPosting
-                    job_posting, created = JobPosting.objects.update_or_create(
-                        external_id=job_data.external_id,
-                        defaults={
-                            "title": job_data.title,
-                            "description": job_data.description,
-                            "email": getattr(job_data, "email", ""),
-                            "raw_html": getattr(job_data, "raw_html", ""),
-                        },
-                    )
-
-                    saved_jobs += 1
-                    if created:
-                        new_jobs += 1
-                        logger.info(
-                            f"Nueva oferta guardada: {job_posting.title} - Email: {job_posting.email}"
-                        )
-
-                    # Calcular matches con CVs del usuario
-                    matches = matching_service.calculate_user_job_matches(
-                        user_profile, job_posting
-                    )
-
-                    for cv, match_result in matches:
-                        # Solo guardar si supera el umbral
-                        if match_result.score >= user_profile.match_threshold:
-                            matching_service.save_match_score(
-                                user_profile.user, cv, job_posting, match_result
-                            )
-                            logger.info(
-                                f"Match encontrado: {match_result.score}% para {job_posting.title}"
-                            )
-
-                except Exception as e:
-                    logger.error(f"Error procesando oferta {job_data.external_id}: {e}")
-                    continue
-
-        result = {
-            "success": True,
-            "user_id": user_id,
-            "total_jobs": len(job_postings_data),
-            "saved_jobs": saved_jobs,
-            "new_jobs": new_jobs,
-            "matches_found": MatchScore.objects.filter(user=user_profile).count(),
-        }
-
-        logger.info(f"Scraping completado para usuario {user_id}: {result}")
-        return result
+        #
+        # logger.info(
+        #     f"Encontradas {len(job_postings_data)} ofertas para usuario {user_id}"
+        # )
+        #
+        # # Procesar y guardar ofertas
+        # saved_jobs = 0
+        # new_jobs = 0
+        #
+        # for job_data in job_postings_data:
+        #     try:
+        #         # Crear o actualizar JobPosting
+        #         job_posting, created = JobPosting.objects.update_or_create(
+        #             external_id=job_data.external_id,
+        #             defaults={
+        #                 "title": job_data.title,
+        #                 "description": job_data.description,
+        #                 "email": getattr(job_data, "email", ""),
+        #                 "raw_html": getattr(job_data, "raw_html", ""),
+        #             },
+        #         )
+        #
+        #         saved_jobs += 1
+        #         if created:
+        #             new_jobs += 1
+        #             logger.info(
+        #                 f"Nueva oferta guardada: {job_posting.title} - Email: {job_posting.email}"
+        #             )
+        #
+        #         # Calcular matches con CVs del usuario
+        #         matches = matching_service.calculate_user_job_matches(
+        #             user_profile, job_posting
+        #         )
+        #
+        #         for cv, match_result in matches:
+        #             # Solo guardar si supera el umbral
+        #             if match_result.score >= user_profile.match_threshold:
+        #                 matching_service.save_match_score(
+        #                     user_profile.user, cv, job_posting, match_result
+        #                 )
+        #                 logger.info(
+        #                     f"Match encontrado: {match_result.score}% para {job_posting.title}"
+        #                 )
+        #
+        #     except Exception as e:
+        #         logger.error(f"Error procesando oferta {job_data.external_id}: {e}")
+        #         continue
+        #
+        # result = {
+        #     "success": True,
+        #     "user_id": user_id,
+        #     "total_jobs": len(job_postings_data),
+        #     "saved_jobs": saved_jobs,
+        #     "new_jobs": new_jobs,
+        #     "matches_found": MatchScore.objects.filter(user=user_profile).count(),
+        # }
+        #
+        # logger.info(f"Scraping completado para usuario {user_id}: {result}")
+        # return result
 
     except Exception as e:
         logger.error(f"Error en scraping para usuario {user_id}: {e}")
