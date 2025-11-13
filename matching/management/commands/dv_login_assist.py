@@ -5,9 +5,8 @@ from pathlib import Path
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand, CommandError
 
-from matching.clients.dvcarreras_playwright_flaresolverr import (
-    DVCarrerasPlaywrightFlareSolverr,
-)
+from matching.clients.dvcarreras_playwright_flaresolverr import \
+    DVCarrerasPlaywrightFlareSolverr
 
 
 class Command(BaseCommand):

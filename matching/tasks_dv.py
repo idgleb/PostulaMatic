@@ -30,9 +30,8 @@ def verify_dv_login_manual_task(self, user_id: int, timeout_seconds: int = 300):
         import json
         from pathlib import Path
 
-        from .clients.dvcarreras_playwright_flaresolverr import (
-            DVCarrerasPlaywrightFlareSolverr,
-        )
+        from .clients.dvcarreras_playwright_flaresolverr import \
+            DVCarrerasPlaywrightFlareSolverr
 
         def do_manual_login():
             client = DVCarrerasPlaywrightFlareSolverr(
