@@ -105,9 +105,11 @@ class ScrapingLockService:
                 # Si está PENDING, verificar si hay logs recientes (últimos 5 minutos)
                 # Si no hay logs, probablemente nunca se ejecutó
                 try:
-                    from matching.models import ScrapingLog
-                    from django.utils import timezone
                     from datetime import timedelta
+
+                    from django.utils import timezone
+
+                    from matching.models import ScrapingLog
 
                     recent_logs = ScrapingLog.objects.filter(
                         task_id=existing_task_id,
@@ -121,6 +123,7 @@ class ScrapingLockService:
                         # Hay logs recientes, pero está PENDING - puede ser que esté en cola
                         # Verificar si la tarea realmente existe en Celery
                         from celery import current_app
+
                         inspect = current_app.control.inspect()
                         active_tasks = inspect.active()
                         task_exists = False
@@ -136,9 +139,13 @@ class ScrapingLockService:
 
                         if not task_exists:
                             should_cleanup = True
-                            cleanup_reason = "Tarea PENDING pero no existe en workers activos"
+                            cleanup_reason = (
+                                "Tarea PENDING pero no existe en workers activos"
+                            )
                 except Exception as log_check_error:
-                    logger.warning(f"Error verificando logs para limpieza: {log_check_error}")
+                    logger.warning(
+                        f"Error verificando logs para limpieza: {log_check_error}"
+                    )
                     # Si no se puede verificar logs, ser conservador y no limpiar
                     pass
 
