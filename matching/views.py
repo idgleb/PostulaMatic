@@ -2344,8 +2344,15 @@ def latest_screenshot_view(request, task_id):
 
         # Buscar screenshots por task_id (sin filtrar por user_id específico)
         # Esto permite ver screenshots de cualquier usuario que ejecutó esta tarea
-        screenshots_pattern = f"media/screenshots/user_*_{task_id}_*.png"
-        screenshots = glob.glob(screenshots_pattern)
+        # Buscar tanto PNG como JPG (después de compresión)
+        screenshots_pattern_png = f"media/screenshots/user_*_{task_id}_*.png"
+        screenshots_pattern_jpg = f"media/screenshots/user_*_{task_id}_*.jpg"
+        
+        screenshots_png = glob.glob(screenshots_pattern_png)
+        screenshots_jpg = glob.glob(screenshots_pattern_jpg)
+        
+        # Combinar ambos tipos de archivos
+        screenshots = screenshots_png + screenshots_jpg
 
         if screenshots:
             # Obtener el más reciente
