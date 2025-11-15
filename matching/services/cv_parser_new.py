@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Dict
 
 from .docx_parser import DOCXParser
+
 # Importar parsers especializados
 from .pdf_parser import PDFParser
 
