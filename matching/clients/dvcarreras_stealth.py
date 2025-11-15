@@ -1077,8 +1077,26 @@ class DVCarrerasStealth:
             # Verificar si aparece página de encuesta antes de scrapear
             await self._handle_survey_popup()
 
+            # Esperar a que la página esté completamente cargada antes de capturar screenshot
+            await self._log("Esperando a que el tablero esté completamente cargado...", "info")
+            await self._human_delay(2, 4)
+
+            # Verificar que estamos en la página correcta antes de capturar
+            current_url = self.driver.current_url
+            await self._log(f"URL antes de capturar screenshot: {current_url}", "info")
+
             # ÚNICA captura de ofertas al entrar al tablero
-            await self._capture_screenshot("tablero_cargado")
+            screenshot_result = await self._capture_screenshot("tablero_cargado")
+            if screenshot_result:
+                await self._log(
+                    f"✅ Screenshot 'tablero_cargado' capturado exitosamente: {screenshot_result}",
+                    "success",
+                )
+            else:
+                await self._log(
+                    "❌ ERROR: No se pudo capturar screenshot 'tablero_cargado'",
+                    "error",
+                )
 
             # Verificar URL actual
             current_url = self.driver.current_url
