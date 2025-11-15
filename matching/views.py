@@ -2451,7 +2451,7 @@ def latest_screenshot_view(request, task_id):
         if matching_screenshots:
             # Filtrar solo screenshots que realmente existen en disco
             existing_screenshots = [s for s in matching_screenshots if Path(s).exists()]
-            
+
             if not existing_screenshots:
                 logger.warning(
                     f"⚠️ No se encontraron screenshots existentes para task_id={task_id}. "
@@ -2464,13 +2464,18 @@ def latest_screenshot_view(request, task_id):
                         jpg_path = png_path.with_suffix(".jpg")
                         if jpg_path.exists():
                             existing_screenshots.append(str(jpg_path))
-                            logger.info(f"✅ Encontrado JPG correspondiente: {jpg_path.name}")
-                
+                            logger.info(
+                                f"✅ Encontrado JPG correspondiente: {jpg_path.name}"
+                            )
+
                 if not existing_screenshots:
                     return JsonResponse(
-                        {"success": False, "message": "No hay screenshots disponibles en disco"}
+                        {
+                            "success": False,
+                            "message": "No hay screenshots disponibles en disco",
+                        }
                     )
-            
+
             # Priorizar screenshots de "tablero_cargado" (el más importante)
             tablero_screenshots = [
                 s for s in existing_screenshots if "tablero_cargado" in s
