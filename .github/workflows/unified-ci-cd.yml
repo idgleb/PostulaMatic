@@ -56,7 +56,7 @@ jobs:
       
       - name: Run Ruff
         run: |
-          # Solo verificar errores, no arreglar automÃ¡ticamente
+          # Solo verificar errores, no arreglar automaticamente
           ruff check --output-format=github . || true
       
       - name: Run Django tests
@@ -103,9 +103,9 @@ jobs:
             # Validate Nginx config
             if [ -d "conf.d" ] && [ -f "conf.d/postulamatic.conf" ]; then
               if docker exec nginx-proxy nginx -t 2>&1; then
-                echo "âœ… Nginx config valid"
+                echo "Nginx config valid"
               else
-                echo "âŒ Nginx config invalid, restoring backup"
+                echo "Nginx config invalid, restoring backup"
                 if ls conf.d/postulamatic.conf.backup.* 1> /dev/null 2>&1; then
                   LATEST_BACKUP=$(ls -t conf.d/postulamatic.conf.backup.* | head -1)
                   cp "$LATEST_BACKUP" conf.d/postulamatic.conf
@@ -122,9 +122,9 @@ jobs:
             # Build Docker containers
             docker compose build
             
-            # âœ… FIX: Aplicar migraciones directamente (sin --check que causa timeout)
-            # Django es seguro: si no hay migraciones pendientes, termina rÃ¡pidamente
-            echo "ðŸ”„ Aplicando migraciones..."
+            # FIX: Aplicar migraciones directamente (sin --check que causa timeout)
+            # Django es seguro: si no hay migraciones pendientes, termina rapidamente
+            echo "Aplicando migraciones..."
             docker compose run --rm postulamatic_web python manage.py migrate --noinput
             
             # Start containers
@@ -139,21 +139,21 @@ jobs:
             fi
             
             # Health check
-            echo "ðŸ¥ Verificando salud del sitio..."
+            echo "Verificando salud del sitio..."
             MAX_RETRIES=3
             RETRY_DELAY=10
             
             for i in $(seq 1 $MAX_RETRIES); do
               if curl -f -s https://postulamatic.app > /dev/null 2>&1; then
-                echo "âœ… Health check exitoso (intento $i/$MAX_RETRIES)"
-                echo "ðŸŽ‰ Deployment completado exitosamente"
+                echo "Health check exitoso (intento $i/$MAX_RETRIES)"
+                echo "Deployment completado exitosamente"
                 exit 0
               else
-                echo "â³ Health check fallido (intento $i/$MAX_RETRIES), reintentando en ${RETRY_DELAY}s..."
+                echo "Health check fallido (intento $i/$MAX_RETRIES), reintentando en ${RETRY_DELAY}s..."
                 sleep $RETRY_DELAY
               fi
             done
             
-            echo "âš ï¸ Health check fallÃ³ despuÃ©s de $MAX_RETRIES intentos"
-            echo "â„¹ï¸ El deployment se completÃ³, pero el sitio puede tardar unos minutos en responder"
+            echo "Health check fallo despues de $MAX_RETRIES intentos"
+            echo "El deployment se completo, pero el sitio puede tardar unos minutos en responder"
             exit 0
