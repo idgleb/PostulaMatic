@@ -47,42 +47,17 @@ jobs:
       - name: Run Black (check only)
         run: |          # Solo verificar formato, no formatear --line-length 88 .
           
-          # Si hay cambios, hacer commit autom+ítico
-          if [ -n "$(git status --porcelain)" ]; then
-            git config --local user.email "action@github.com"
-            git config --local user.name "GitHub Action"
-            git add .
-            git commit -m "Format: Aplicar formateo Black autom+ítico [skip ci]" || exit 0
-            git push origin HEAD:master || exit 0
-          fi
       
       - name: Run isort (check only)
         run: |          # Solo verificar imports, no formatear .
           
-          # Si hay cambios, hacer commit autom+ítico
-          if [ -n "$(git status --porcelain)" ]; then
-            git config --local user.email "action@github.com"
-            git config --local user.name "GitHub Action"
-            git add .
-            git commit -m "Format: Aplicar formateo isort autom+ítico [skip ci]" || exit 0
-            git push origin HEAD:master || exit 0
-          fi
       
       - name: Run Ruff
         run: |
-          # Arreglar errores autom+íticamente
+          # Arreglar errores autom+Ýticamente
           ruff check --output-format=github . || true
           
-          # Si hay cambios, hacer commit autom+ítico
-          if [ -n "$(git status --porcelain)" ]; then
-            git config --local user.email "action@github.com"
-            git config --local user.name "GitHub Action"
-            git add .
-            git commit -m "Fix: Aplicar correcciones autom+íticas de Ruff [skip ci]" || exit 0
-            git push origin HEAD:master || exit 0
-          fi
           
-          # Verificar que no queden errores cr+¡ticos
           ruff check --output-format=github . || true
       
       - name: Run Django tests
@@ -129,9 +104,9 @@ jobs:
             # Validate Nginx config
             if [ -d "conf.d" ] && [ -f "conf.d/postulamatic.conf" ]; then
               if docker exec nginx-proxy nginx -t 2>&1; then
-                echo "Ô£à Nginx config valid"
+                echo "ÈúÓ Nginx config valid"
               else
-                echo "ÔØî Nginx config invalid, restoring backup"
+                echo "ÈÏ¯ Nginx config invalid, restoring backup"
                 if ls conf.d/postulamatic.conf.backup.* 1> /dev/null 2>&1; then
                   LATEST_BACKUP=$(ls -t conf.d/postulamatic.conf.backup.* | head -1)
                   cp "$LATEST_BACKUP" conf.d/postulamatic.conf
@@ -148,9 +123,9 @@ jobs:
             # Build Docker containers
             docker compose build
             
-            # Ô£à FIX: Aplicar migraciones directamente (sin --check que causa timeout)
-            # Django es seguro: si no hay migraciones pendientes, termina r+ípidamente
-            echo "­ƒöä Aplicando migraciones..."
+            # ÈúÓ FIX: Aplicar migraciones directamente (sin --check que causa timeout)
+            # Django es seguro: si no hay migraciones pendientes, termina r+Ýpidamente
+            echo "¡â÷õ Aplicando migraciones..."
             docker compose run --rm postulamatic_web python manage.py migrate --noinput
             
             # Start containers
@@ -165,22 +140,22 @@ jobs:
             fi
             
             # Health check
-            echo "­ƒÅÑ Verificando salud del sitio..."
+            echo "¡â+Ð Verificando salud del sitio..."
             MAX_RETRIES=3
             RETRY_DELAY=10
             
             for i in $(seq 1 $MAX_RETRIES); do
               if curl -f -s https://postulamatic.app > /dev/null 2>&1; then
-                echo "Ô£à Health check exitoso (intento $i/$MAX_RETRIES)"
-                echo "­ƒÄë Deployment completado exitosamente"
+                echo "ÈúÓ Health check exitoso (intento $i/$MAX_RETRIES)"
+                echo "¡â-Ù Deployment completado exitosamente"
                 exit 0
               else
-                echo "ÔÅ¦ Health check fallido (intento $i/$MAX_RETRIES), reintentando en ${RETRY_DELAY}s..."
+                echo "È+ª Health check fallido (intento $i/$MAX_RETRIES), reintentando en ${RETRY_DELAY}s..."
                 sleep $RETRY_DELAY
               fi
             done
             
-            echo "ÔÜá´©Å Health check fall+¦ despu+®s de $MAX_RETRIES intentos"
-            echo "Ôä¦´©Å El deployment se complet+¦, pero el sitio puede tardar unos minutos en responder"
+            echo "È_ß¦®+ Health check fall+ª despu+«s de $MAX_RETRIES intentos"
+            echo "Èõª¦®+ El deployment se complet+ª, pero el sitio puede tardar unos minutos en responder"
             exit 0
 
