@@ -246,43 +246,71 @@ class DVCarrerasStealth:
                             "info",
                         )
 
-                    # Decidir formato según tamaño
-                    # Para imágenes grandes (>500KB), usar JPEG (mejor compresión)
-                    # Para imágenes pequeñas, mantener PNG con compresión agresiva
-                    use_jpeg = original_size > 500 * 1024  # 500KB
-
-                    if use_jpeg:
-                        # Convertir a JPEG con calidad 85 (balance calidad/tamaño)
-                        jpeg_path = screenshot_path.with_suffix(".jpg")
+                    # Estrategia de compresión según tamaño original
+                    # Para screenshots, JPEG siempre comprime mejor que PNG
+                    # Usamos diferentes calidades según el tamaño para maximizar reducción
+                    
+                    if original_size < 100 * 1024:  # < 100KB: JPEG calidad 75 (más agresivo)
+                        quality = 75
+                        strategy = "JPEG calidad 75 (imagen pequeña)"
+                    elif original_size < 500 * 1024:  # 100-500KB: JPEG calidad 80
+                        quality = 80
+                        strategy = "JPEG calidad 80 (imagen mediana)"
+                    else:  # > 500KB: JPEG calidad 85
+                        quality = 85
+                        strategy = "JPEG calidad 85 (imagen grande)"
+                    
+                    # Convertir a JPEG (siempre mejor que PNG para screenshots)
+                    jpeg_path = screenshot_path.with_suffix(".jpg")
+                    img.save(
+                        jpeg_path,
+                        "JPEG",
+                        quality=quality,
+                        optimize=True,
+                        progressive=True,
+                    )
+                    
+                    # Obtener tamaño comprimido
+                    compressed_size = jpeg_path.stat().st_size
+                    
+                    # Si el JPEG es más grande que el original, intentar con calidad más baja
+                    if compressed_size >= original_size and original_size < 500 * 1024:
+                        await self._log(
+                            f"⚠️ JPEG inicial más grande, probando calidad más baja...",
+                            "info",
+                        )
+                        # Intentar con calidad 70
                         img.save(
                             jpeg_path,
                             "JPEG",
-                            quality=85,
+                            quality=70,
                             optimize=True,
                             progressive=True,
                         )
+                        compressed_size = jpeg_path.stat().st_size
+                        strategy = "JPEG calidad 70 (optimizado)"
+                    
+                    # Si aún es más grande, mantener el original PNG
+                    if compressed_size >= original_size:
+                        await self._log(
+                            f"⚠️ JPEG no mejora el tamaño, manteniendo PNG original",
+                            "warning",
+                        )
+                        jpeg_path.unlink()  # Eliminar JPEG
+                        compressed_size = original_size
+                        reduction_percent = 0
+                    else:
                         # Reemplazar PNG con JPEG
                         screenshot_path.unlink()
                         screenshot_path = jpeg_path
+                        reduction_percent = (
+                            (1 - compressed_size / original_size) * 100
+                            if original_size > 0
+                            else 0
+                        )
                         await self._log(
-                            "🖼️ Convertido a JPEG para mejor compresión", "info"
+                            f"🖼️ {strategy}", "info"
                         )
-                    else:
-                        # PNG con compresión máxima (compress_level=9)
-                        img.save(
-                            screenshot_path,
-                            "PNG",
-                            optimize=True,
-                            compress_level=9,  # Máxima compresión
-                        )
-
-                    # Obtener tamaño comprimido
-                    compressed_size = screenshot_path.stat().st_size
-                    reduction_percent = (
-                        (1 - compressed_size / original_size) * 100
-                        if original_size > 0
-                        else 0
-                    )
 
                     await self._log(
                         f"🗜️ Screenshot comprimido: {original_size / 1024:.1f}KB → {compressed_size / 1024:.1f}KB ({reduction_percent:.1f}% reducción)",
