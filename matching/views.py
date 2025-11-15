@@ -1441,8 +1441,9 @@ def dv_connection_status_view(request):
 def scraper_status_view(request, task_id):
     """Vista para obtener el estado real de una tarea de scraping (solo admins)."""
     # Importar modelos al inicio para evitar errores de importación
-    from .models import JobPosting, MatchScore
     from celery.result import AsyncResult
+
+    from .models import JobPosting, MatchScore
 
     logger.info(f"📊 scraper_status_view llamado para task_id={task_id}")
 
