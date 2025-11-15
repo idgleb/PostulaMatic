@@ -3,15 +3,13 @@ Comando Django para verificar y limpiar locks de scraping huérfanos.
 """
 
 import logging
-from django.core.management.base import BaseCommand
-from django.core.cache import cache
-from celery.result import AsyncResult
 
-from matching.services.scraping_lock import (
-    SCRAPING_LOCK_KEY,
-    SCRAPING_INFO_KEY,
-    scraping_lock,
-)
+from celery.result import AsyncResult
+from django.core.cache import cache
+from django.core.management.base import BaseCommand
+
+from matching.services.scraping_lock import (SCRAPING_INFO_KEY,
+                                             SCRAPING_LOCK_KEY, scraping_lock)
 
 logger = logging.getLogger(__name__)
 
@@ -34,9 +32,7 @@ class Command(BaseCommand):
         info = cache.get(SCRAPING_INFO_KEY)
 
         if not task_id:
-            self.stdout.write(
-                self.style.SUCCESS("✅ No hay lock de scraping activo")
-            )
+            self.stdout.write(self.style.SUCCESS("✅ No hay lock de scraping activo"))
             return
 
         self.stdout.write(f"🔒 Lock encontrado: task_id={task_id}")
@@ -114,4 +110,3 @@ class Command(BaseCommand):
                     self.stdout.write(
                         self.style.SUCCESS("✅ Lock liberado exitosamente")
                     )
-
