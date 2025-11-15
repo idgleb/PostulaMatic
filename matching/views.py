@@ -11,10 +11,21 @@ from django.views.decorators.http import require_http_methods
 
 from matching.tasks_dv import verify_dv_login_task
 
-from .forms import (CVUploadForm, DVCredentialsForm, EmailConfigForm,
-                    MatchingConfigForm, SMTPConfigForm)
-from .models import (EmailSentLog, JobPosting, MatchScore, ScrapingLog, UserCV,
-                     UserProfile)
+from .forms import (
+    CVUploadForm,
+    DVCredentialsForm,
+    EmailConfigForm,
+    MatchingConfigForm,
+    SMTPConfigForm,
+)
+from .models import (
+    EmailSentLog,
+    JobPosting,
+    MatchScore,
+    ScrapingLog,
+    UserCV,
+    UserProfile,
+)
 from .services.cv_parser import cv_parser
 from .services.skills_extractor import skills_extractor
 from .utils.log_capture import cleanup_log_capture, setup_log_capture
@@ -2405,14 +2416,16 @@ def latest_screenshot_view(request, task_id):
 
         if matching_screenshots:
             # Priorizar screenshots de "tablero_cargado" (el más importante)
-            tablero_screenshots = [s for s in matching_screenshots if "tablero_cargado" in s.name]
-            
+            tablero_screenshots = [
+                s for s in matching_screenshots if "tablero_cargado" in s.name
+            ]
+
             # Si hay screenshots de tablero_cargado, usar esos
             if tablero_screenshots:
                 # Priorizar JPG sobre PNG para tablero_cargado
                 tablero_jpg = [s for s in tablero_screenshots if s.endswith(".jpg")]
                 tablero_png = [s for s in tablero_screenshots if s.endswith(".png")]
-                
+
                 if tablero_jpg:
                     latest_screenshot = max(tablero_jpg, key=os.path.getmtime)
                 elif tablero_png:
@@ -2422,7 +2435,9 @@ def latest_screenshot_view(request, task_id):
                     jpg_path = png_path.with_suffix(".jpg")
                     if jpg_path.exists():
                         latest_screenshot = str(jpg_path)
-                        logger.info(f"✅ Encontrado JPG de tablero_cargado: {jpg_path.name}")
+                        logger.info(
+                            f"✅ Encontrado JPG de tablero_cargado: {jpg_path.name}"
+                        )
                     else:
                         latest_screenshot = latest_png
                 else:
@@ -2431,9 +2446,13 @@ def latest_screenshot_view(request, task_id):
             else:
                 # Si no hay tablero_cargado, usar el más reciente de todos
                 # Priorizar JPG sobre PNG (después de compresión, JPG es el archivo final)
-                jpg_screenshots = [s for s in matching_screenshots if s.endswith(".jpg")]
-                png_screenshots = [s for s in matching_screenshots if s.endswith(".png")]
-                
+                jpg_screenshots = [
+                    s for s in matching_screenshots if s.endswith(".jpg")
+                ]
+                png_screenshots = [
+                    s for s in matching_screenshots if s.endswith(".png")
+                ]
+
                 # Si hay JPGs, usar el más reciente de esos (son los comprimidos)
                 # Si no, usar el PNG más reciente
                 if jpg_screenshots:
