@@ -14,7 +14,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
     
     services:
       postgres:
@@ -44,49 +44,49 @@ jobs:
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
       
-      - name: Run Black
+      - name: Run Black (check only)
         run: |
           # Formatear archivos
-          black --line-length 88 .
+          black --check --line-length 88 .
           
-          # Si hay cambios, hacer commit autom√°tico
+          # Si hay cambios, hacer commit autom+Ìtico
           if [ -n "$(git status --porcelain)" ]; then
             git config --local user.email "action@github.com"
             git config --local user.name "GitHub Action"
             git add .
-            git commit -m "Format: Aplicar formateo Black autom√°tico [skip ci]" || exit 0
+            git commit -m "Format: Aplicar formateo Black autom+Ìtico [skip ci]" || exit 0
             git push origin HEAD:master || exit 0
           fi
       
-      - name: Run isort
+      - name: Run isort (check only)
         run: |
           # Formatear imports
-          isort .
+          isort --check-only .
           
-          # Si hay cambios, hacer commit autom√°tico
+          # Si hay cambios, hacer commit autom+Ìtico
           if [ -n "$(git status --porcelain)" ]; then
             git config --local user.email "action@github.com"
             git config --local user.name "GitHub Action"
             git add .
-            git commit -m "Format: Aplicar formateo isort autom√°tico [skip ci]" || exit 0
+            git commit -m "Format: Aplicar formateo isort autom+Ìtico [skip ci]" || exit 0
             git push origin HEAD:master || exit 0
           fi
       
       - name: Run Ruff
         run: |
-          # Arreglar errores autom√°ticamente
-          ruff check --fix . || true
+          # Arreglar errores autom+Ìticamente
+          ruff check --output-format=github . || true
           
-          # Si hay cambios, hacer commit autom√°tico
+          # Si hay cambios, hacer commit autom+Ìtico
           if [ -n "$(git status --porcelain)" ]; then
             git config --local user.email "action@github.com"
             git config --local user.name "GitHub Action"
             git add .
-            git commit -m "Fix: Aplicar correcciones autom√°ticas de Ruff [skip ci]" || exit 0
+            git commit -m "Fix: Aplicar correcciones autom+Ìticas de Ruff [skip ci]" || exit 0
             git push origin HEAD:master || exit 0
           fi
           
-          # Verificar que no queden errores cr√≠ticos
+          # Verificar que no queden errores cr+°ticos
           ruff check --output-format=github . || true
       
       - name: Run Django tests
@@ -133,9 +133,9 @@ jobs:
             # Validate Nginx config
             if [ -d "conf.d" ] && [ -f "conf.d/postulamatic.conf" ]; then
               if docker exec nginx-proxy nginx -t 2>&1; then
-                echo "‚úÖ Nginx config valid"
+                echo "‘£‡ Nginx config valid"
               else
-                echo "‚ùå Nginx config invalid, restoring backup"
+                echo "‘ÿÓ Nginx config invalid, restoring backup"
                 if ls conf.d/postulamatic.conf.backup.* 1> /dev/null 2>&1; then
                   LATEST_BACKUP=$(ls -t conf.d/postulamatic.conf.backup.* | head -1)
                   cp "$LATEST_BACKUP" conf.d/postulamatic.conf
@@ -152,9 +152,9 @@ jobs:
             # Build Docker containers
             docker compose build
             
-            # ‚úÖ FIX: Aplicar migraciones directamente (sin --check que causa timeout)
-            # Django es seguro: si no hay migraciones pendientes, termina r√°pidamente
-            echo "üîÑ Aplicando migraciones..."
+            # ‘£‡ FIX: Aplicar migraciones directamente (sin --check que causa timeout)
+            # Django es seguro: si no hay migraciones pendientes, termina r+Ìpidamente
+            echo "≠Éˆ‰ Aplicando migraciones..."
             docker compose run --rm postulamatic_web python manage.py migrate --noinput
             
             # Start containers
@@ -169,22 +169,22 @@ jobs:
             fi
             
             # Health check
-            echo "üè• Verificando salud del sitio..."
+            echo "≠É≈— Verificando salud del sitio..."
             MAX_RETRIES=3
             RETRY_DELAY=10
             
             for i in $(seq 1 $MAX_RETRIES); do
               if curl -f -s https://postulamatic.app > /dev/null 2>&1; then
-                echo "‚úÖ Health check exitoso (intento $i/$MAX_RETRIES)"
-                echo "üéâ Deployment completado exitosamente"
+                echo "‘£‡ Health check exitoso (intento $i/$MAX_RETRIES)"
+                echo "≠ÉƒÎ Deployment completado exitosamente"
                 exit 0
               else
-                echo "‚è≥ Health check fallido (intento $i/$MAX_RETRIES), reintentando en ${RETRY_DELAY}s..."
+                echo "‘≈¶ Health check fallido (intento $i/$MAX_RETRIES), reintentando en ${RETRY_DELAY}s..."
                 sleep $RETRY_DELAY
               fi
             done
             
-            echo "‚ö†Ô∏è Health check fall√≥ despu√©s de $MAX_RETRIES intentos"
-            echo "‚ÑπÔ∏è El deployment se complet√≥, pero el sitio puede tardar unos minutos en responder"
+            echo "‘‹·¥©≈ Health check fall+¶ despu+Æs de $MAX_RETRIES intentos"
+            echo "‘‰¶¥©≈ El deployment se complet+¶, pero el sitio puede tardar unos minutos en responder"
             exit 0
 
