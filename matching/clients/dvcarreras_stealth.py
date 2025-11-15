@@ -188,9 +188,7 @@ class DVCarrerasStealth:
             screenshot_path = screenshots_dir / filename
 
             await self._log(f"📸 Capturando screenshot: {filename}", "info")
-            await self._log(
-                f"📁 Path completo: {screenshot_path.absolute()}", "info"
-            )
+            await self._log(f"📁 Path completo: {screenshot_path.absolute()}", "info")
 
             # Capturar screenshot
             try:
@@ -1093,7 +1091,9 @@ class DVCarrerasStealth:
             await self._handle_survey_popup()
 
             # Esperar a que la página esté completamente cargada antes de capturar screenshot
-            await self._log("Esperando a que el tablero esté completamente cargado...", "info")
+            await self._log(
+                "Esperando a que el tablero esté completamente cargado...", "info"
+            )
             await self._human_delay(2, 4)
 
             # Verificar que estamos en la página correcta antes de capturar
