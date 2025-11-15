@@ -161,7 +161,7 @@ class ScrapingLockService:
                 remaining_lock = cache.get(SCRAPING_LOCK_KEY)
                 if remaining_lock:
                     logger.warning(
-                        f"⚠️ Lock aún existe después de delete(), forzando limpieza..."
+                        "⚠️ Lock aún existe después de delete(), forzando limpieza..."
                     )
                     # Intentar con timeout 0 para forzar expiración inmediata
                     cache.set(SCRAPING_LOCK_KEY, None, timeout=0)
@@ -197,7 +197,7 @@ class ScrapingLockService:
                 remaining = cache.get(SCRAPING_LOCK_KEY)
                 if remaining:
                     logger.warning(
-                        f"⚠️ Lock aún existe después de release, forzando limpieza..."
+                        "⚠️ Lock aún existe después de release, forzando limpieza..."
                     )
                     cache.set(SCRAPING_LOCK_KEY, None, timeout=0)
                     cache.set(SCRAPING_INFO_KEY, None, timeout=0)
