@@ -278,7 +278,7 @@ class DVCarrerasStealth:
                     # Si el JPEG es más grande que el original, intentar con calidad más baja
                     if compressed_size >= original_size and original_size < 500 * 1024:
                         await self._log(
-                            f"⚠️ JPEG inicial más grande, probando calidad más baja...",
+                            "⚠️ JPEG inicial más grande, probando calidad más baja...",
                             "info",
                         )
                         # Intentar con calidad 70
@@ -295,7 +295,7 @@ class DVCarrerasStealth:
                     # Si aún es más grande, mantener el original PNG
                     if compressed_size >= original_size:
                         await self._log(
-                            f"⚠️ JPEG no mejora el tamaño, manteniendo PNG original",
+                            "⚠️ JPEG no mejora el tamaño, manteniendo PNG original",
                             "warning",
                         )
                         jpeg_path.unlink()  # Eliminar JPEG
