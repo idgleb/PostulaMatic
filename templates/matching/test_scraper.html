@@ -1133,27 +1133,31 @@ function updateLiveScreenshots() {
         return;
     }
     
-    console.debug(`updateLiveScreenshots: Buscando screenshot para task_id=${currentTaskId}`);
+    console.log(`📸 updateLiveScreenshots: Buscando screenshot para task_id=${currentTaskId}`);
     
     fetch(`/matching/latest-screenshot/${currentTaskId}/`, {
         signal: AbortSignal.timeout(10000) // 10 segundos timeout
     })
         .then(response => {
+            console.log(`📥 Respuesta de latest-screenshot: HTTP ${response.status}`);
             if (!response.ok) {
-                console.warn(`Error HTTP ${response.status} al obtener screenshot`);
+                console.warn(`⚠️ Error HTTP ${response.status} al obtener screenshot`);
                 return response.json().catch(() => ({success: false, error: `HTTP ${response.status}`}));
             }
             return response.json();
         })
         .then(data => {
+            console.log(`📊 Datos recibidos de latest-screenshot:`, data);
             if (data.success && data.screenshot_url) {
+                console.log(`✅ Screenshot encontrado: ${data.screenshot_url}`);
                 // Solo actualizar si la URL cambió (nuevo screenshot)
                 if (data.screenshot_url !== lastScreenshotUrl) {
-                    console.log(`📸 Nuevo screenshot encontrado: ${data.screenshot_url}`);
+                    console.log(`🔄 Nueva URL de screenshot detectada: ${data.screenshot_url} (anterior: ${lastScreenshotUrl})`);
                     lastScreenshotUrl = data.screenshot_url;
                     
                     const screenshotContainer = document.getElementById('liveScreenshots');
                     if (screenshotContainer) {
+                        console.log('📦 Contenedor liveScreenshots encontrado, creando imagen...');
                         // Crear imagen con mejor manejo de errores
                         const img = document.createElement('img');
                         img.src = data.screenshot_url;
@@ -1163,7 +1167,7 @@ function updateLiveScreenshots() {
                         
                         // Manejar errores de carga (404, etc.)
                         img.onerror = function() {
-                            console.warn(`⚠️ Error cargando screenshot: ${this.src}`);
+                            console.warn(`❌ Error cargando imagen: ${this.src}`);
                             // Si es PNG y falla, puede que se haya convertido a JPG
                             if (this.src.endsWith('.png')) {
                                 const jpgUrl = this.src.replace('.png', '.jpg');
@@ -1171,6 +1175,7 @@ function updateLiveScreenshots() {
                                 this.src = jpgUrl;
                                 // Si el JPG también falla, mostrar mensaje
                                 this.onerror = function() {
+                                    console.error(`❌ JPG alternativo también falló: ${this.src}`);
                                     screenshotContainer.innerHTML = `
                                         <div class="text-light text-center p-3">
                                             <i class="bi bi-exclamation-triangle me-2"></i>
@@ -1205,17 +1210,36 @@ function updateLiveScreenshots() {
                         `;
                         screenshotContainer.appendChild(timestampDiv);
                     } else {
-                        console.warn('updateLiveScreenshots: No se encontró el contenedor liveScreenshots');
+                        console.warn('⚠️ updateLiveScreenshots: No se encontró el contenedor liveScreenshots');
                     }
                 } else {
-                    console.debug('updateLiveScreenshots: Screenshot sin cambios');
+                    console.debug('🔄 updateLiveScreenshots: Screenshot sin cambios (misma URL)');
                 }
             } else {
-                console.debug(`updateLiveScreenshots: No hay screenshot disponible (success=${data.success})`);
+                console.warn(`⚠️ updateLiveScreenshots: No hay screenshot disponible (success=${data.success}, error=${data.error || data.message || 'N/A'})`);
+                // Mostrar mensaje en el contenedor si existe
+                const screenshotContainer = document.getElementById('liveScreenshots');
+                if (screenshotContainer && !screenshotContainer.querySelector('img')) {
+                    screenshotContainer.innerHTML = `
+                        <div class="text-light text-center p-3">
+                            <i class="bi bi-hourglass-split me-2"></i>
+                            Esperando screenshot...
+                        </div>
+                    `;
+                }
             }
         })
         .catch(error => {
-            console.error('Error cargando screenshot:', error);
+            console.error('❌ Error cargando screenshot:', error);
+            const screenshotContainer = document.getElementById('liveScreenshots');
+            if (screenshotContainer) {
+                screenshotContainer.innerHTML = `
+                    <div class="text-light text-center p-3">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Error de conexión al obtener screenshot
+                    </div>
+                `;
+            }
         });
 }
 
