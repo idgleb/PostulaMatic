@@ -1519,9 +1519,18 @@ def scraper_status_view(request, task_id):
                     )
                     # Continuar con el flujo normal, no es crítico
 
-        # Obtener estadísticas actuales
-        total_jobs = JobPosting.objects.count()
-        total_matches = MatchScore.objects.filter(user=request.user).count()
+        # Obtener estadísticas actuales (se actualizarán al final si es necesario)
+        try:
+            total_jobs = JobPosting.objects.count()
+        except Exception as e:
+            logger.warning(f"Error obteniendo total_jobs inicial: {e}")
+            total_jobs = 0
+
+        try:
+            total_matches = MatchScore.objects.filter(user=request.user).count()
+        except Exception as e:
+            logger.warning(f"Error obteniendo total_matches inicial: {e}")
+            total_matches = 0
 
         # Preparar información detallada del resultado
         result_info = None
