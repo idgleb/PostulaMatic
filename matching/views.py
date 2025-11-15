@@ -2346,7 +2346,6 @@ def scraping_logs_general_view(request):
 def latest_screenshot_view(request, task_id):
     """Vista para obtener el screenshot más reciente de una tarea (solo admins)"""
     try:
-        import glob
         import os
         from pathlib import Path
 
