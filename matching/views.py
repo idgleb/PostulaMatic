@@ -1562,12 +1562,27 @@ def scraper_status_view(request, task_id):
             except Exception as e:
                 logger.warning(f"Error obteniendo meta info: {e}")
 
-        # Obtener estado de forma segura
+        # Obtener estado de forma segura (actualizar si cambió)
         try:
-            task_status = task_result.status
+            current_status = task_result.status
+            # Solo actualizar si es diferente (puede haber cambiado durante el procesamiento)
+            if current_status != task_status:
+                task_status = current_status
         except Exception as e:
-            logger.warning(f"Error obteniendo status de tarea: {e}")
-            task_status = "UNKNOWN"
+            logger.warning(f"Error obteniendo status final de tarea: {e}")
+            # Mantener el status que ya teníamos o usar UNKNOWN
+            if 'task_status' not in locals():
+                task_status = "UNKNOWN"
+
+        # Asegurar que todas las variables estén inicializadas
+        if result_info is None:
+            result_info = {}
+        if not isinstance(is_ready, bool):
+            is_ready = False
+        if not isinstance(is_successful, bool):
+            is_successful = False
+        if not isinstance(is_failed, bool):
+            is_failed = False
 
         status_data = {
             "task_id": task_id,
