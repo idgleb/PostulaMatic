@@ -11,10 +11,21 @@ from django.views.decorators.http import require_http_methods
 
 from matching.tasks_dv import verify_dv_login_task
 
-from .forms import (CVUploadForm, DVCredentialsForm, EmailConfigForm,
-                    MatchingConfigForm, SMTPConfigForm)
-from .models import (EmailSentLog, JobPosting, MatchScore, ScrapingLog, UserCV,
-                     UserProfile)
+from .forms import (
+    CVUploadForm,
+    DVCredentialsForm,
+    EmailConfigForm,
+    MatchingConfigForm,
+    SMTPConfigForm,
+)
+from .models import (
+    EmailSentLog,
+    JobPosting,
+    MatchScore,
+    ScrapingLog,
+    UserCV,
+    UserProfile,
+)
 from .services.cv_parser import cv_parser
 from .services.skills_extractor import skills_extractor
 from .utils.log_capture import cleanup_log_capture, setup_log_capture
