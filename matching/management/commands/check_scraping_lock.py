@@ -8,11 +8,8 @@ from celery.result import AsyncResult
 from django.core.cache import cache
 from django.core.management.base import BaseCommand
 
-from matching.services.scraping_lock import (
-    SCRAPING_INFO_KEY,
-    SCRAPING_LOCK_KEY,
-    scraping_lock,
-)
+from matching.services.scraping_lock import (SCRAPING_INFO_KEY,
+                                             SCRAPING_LOCK_KEY, scraping_lock)
 
 logger = logging.getLogger(__name__)
 
