@@ -663,7 +663,7 @@ function checkCurrentScrapingStatus() {
 
 // Función simple para monitorear logs desde la base de datos
 function startSimpleMonitoring() {
-    console.log('Iniciando monitoreo simple de logs...');
+    console.log(`🔄 [startSimpleMonitoring] Iniciando monitoreo, currentTaskId=${currentTaskId}`);
     
     // Detener cualquier monitoreo previo
     if (window.logsInterval) {
@@ -679,7 +679,10 @@ function startSimpleMonitoring() {
         checkScrapingStatus();
         // Actualizar screenshots en tiempo real
         if (currentTaskId) {
+            console.log(`📸 [startSimpleMonitoring] Llamando updateLiveScreenshots para task_id=${currentTaskId}`);
             updateLiveScreenshots();
+        } else {
+            console.debug(`⚠️ [startSimpleMonitoring] No hay currentTaskId, saltando updateLiveScreenshots`);
         }
     }, 2000);
 }
