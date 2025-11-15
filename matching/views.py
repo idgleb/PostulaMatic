@@ -3102,6 +3102,7 @@ def get_global_scraping_status(request):
                         f"Error verificando ready() de tarea: {ready_check_error}"
                     )
 
+                # Verificar si la tarea está PENDING
                 if celery_state == "PENDING":
                     # Si está PENDING, verificar si realmente existe en workers activos
                     # Si no existe, es un lock huérfano
