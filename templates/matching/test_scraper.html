@@ -509,20 +509,66 @@ function checkCurrentScrapingStatus() {
                         
                         // Si la tarea está PENDING o STARTED, verificar que realmente tenga actividad
                         if (taskData.status === 'PENDING' || taskData.status === 'STARTED') {
-                            // Verificar si hay logs para confirmar que la tarea está realmente activa
-                            loadAllLogsFromDatabase(true);
-                            setTimeout(() => {
-                                const statusLog = document.getElementById('statusLog');
-                                const hasLogs = statusLog && statusLog.children.length > 0;
-                                
-                                if (!hasLogs) {
-                                    // No hay logs, probablemente lock huérfano
-                                    console.log('⚠️ Tarea activa pero sin logs, forzando limpieza...');
+                            // Verificar inmediatamente si hay logs (con timeout corto)
+                            fetch(`/matching/scraping-logs/${globalTaskId}/`, { 
+                                signal: AbortSignal.timeout(5000) // 5 segundos timeout
+                            })
+                                .then(response => response.json())
+                                .then(logsData => {
+                                    const hasLogs = logsData.success && logsData.logs && logsData.logs.length > 0;
+                                    
+                                    if (!hasLogs) {
+                                        // No hay logs, probablemente lock huérfano
+                                        console.log('⚠️ Tarea activa pero sin logs, forzando limpieza...');
+                                        let attempts = 0;
+                                        const maxAttempts = 5;
+                                        const forceCleanup = () => {
+                                            attempts++;
+                                            console.log(`🔄 Intento ${attempts}/${maxAttempts}: Forzando limpieza de lock sin logs...`);
+                                            fetch('/matching/api/global-scraping-status/', {
+                                                signal: AbortSignal.timeout(5000)
+                                            })
+                                                .then(response => response.json())
+                                                .then(cleanupData => {
+                                                    if (cleanupData.has_active_scraping && attempts < maxAttempts) {
+                                                        setTimeout(forceCleanup, 2000);
+                                                    } else {
+                                                        console.log('✅ Lock limpiado (sin logs)');
+                                                        checkCurrentScrapingStatus();
+                                                    }
+                                                })
+                                                .catch(() => {
+                                                    if (attempts < maxAttempts) {
+                                                        setTimeout(forceCleanup, 2000);
+                                                    } else {
+                                                        checkCurrentScrapingStatus();
+                                                    }
+                                                });
+                                        };
+                                        forceCleanup();
+                                    } else {
+                                        // Hay logs, monitorear normalmente
+                                        currentTaskId = globalTaskId;
+                                        localStorage.setItem('lastTaskId', globalTaskId);
+                                        loadAllLogsFromDatabase(true);
+                                        startSimpleMonitoring();
+                                        
+                                        const sourceText = globalData.source === 'scheduled' ? 'automáticamente (programado)' : 'manualmente';
+                                        const sourceIcon = globalData.source === 'scheduled' ? '🕒' : '👤';
+                                        addLogEntry(`${sourceIcon} Conectado al scraping global en curso (iniciado ${sourceText})`, 'info');
+                                        updateScrapingSourceBadge(globalData.source);
+                                    }
+                                })
+                                .catch(error => {
+                                    // Si falla la verificación de logs (timeout, etc.), asumir lock huérfano
+                                    console.warn('⚠️ Error verificando logs, asumiendo lock huérfano:', error);
                                     let attempts = 0;
                                     const maxAttempts = 3;
                                     const forceCleanup = () => {
                                         attempts++;
-                                        fetch('/matching/api/global-scraping-status/')
+                                        fetch('/matching/api/global-scraping-status/', {
+                                            signal: AbortSignal.timeout(5000)
+                                        })
                                             .then(response => response.json())
                                             .then(cleanupData => {
                                                 if (cleanupData.has_active_scraping && attempts < maxAttempts) {
@@ -540,18 +586,7 @@ function checkCurrentScrapingStatus() {
                                             });
                                     };
                                     forceCleanup();
-                                } else {
-                                    // Hay logs, monitorear normalmente
-                                    currentTaskId = globalTaskId;
-                                    localStorage.setItem('lastTaskId', globalTaskId);
-                                    startSimpleMonitoring();
-                                    
-                                    const sourceText = globalData.source === 'scheduled' ? 'automáticamente (programado)' : 'manualmente';
-                                    const sourceIcon = globalData.source === 'scheduled' ? '🕒' : '👤';
-                                    addLogEntry(`${sourceIcon} Conectado al scraping global en curso (iniciado ${sourceText})`, 'info');
-                                    updateScrapingSourceBadge(globalData.source);
-                                }
-                            }, 2000);
+                                });
                         } else {
                             // Si la tarea está en otro estado activo, monitorear normalmente
                             currentTaskId = globalTaskId;
@@ -1086,7 +1121,9 @@ function updateLiveScreenshots() {
     
     console.debug(`updateLiveScreenshots: Buscando screenshot para task_id=${currentTaskId}`);
     
-    fetch(`/matching/latest-screenshot/${currentTaskId}/`)
+    fetch(`/matching/latest-screenshot/${currentTaskId}/`, {
+        signal: AbortSignal.timeout(10000) // 10 segundos timeout
+    })
         .then(response => {
             if (!response.ok) {
                 console.warn(`Error HTTP ${response.status} al obtener screenshot`);
