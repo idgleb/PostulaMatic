@@ -249,8 +249,10 @@ class DVCarrerasStealth:
                     # Estrategia de compresión según tamaño original
                     # Para screenshots, JPEG siempre comprime mejor que PNG
                     # Usamos diferentes calidades según el tamaño para maximizar reducción
-                    
-                    if original_size < 100 * 1024:  # < 100KB: JPEG calidad 75 (más agresivo)
+
+                    if (
+                        original_size < 100 * 1024
+                    ):  # < 100KB: JPEG calidad 75 (más agresivo)
                         quality = 75
                         strategy = "JPEG calidad 75 (imagen pequeña)"
                     elif original_size < 500 * 1024:  # 100-500KB: JPEG calidad 80
@@ -259,7 +261,7 @@ class DVCarrerasStealth:
                     else:  # > 500KB: JPEG calidad 85
                         quality = 85
                         strategy = "JPEG calidad 85 (imagen grande)"
-                    
+
                     # Convertir a JPEG (siempre mejor que PNG para screenshots)
                     jpeg_path = screenshot_path.with_suffix(".jpg")
                     img.save(
@@ -269,10 +271,10 @@ class DVCarrerasStealth:
                         optimize=True,
                         progressive=True,
                     )
-                    
+
                     # Obtener tamaño comprimido
                     compressed_size = jpeg_path.stat().st_size
-                    
+
                     # Si el JPEG es más grande que el original, intentar con calidad más baja
                     if compressed_size >= original_size and original_size < 500 * 1024:
                         await self._log(
@@ -289,7 +291,7 @@ class DVCarrerasStealth:
                         )
                         compressed_size = jpeg_path.stat().st_size
                         strategy = "JPEG calidad 70 (optimizado)"
-                    
+
                     # Si aún es más grande, mantener el original PNG
                     if compressed_size >= original_size:
                         await self._log(
@@ -308,9 +310,7 @@ class DVCarrerasStealth:
                             if original_size > 0
                             else 0
                         )
-                        await self._log(
-                            f"🖼️ {strategy}", "info"
-                        )
+                        await self._log(f"🖼️ {strategy}", "info")
 
                     await self._log(
                         f"🗜️ Screenshot comprimido: {original_size / 1024:.1f}KB → {compressed_size / 1024:.1f}KB ({reduction_percent:.1f}% reducción)",
