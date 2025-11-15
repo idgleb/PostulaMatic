@@ -2404,30 +2404,56 @@ def latest_screenshot_view(request, task_id):
         )
 
         if matching_screenshots:
-            # Priorizar JPG sobre PNG (después de compresión, JPG es el archivo final)
-            jpg_screenshots = [s for s in matching_screenshots if s.endswith(".jpg")]
-            png_screenshots = [s for s in matching_screenshots if s.endswith(".png")]
+            # Priorizar screenshots de "tablero_cargado" (el más importante)
+            tablero_screenshots = [s for s in matching_screenshots if "tablero_cargado" in s.name]
             
-            # Si hay JPGs, usar el más reciente de esos (son los comprimidos)
-            # Si no, usar el PNG más reciente
-            if jpg_screenshots:
-                latest_screenshot = max(jpg_screenshots, key=os.path.getmtime)
-            elif png_screenshots:
-                # Verificar si existe un JPG correspondiente para cada PNG
-                # (puede que el PNG se haya convertido a JPG pero aún no se haya eliminado)
-                latest_png = max(png_screenshots, key=os.path.getmtime)
-                png_path = Path(latest_png)
-                # Buscar JPG con el mismo nombre base
-                jpg_path = png_path.with_suffix(".jpg")
-                if jpg_path.exists():
-                    # El JPG existe, usar ese en lugar del PNG
-                    latest_screenshot = str(jpg_path)
-                    logger.info(f"✅ Encontrado JPG correspondiente para PNG: {jpg_path.name}")
+            # Si hay screenshots de tablero_cargado, usar esos
+            if tablero_screenshots:
+                # Priorizar JPG sobre PNG para tablero_cargado
+                tablero_jpg = [s for s in tablero_screenshots if s.endswith(".jpg")]
+                tablero_png = [s for s in tablero_screenshots if s.endswith(".png")]
+                
+                if tablero_jpg:
+                    latest_screenshot = max(tablero_jpg, key=os.path.getmtime)
+                elif tablero_png:
+                    # Verificar si existe JPG correspondiente
+                    latest_png = max(tablero_png, key=os.path.getmtime)
+                    png_path = Path(latest_png)
+                    jpg_path = png_path.with_suffix(".jpg")
+                    if jpg_path.exists():
+                        latest_screenshot = str(jpg_path)
+                        logger.info(f"✅ Encontrado JPG de tablero_cargado: {jpg_path.name}")
+                    else:
+                        latest_screenshot = latest_png
                 else:
-                    latest_screenshot = latest_png
+                    latest_screenshot = max(tablero_screenshots, key=os.path.getmtime)
+                logger.info(f"✅ Priorizando screenshot de tablero_cargado")
             else:
-                # Fallback: usar el más reciente de todos
-                latest_screenshot = max(matching_screenshots, key=os.path.getmtime)
+                # Si no hay tablero_cargado, usar el más reciente de todos
+                # Priorizar JPG sobre PNG (después de compresión, JPG es el archivo final)
+                jpg_screenshots = [s for s in matching_screenshots if s.endswith(".jpg")]
+                png_screenshots = [s for s in matching_screenshots if s.endswith(".png")]
+                
+                # Si hay JPGs, usar el más reciente de esos (son los comprimidos)
+                # Si no, usar el PNG más reciente
+                if jpg_screenshots:
+                    latest_screenshot = max(jpg_screenshots, key=os.path.getmtime)
+                elif png_screenshots:
+                    # Verificar si existe un JPG correspondiente para cada PNG
+                    # (puede que el PNG se haya convertido a JPG pero aún no se haya eliminado)
+                    latest_png = max(png_screenshots, key=os.path.getmtime)
+                    png_path = Path(latest_png)
+                    # Buscar JPG con el mismo nombre base
+                    jpg_path = png_path.with_suffix(".jpg")
+                    if jpg_path.exists():
+                        # El JPG existe, usar ese en lugar del PNG
+                        latest_screenshot = str(jpg_path)
+                        logger.info(f"✅ Encontrado JPG correspondiente para PNG: {jpg_path.name}")
+                    else:
+                        latest_screenshot = latest_png
+                else:
+                    # Fallback: usar el más reciente de todos
+                    latest_screenshot = max(matching_screenshots, key=os.path.getmtime)
 
             screenshot_url = latest_screenshot.replace("media/", "/media/")
             screenshot_name = os.path.basename(latest_screenshot)
