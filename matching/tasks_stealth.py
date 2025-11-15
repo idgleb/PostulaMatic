@@ -454,7 +454,9 @@ def scrape_dvcarreras_jobs_stealth(
             try:
                 scraping_lock.force_release_lock()
             except Exception as force_error:
-                logger.error(f"❌ Error crítico al forzar liberación de lock: {force_error}")
+                logger.error(
+                    f"❌ Error crítico al forzar liberación de lock: {force_error}"
+                )
 
 
 @shared_task(bind=True, max_retries=2)

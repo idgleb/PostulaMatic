@@ -165,7 +165,7 @@ class ScrapingLockService:
         try:
             # Limpiar locks huérfanos antes de obtener información
             ScrapingLockService._cleanup_orphaned_locks()
-            
+
             task_id = cache.get(SCRAPING_LOCK_KEY)
             if not task_id:
                 return None
