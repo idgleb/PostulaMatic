@@ -1604,6 +1604,27 @@ def scraper_status_view(request, task_id):
         if not isinstance(is_failed, bool):
             is_failed = False
 
+        # Asegurar que task_status esté definido
+        if "task_status" not in locals() or task_status is None:
+            task_status = "UNKNOWN"
+
+        # Actualizar estadísticas al final (por si cambiaron durante el procesamiento)
+        try:
+            total_jobs = JobPosting.objects.count()
+        except Exception as e:
+            logger.warning(f"Error obteniendo total_jobs final: {e}")
+            # Mantener el valor anterior si existe
+            if "total_jobs" not in locals():
+                total_jobs = 0
+
+        try:
+            total_matches = MatchScore.objects.filter(user=request.user).count()
+        except Exception as e:
+            logger.warning(f"Error obteniendo total_matches final: {e}")
+            # Mantener el valor anterior si existe
+            if "total_matches" not in locals():
+                total_matches = 0
+
         status_data = {
             "task_id": task_id,
             "status": task_status,
