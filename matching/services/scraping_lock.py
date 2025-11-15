@@ -157,11 +157,15 @@ class ScrapingLockService:
     def get_active_scraping() -> Optional[Dict[str, Any]]:
         """
         Obtiene información del scraping activo (si existe).
+        Limpia automáticamente locks huérfanos antes de devolver la información.
 
         Returns:
             Dict con información del scraping activo, o None si no hay ninguno
         """
         try:
+            # Limpiar locks huérfanos antes de obtener información
+            ScrapingLockService._cleanup_orphaned_locks()
+            
             task_id = cache.get(SCRAPING_LOCK_KEY)
             if not task_id:
                 return None
@@ -186,11 +190,14 @@ class ScrapingLockService:
     def is_locked() -> bool:
         """
         Verifica si hay un scraping activo.
+        Limpia automáticamente locks huérfanos antes de verificar.
 
         Returns:
             True si hay un scraping en curso, False si no
         """
         try:
+            # Limpiar locks huérfanos antes de verificar
+            ScrapingLockService._cleanup_orphaned_locks()
             return cache.get(SCRAPING_LOCK_KEY) is not None
         except Exception as e:
             logger.error(f"❌ Error al verificar lock: {e}")

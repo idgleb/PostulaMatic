@@ -438,8 +438,23 @@ def scrape_dvcarreras_jobs_stealth(
         # ============================================================
         # 🔓 LOCK GLOBAL: Liberar lock al terminar (éxito o error)
         # ============================================================
-        scraping_lock.release_lock(task_id)
-        logger.info(f"🔓 Lock liberado para task={task_id}")
+        try:
+            released = scraping_lock.release_lock(task_id)
+            if released:
+                logger.info(f"🔓 Lock liberado para task={task_id}")
+            else:
+                # Si no se pudo liberar (no era el dueño), forzar liberación
+                logger.warning(
+                    f"⚠️ No se pudo liberar lock normalmente para task={task_id}, forzando liberación"
+                )
+                scraping_lock.force_release_lock()
+        except Exception as e:
+            logger.error(f"❌ Error al liberar lock en finally: {e}")
+            # Intentar forzar liberación como último recurso
+            try:
+                scraping_lock.force_release_lock()
+            except Exception as force_error:
+                logger.error(f"❌ Error crítico al forzar liberación de lock: {force_error}")
 
 
 @shared_task(bind=True, max_retries=2)

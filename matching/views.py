@@ -2741,11 +2741,13 @@ def get_global_scraping_status(request):
     """
     Vista para obtener el estado del scraping GLOBAL activo (si existe).
     Todos los admins ven el mismo scraping sin importar quién lo inició.
+    Limpia automáticamente locks huérfanos antes de verificar.
     """
     try:
         from .services.scraping_lock import scraping_lock
 
         # Verificar si hay un scraping activo globalmente
+        # get_active_scraping() ya limpia locks huérfanos automáticamente
         active_scraping = scraping_lock.get_active_scraping()
 
         if active_scraping:
@@ -2755,6 +2757,24 @@ def get_global_scraping_status(request):
             from celery.result import AsyncResult
 
             task_result = AsyncResult(task_id)
+            celery_state = task_result.state
+
+            # Si la tarea terminó, limpiar el lock automáticamente
+            finished_states = ["SUCCESS", "FAILURE", "REVOKED", "REJECTED"]
+            if celery_state in finished_states or celery_state == "PENDING":
+                logger.info(
+                    f"🧹 Limpiando lock huérfano detectado en get_global_scraping_status: "
+                    f"task={task_id}, estado={celery_state}"
+                )
+                scraping_lock.force_release_lock()
+                return JsonResponse(
+                    {
+                        "success": True,
+                        "has_active_scraping": False,
+                        "task_id": None,
+                        "message": "Lock huérfano limpiado automáticamente",
+                    }
+                )
 
             return JsonResponse(
                 {
@@ -2764,7 +2784,7 @@ def get_global_scraping_status(request):
                     "user_id": active_scraping.get("user_id"),
                     "source": active_scraping.get("source"),
                     "started_at": active_scraping.get("started_at"),
-                    "celery_status": task_result.state,
+                    "celery_status": celery_state,
                 }
             )
         else:
