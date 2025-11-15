@@ -2346,14 +2346,13 @@ def scraping_logs_general_view(request):
 def latest_screenshot_view(request, task_id):
     """Vista para obtener el screenshot más reciente de una tarea (solo admins)"""
     try:
-        import glob
         import os
         from pathlib import Path
 
         # Buscar todos los screenshots posibles (PNG y JPG)
         # Usar búsqueda más amplia para asegurar que encontramos todos los archivos
         screenshots_dir = Path("media/screenshots")
-        
+
         if not screenshots_dir.exists():
             logger.warning(f"Directorio de screenshots no existe: {screenshots_dir}")
             return JsonResponse(
@@ -2366,9 +2365,7 @@ def latest_screenshot_view(request, task_id):
         )
 
         # Filtrar por task_id (debe estar en el nombre del archivo)
-        matching_screenshots = [
-            str(s) for s in all_screenshots if task_id in s.name
-        ]
+        matching_screenshots = [str(s) for s in all_screenshots if task_id in s.name]
 
         # Log detallado para debugging
         logger.info(
