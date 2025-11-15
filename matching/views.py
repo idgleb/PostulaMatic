@@ -1482,19 +1482,41 @@ def scraper_status_view(request, task_id):
 
         # Preparar información detallada del resultado
         result_info = None
-        if task_result.ready():
-            if task_result.successful():
-                result_info = task_result.result
-            elif task_result.failed():
-                # Capturar información detallada del error
-                try:
-                    result_info = {
-                        "error": str(task_result.result),
-                        "traceback": getattr(task_result, "traceback", None),
-                        "info": getattr(task_result, "info", None),
-                    }
-                except Exception as e:
-                    result_info = {"error": f"Error desconocido en la tarea: {str(e)}"}
+        is_ready = False
+        is_successful = False
+        is_failed = False
+        
+        try:
+            is_ready = task_result.ready()
+        except Exception as e:
+            logger.warning(f"Error verificando si tarea está lista: {e}")
+            is_ready = False
+        
+        if is_ready:
+            try:
+                is_successful = task_result.successful()
+                is_failed = task_result.failed()
+                
+                if is_successful:
+                    try:
+                        result_info = task_result.result
+                    except Exception as e:
+                        logger.warning(f"Error obteniendo resultado exitoso: {e}")
+                        result_info = {"message": "Tarea completada exitosamente"}
+                elif is_failed:
+                    # Capturar información detallada del error
+                    try:
+                        result_info = {
+                            "error": str(task_result.result),
+                            "traceback": getattr(task_result, "traceback", None),
+                            "info": getattr(task_result, "info", None),
+                        }
+                    except Exception as e:
+                        logger.warning(f"Error obteniendo detalles de error: {e}")
+                        result_info = {"error": "Error desconocido en la tarea"}
+            except Exception as e:
+                logger.warning(f"Error verificando estado de tarea: {e}")
+                # Continuar con valores por defecto
         else:
             # Si la tarea no está lista, incluir información de meta si está disponible
             try:
@@ -1508,12 +1530,19 @@ def scraper_status_view(request, task_id):
             except Exception as e:
                 logger.warning(f"Error obteniendo meta info: {e}")
 
+        # Obtener estado de forma segura
+        try:
+            task_status = task_result.status
+        except Exception as e:
+            logger.warning(f"Error obteniendo status de tarea: {e}")
+            task_status = "UNKNOWN"
+
         status_data = {
             "task_id": task_id,
-            "status": task_result.status,
-            "ready": task_result.ready(),
-            "successful": task_result.successful() if task_result.ready() else False,
-            "failed": task_result.failed() if task_result.ready() else False,
+            "status": task_status,
+            "ready": is_ready,
+            "successful": is_successful,
+            "failed": is_failed,
             "result": result_info,
             "total_jobs": total_jobs,
             "total_matches": total_matches,
