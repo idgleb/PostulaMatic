@@ -11,10 +11,21 @@ from django.views.decorators.http import require_http_methods
 
 from matching.tasks_dv import verify_dv_login_task
 
-from .forms import (CVUploadForm, DVCredentialsForm, EmailConfigForm,
-                    MatchingConfigForm, SMTPConfigForm)
-from .models import (EmailSentLog, JobPosting, MatchScore, ScrapingLog, UserCV,
-                     UserProfile)
+from .forms import (
+    CVUploadForm,
+    DVCredentialsForm,
+    EmailConfigForm,
+    MatchingConfigForm,
+    SMTPConfigForm,
+)
+from .models import (
+    EmailSentLog,
+    JobPosting,
+    MatchScore,
+    ScrapingLog,
+    UserCV,
+    UserProfile,
+)
 from .services.cv_parser import cv_parser
 from .services.skills_extractor import skills_extractor
 from .utils.log_capture import cleanup_log_capture, setup_log_capture
@@ -2407,7 +2418,7 @@ def latest_screenshot_view(request, task_id):
             # Priorizar JPG sobre PNG (después de compresión, JPG es el archivo final)
             jpg_screenshots = [s for s in matching_screenshots if s.endswith(".jpg")]
             png_screenshots = [s for s in matching_screenshots if s.endswith(".png")]
-            
+
             # Si hay JPGs, usar el más reciente de esos (son los comprimidos)
             # Si no, usar el PNG más reciente
             if jpg_screenshots:
@@ -2422,7 +2433,9 @@ def latest_screenshot_view(request, task_id):
                 if jpg_path.exists():
                     # El JPG existe, usar ese en lugar del PNG
                     latest_screenshot = str(jpg_path)
-                    logger.info(f"✅ Encontrado JPG correspondiente para PNG: {jpg_path.name}")
+                    logger.info(
+                        f"✅ Encontrado JPG correspondiente para PNG: {jpg_path.name}"
+                    )
                 else:
                     latest_screenshot = latest_png
             else:
