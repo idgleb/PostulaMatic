@@ -11,10 +11,21 @@ from django.views.decorators.http import require_http_methods
 
 from matching.tasks_dv import verify_dv_login_task
 
-from .forms import (CVUploadForm, DVCredentialsForm, EmailConfigForm,
-                    MatchingConfigForm, SMTPConfigForm)
-from .models import (EmailSentLog, JobPosting, MatchScore, ScrapingLog, UserCV,
-                     UserProfile)
+from .forms import (
+    CVUploadForm,
+    DVCredentialsForm,
+    EmailConfigForm,
+    MatchingConfigForm,
+    SMTPConfigForm,
+)
+from .models import (
+    EmailSentLog,
+    JobPosting,
+    MatchScore,
+    ScrapingLog,
+    UserCV,
+    UserProfile,
+)
 from .services.cv_parser import cv_parser
 from .services.skills_extractor import skills_extractor
 from .utils.log_capture import cleanup_log_capture, setup_log_capture
@@ -2353,7 +2364,7 @@ def latest_screenshot_view(request, task_id):
         # Buscar todos los screenshots posibles (PNG y JPG)
         # Usar búsqueda más amplia para asegurar que encontramos todos los archivos
         screenshots_dir = Path("media/screenshots")
-        
+
         if not screenshots_dir.exists():
             logger.warning(f"Directorio de screenshots no existe: {screenshots_dir}")
             return JsonResponse(
@@ -2366,9 +2377,7 @@ def latest_screenshot_view(request, task_id):
         )
 
         # Filtrar por task_id (debe estar en el nombre del archivo)
-        matching_screenshots = [
-            str(s) for s in all_screenshots if task_id in s.name
-        ]
+        matching_screenshots = [str(s) for s in all_screenshots if task_id in s.name]
 
         # Log detallado para debugging
         logger.info(
