@@ -2838,25 +2838,81 @@ def get_global_scraping_status(request):
             # Verificar el estado real de la tarea en Celery
             from celery.result import AsyncResult
 
-            task_result = AsyncResult(task_id)
-            celery_state = task_result.state
+            try:
+                task_result = AsyncResult(task_id)
+                celery_state = task_result.state
 
-            # Si la tarea terminó, limpiar el lock automáticamente
-            finished_states = ["SUCCESS", "FAILURE", "REVOKED", "REJECTED"]
-            if celery_state in finished_states or celery_state == "PENDING":
-                logger.info(
-                    f"🧹 Limpiando lock huérfano detectado en get_global_scraping_status: "
-                    f"task={task_id}, estado={celery_state}"
-                )
-                scraping_lock.force_release_lock()
-                return JsonResponse(
-                    {
-                        "success": True,
-                        "has_active_scraping": False,
-                        "task_id": None,
-                        "message": "Lock huérfano limpiado automáticamente",
-                    }
-                )
+                # Si la tarea terminó, limpiar el lock automáticamente
+                finished_states = ["SUCCESS", "FAILURE", "REVOKED", "REJECTED"]
+                
+                # Verificar si la tarea realmente terminó
+                if celery_state in finished_states:
+                    logger.info(
+                        f"🧹 Limpiando lock huérfano detectado en get_global_scraping_status: "
+                        f"task={task_id}, estado={celery_state}"
+                    )
+                    scraping_lock.force_release_lock()
+                    return JsonResponse(
+                        {
+                            "success": True,
+                            "has_active_scraping": False,
+                            "task_id": None,
+                            "message": "Lock huérfano limpiado automáticamente",
+                        }
+                    )
+                elif celery_state == "PENDING":
+                    # Si está PENDING, verificar si realmente existe en workers activos
+                    # Si no existe, es un lock huérfano
+                    try:
+                        from celery import current_app
+                        inspect = current_app.control.inspect()
+                        active_tasks = inspect.active()
+                        task_exists = False
+                        
+                        if active_tasks:
+                            for worker, tasks in active_tasks.items():
+                                for task in tasks:
+                                    if task.get("id") == task_id:
+                                        task_exists = True
+                                        break
+                                if task_exists:
+                                    break
+                        
+                        if not task_exists:
+                            # Verificar también si hay logs recientes (últimos 2 minutos)
+                            from matching.models import ScrapingLog
+                            from django.utils import timezone
+                            from datetime import timedelta
+                            
+                            recent_logs = ScrapingLog.objects.filter(
+                                task_id=task_id,
+                                created_at__gte=timezone.now() - timedelta(minutes=2),
+                            ).exists()
+                            
+                            if not recent_logs:
+                                # No existe en workers y no hay logs recientes = lock huérfano
+                                logger.info(
+                                    f"🧹 Limpiando lock huérfano PENDING: "
+                                    f"task={task_id}, no existe en workers, sin logs recientes"
+                                )
+                                scraping_lock.force_release_lock()
+                                return JsonResponse(
+                                    {
+                                        "success": True,
+                                        "has_active_scraping": False,
+                                        "task_id": None,
+                                        "message": "Lock huérfano limpiado automáticamente",
+                                    }
+                                )
+                    except Exception as inspect_error:
+                        logger.warning(f"Error verificando workers activos: {inspect_error}")
+                        # Si no se puede verificar, ser conservador y no limpiar
+                        pass
+                        
+            except Exception as task_check_error:
+                logger.warning(f"Error verificando estado de tarea {task_id}: {task_check_error}")
+                # Si no se puede verificar el estado, asumir que está activo
+                pass
 
             return JsonResponse(
                 {
