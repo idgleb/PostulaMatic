@@ -3079,6 +3079,26 @@ def get_global_scraping_status(request):
                             "message": "Lock huérfano limpiado automáticamente",
                         }
                     )
+
+                # Verificar también si la tarea está "ready" (terminada pero estado no actualizado)
+                try:
+                    if task_result.ready():
+                        # Si está ready pero el estado no es finished, verificar el resultado
+                        if celery_state not in ["STARTED", "PENDING"]:
+                            logger.info(
+                                f"🧹 Tarea ready pero estado={celery_state}, limpiando lock: task={task_id}"
+                            )
+                            scraping_lock.force_release_lock()
+                            return JsonResponse(
+                                {
+                                    "success": True,
+                                    "has_active_scraping": False,
+                                    "task_id": None,
+                                    "message": "Lock limpiado (tarea ready)",
+                                }
+                            )
+                except Exception as ready_check_error:
+                    logger.warning(f"Error verificando ready() de tarea: {ready_check_error}")
                 elif celery_state == "PENDING":
                     # Si está PENDING, verificar si realmente existe en workers activos
                     # Si no existe, es un lock huérfano
