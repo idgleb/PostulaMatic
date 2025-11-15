@@ -2378,9 +2378,20 @@ def latest_screenshot_view(request, task_id):
         )
 
         if matching_screenshots:
-            # Obtener el más reciente usando getmtime() (modification time)
-            # Esto es más confiable que getctime() especialmente después de compresión
-            latest_screenshot = max(matching_screenshots, key=os.path.getmtime)
+            # Priorizar JPG sobre PNG (después de compresión, JPG es el archivo final)
+            jpg_screenshots = [s for s in matching_screenshots if s.endswith(".jpg")]
+            png_screenshots = [s for s in matching_screenshots if s.endswith(".png")]
+            
+            # Si hay JPGs, usar el más reciente de esos (son los comprimidos)
+            # Si no, usar el PNG más reciente
+            if jpg_screenshots:
+                latest_screenshot = max(jpg_screenshots, key=os.path.getmtime)
+            elif png_screenshots:
+                latest_screenshot = max(png_screenshots, key=os.path.getmtime)
+            else:
+                # Fallback: usar el más reciente de todos
+                latest_screenshot = max(matching_screenshots, key=os.path.getmtime)
+            
             screenshot_url = latest_screenshot.replace("media/", "/media/")
             screenshot_name = os.path.basename(latest_screenshot)
 
