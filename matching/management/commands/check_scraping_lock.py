@@ -3,15 +3,13 @@ Comando Django para verificar y limpiar locks de scraping huérfanos.
 """
 
 import logging
-from django.core.management.base import BaseCommand
-from django.core.cache import cache
-from celery.result import AsyncResult
 
-from matching.services.scraping_lock import (
-    SCRAPING_LOCK_KEY,
-    SCRAPING_INFO_KEY,
-    scraping_lock,
-)
+from celery.result import AsyncResult
+from django.core.cache import cache
+from django.core.management.base import BaseCommand
+
+from matching.services.scraping_lock import (SCRAPING_INFO_KEY,
+                                             SCRAPING_LOCK_KEY, scraping_lock)
 
 logger = logging.getLogger(__name__)
 
