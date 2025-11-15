@@ -688,8 +688,15 @@ function startSimpleMonitoring() {
 function checkScrapingStatus() {
     if (!currentTaskId) return;
     
-    fetch(`/matching/scraper-status/${currentTaskId}/`)
-        .then(response => response.json())
+    fetch(`/matching/scraper-status/${currentTaskId}/`, {
+        signal: AbortSignal.timeout(10000) // 10 segundos timeout
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
             // Actualizar progress bar según el estado
                             if (data.status === 'PENDING') {
@@ -1051,8 +1058,15 @@ function loadAllLogsFromDatabase(forceReload = false) {
     // Si hay task_id específico, cargar logs de esa tarea
     if (currentTaskId) {
         console.log(`📥 Cargando logs para task_id: ${currentTaskId}`);
-        fetch(`/matching/scraping-logs/${currentTaskId}/`)
-            .then(response => response.json())
+        fetch(`/matching/scraping-logs/${currentTaskId}/`, {
+            signal: AbortSignal.timeout(10000) // 10 segundos timeout
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 console.log(`📊 Respuesta de logs recibida:`, data);
                 if (data.success && data.logs) {
