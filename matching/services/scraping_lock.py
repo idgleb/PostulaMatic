@@ -78,6 +78,7 @@ class ScrapingLockService:
         """
         Limpia locks huérfanos (tareas que ya terminaron pero el lock sigue activo).
         Se ejecuta automáticamente antes de adquirir un nuevo lock.
+        Verifica tanto el estado de Celery como si hay logs recientes.
         """
         try:
             existing_task_id = cache.get(SCRAPING_LOCK_KEY)
@@ -93,10 +94,58 @@ class ScrapingLockService:
             # Estados que indican que la tarea ya terminó
             finished_states = ["SUCCESS", "FAILURE", "REVOKED", "REJECTED"]
 
-            if celery_state in finished_states or celery_state == "PENDING":
+            should_cleanup = False
+            cleanup_reason = ""
+
+            # Verificar si la tarea terminó o está en PENDING
+            if celery_state in finished_states:
+                should_cleanup = True
+                cleanup_reason = f"Tarea terminada (estado: {celery_state})"
+            elif celery_state == "PENDING":
+                # Si está PENDING, verificar si hay logs recientes (últimos 5 minutos)
+                # Si no hay logs, probablemente nunca se ejecutó
+                try:
+                    from matching.models import ScrapingLog
+                    from django.utils import timezone
+                    from datetime import timedelta
+
+                    recent_logs = ScrapingLog.objects.filter(
+                        task_id=existing_task_id,
+                        created_at__gte=timezone.now() - timedelta(minutes=5),
+                    ).exists()
+
+                    if not recent_logs:
+                        should_cleanup = True
+                        cleanup_reason = "Tarea PENDING sin logs recientes (probablemente nunca se ejecutó)"
+                    else:
+                        # Hay logs recientes, pero está PENDING - puede ser que esté en cola
+                        # Verificar si la tarea realmente existe en Celery
+                        from celery import current_app
+                        inspect = current_app.control.inspect()
+                        active_tasks = inspect.active()
+                        task_exists = False
+
+                        if active_tasks:
+                            for worker, tasks in active_tasks.items():
+                                for task in tasks:
+                                    if task.get("id") == existing_task_id:
+                                        task_exists = True
+                                        break
+                                if task_exists:
+                                    break
+
+                        if not task_exists:
+                            should_cleanup = True
+                            cleanup_reason = "Tarea PENDING pero no existe en workers activos"
+                except Exception as log_check_error:
+                    logger.warning(f"Error verificando logs para limpieza: {log_check_error}")
+                    # Si no se puede verificar logs, ser conservador y no limpiar
+                    pass
+
+            if should_cleanup:
                 # La tarea terminó o nunca se ejecutó, limpiar el lock
                 logger.warning(
-                    f"🧹 Limpiando lock huérfano: task={existing_task_id}, estado={celery_state}"
+                    f"🧹 Limpiando lock huérfano: task={existing_task_id}, razón: {cleanup_reason}"
                 )
                 cache.delete(SCRAPING_LOCK_KEY)
                 cache.delete(SCRAPING_INFO_KEY)
