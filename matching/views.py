@@ -2852,7 +2852,7 @@ def get_global_scraping_status(request):
 
                 # Si la tarea terminó, limpiar el lock automáticamente
                 finished_states = ["SUCCESS", "FAILURE", "REVOKED", "REJECTED"]
-                
+
                 # Verificar si la tarea realmente terminó
                 if celery_state in finished_states:
                     logger.info(
@@ -2873,10 +2873,11 @@ def get_global_scraping_status(request):
                     # Si no existe, es un lock huérfano
                     try:
                         from celery import current_app
+
                         inspect = current_app.control.inspect()
                         active_tasks = inspect.active()
                         task_exists = False
-                        
+
                         if active_tasks:
                             for worker, tasks in active_tasks.items():
                                 for task in tasks:
@@ -2885,18 +2886,20 @@ def get_global_scraping_status(request):
                                         break
                                 if task_exists:
                                     break
-                        
+
                         if not task_exists:
                             # Verificar también si hay logs recientes (últimos 2 minutos)
-                            from matching.models import ScrapingLog
-                            from django.utils import timezone
                             from datetime import timedelta
-                            
+
+                            from django.utils import timezone
+
+                            from matching.models import ScrapingLog
+
                             recent_logs = ScrapingLog.objects.filter(
                                 task_id=task_id,
                                 created_at__gte=timezone.now() - timedelta(minutes=2),
                             ).exists()
-                            
+
                             if not recent_logs:
                                 # No existe en workers y no hay logs recientes = lock huérfano
                                 logger.info(
@@ -2913,12 +2916,16 @@ def get_global_scraping_status(request):
                                     }
                                 )
                     except Exception as inspect_error:
-                        logger.warning(f"Error verificando workers activos: {inspect_error}")
+                        logger.warning(
+                            f"Error verificando workers activos: {inspect_error}"
+                        )
                         # Si no se puede verificar, ser conservador y no limpiar
                         pass
-                        
+
             except Exception as task_check_error:
-                logger.warning(f"Error verificando estado de tarea {task_id}: {task_check_error}")
+                logger.warning(
+                    f"Error verificando estado de tarea {task_id}: {task_check_error}"
+                )
                 # Si no se puede verificar el estado, asumir que está activo
                 pass
 
