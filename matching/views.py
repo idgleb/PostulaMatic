@@ -2411,12 +2411,19 @@ def latest_screenshot_view(request, task_id):
 
             # Si hay screenshots de tablero_cargado, usar esos
             if tablero_screenshots:
+                logger.info(
+                    f"✅ Encontrados {len(tablero_screenshots)} screenshots de 'tablero_cargado': "
+                    f"{[os.path.basename(s) for s in tablero_screenshots]}"
+                )
                 # Priorizar JPG sobre PNG para tablero_cargado
                 tablero_jpg = [s for s in tablero_screenshots if s.endswith(".jpg")]
                 tablero_png = [s for s in tablero_screenshots if s.endswith(".png")]
 
                 if tablero_jpg:
                     latest_screenshot = max(tablero_jpg, key=os.path.getmtime)
+                    logger.info(
+                        f"✅ Usando JPG de tablero_cargado: {os.path.basename(latest_screenshot)}"
+                    )
                 elif tablero_png:
                     # Verificar si existe JPG correspondiente
                     latest_png = max(tablero_png, key=os.path.getmtime)
@@ -2429,6 +2436,9 @@ def latest_screenshot_view(request, task_id):
                         )
                     else:
                         latest_screenshot = latest_png
+                        logger.info(
+                            f"✅ Usando PNG de tablero_cargado: {os.path.basename(latest_screenshot)}"
+                        )
                 else:
                     latest_screenshot = max(tablero_screenshots, key=os.path.getmtime)
                 logger.info("✅ Priorizando screenshot de tablero_cargado")
