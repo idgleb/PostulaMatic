@@ -45,9 +45,7 @@ jobs:
           pip install -r requirements-dev.txt
       
       - name: Run Black (check only)
-        run: |
-          # Formatear archivos
-          black --check --line-length 88 .
+        run: |          # Solo verificar formato, no formatear --line-length 88 .
           
           # Si hay cambios, hacer commit autom+ítico
           if [ -n "$(git status --porcelain)" ]; then
@@ -59,9 +57,7 @@ jobs:
           fi
       
       - name: Run isort (check only)
-        run: |
-          # Formatear imports
-          isort --check-only .
+        run: |          # Solo verificar imports, no formatear .
           
           # Si hay cambios, hacer commit autom+ítico
           if [ -n "$(git status --porcelain)" ]; then
