@@ -2407,13 +2407,24 @@ def latest_screenshot_view(request, task_id):
             # Priorizar JPG sobre PNG (después de compresión, JPG es el archivo final)
             jpg_screenshots = [s for s in matching_screenshots if s.endswith(".jpg")]
             png_screenshots = [s for s in matching_screenshots if s.endswith(".png")]
-
+            
             # Si hay JPGs, usar el más reciente de esos (son los comprimidos)
             # Si no, usar el PNG más reciente
             if jpg_screenshots:
                 latest_screenshot = max(jpg_screenshots, key=os.path.getmtime)
             elif png_screenshots:
-                latest_screenshot = max(png_screenshots, key=os.path.getmtime)
+                # Verificar si existe un JPG correspondiente para cada PNG
+                # (puede que el PNG se haya convertido a JPG pero aún no se haya eliminado)
+                latest_png = max(png_screenshots, key=os.path.getmtime)
+                png_path = Path(latest_png)
+                # Buscar JPG con el mismo nombre base
+                jpg_path = png_path.with_suffix(".jpg")
+                if jpg_path.exists():
+                    # El JPG existe, usar ese en lugar del PNG
+                    latest_screenshot = str(jpg_path)
+                    logger.info(f"✅ Encontrado JPG correspondiente para PNG: {jpg_path.name}")
+                else:
+                    latest_screenshot = latest_png
             else:
                 # Fallback: usar el más reciente de todos
                 latest_screenshot = max(matching_screenshots, key=os.path.getmtime)
