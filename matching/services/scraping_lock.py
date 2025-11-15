@@ -105,9 +105,11 @@ class ScrapingLockService:
                 # Si está PENDING, verificar si hay logs recientes (últimos 5 minutos)
                 # Si no hay logs, probablemente nunca se ejecutó
                 try:
-                    from matching.models import ScrapingLog
-                    from django.utils import timezone
                     from datetime import timedelta
+
+                    from django.utils import timezone
+
+                    from matching.models import ScrapingLog
 
                     recent_logs = ScrapingLog.objects.filter(
                         task_id=existing_task_id,
