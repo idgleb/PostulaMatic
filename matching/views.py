@@ -1471,7 +1471,9 @@ def scraper_status_view(request, task_id):
                     )
             except Exception as inspect_error:
                 # Si falla la inspección de Celery, continuar con el estado actual
-                logger.warning(f"Error inspeccionando tareas activas de Celery: {inspect_error}")
+                logger.warning(
+                    f"Error inspeccionando tareas activas de Celery: {inspect_error}"
+                )
                 # Continuar con el flujo normal, no es crítico
 
         # Obtener estadísticas actuales
