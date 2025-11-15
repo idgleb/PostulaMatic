@@ -188,12 +188,27 @@ class DVCarrerasStealth:
             screenshot_path = screenshots_dir / filename
 
             await self._log(f"📸 Capturando screenshot: {filename}", "info")
+            await self._log(
+                f"📁 Path completo: {screenshot_path.absolute()}", "info"
+            )
 
             # Capturar screenshot
-            self.driver.save_screenshot(str(screenshot_path))
+            try:
+                self.driver.save_screenshot(str(screenshot_path))
+                await self._log("📸 Screenshot capturado por Selenium", "info")
+            except Exception as e:
+                await self._log(
+                    f"❌ Error capturando screenshot con Selenium: {e}", "error"
+                )
+                return None
 
             # Verificar que se creó el archivo
             if screenshot_path.exists():
+                file_size = screenshot_path.stat().st_size
+                await self._log(
+                    f"✅ Archivo creado: {file_size} bytes ({file_size / 1024:.1f} KB)",
+                    "success",
+                )
                 # Comprimir screenshot para reducir tamaño (objetivo: 60-80% de reducción)
                 try:
                     from PIL import Image
