@@ -249,8 +249,10 @@ class DVCarrerasStealth:
                     # Estrategia de compresión adaptativa con prueba iterativa
                     # Prueba diferentes calidades JPEG hasta encontrar la mejor compresión
                     jpeg_path = screenshot_path.with_suffix(".jpg")
-                    temp_jpeg = screenshot_path.parent / f"{screenshot_path.stem}_temp.jpg"
-                    
+                    temp_jpeg = (
+                        screenshot_path.parent / f"{screenshot_path.stem}_temp.jpg"
+                    )
+
                     # Calidades a probar según tamaño (de mayor a menor calidad)
                     if original_size < 100 * 1024:  # < 100KB: probar 70, 65, 60
                         quality_levels = [70, 65, 60]
@@ -261,10 +263,10 @@ class DVCarrerasStealth:
                     else:  # > 500KB: probar 80, 75, 70
                         quality_levels = [80, 75, 70]
                         base_strategy = "JPEG (imagen grande)"
-                    
+
                     best_size = original_size
                     best_quality = None
-                    
+
                     # Probar cada calidad hasta encontrar la mejor
                     for quality in quality_levels:
                         img.save(
@@ -275,7 +277,7 @@ class DVCarrerasStealth:
                             progressive=True,
                         )
                         test_size = temp_jpeg.stat().st_size
-                        
+
                         # Si esta calidad es mejor que las anteriores, guardarla como mejor
                         if test_size < best_size:
                             best_size = test_size
@@ -284,12 +286,15 @@ class DVCarrerasStealth:
                             if jpeg_path.exists():
                                 jpeg_path.unlink()
                             temp_jpeg.rename(jpeg_path)
-                            temp_jpeg = screenshot_path.parent / f"{screenshot_path.stem}_temp.jpg"
-                    
+                            temp_jpeg = (
+                                screenshot_path.parent
+                                / f"{screenshot_path.stem}_temp.jpg"
+                            )
+
                     # Limpiar archivo temporal si existe
                     if temp_jpeg.exists():
                         temp_jpeg.unlink()
-                    
+
                     # Si encontramos una mejor compresión, usar el mejor JPEG
                     if best_quality is not None and best_size < original_size:
                         # Reemplazar PNG con JPEG
@@ -312,7 +317,7 @@ class DVCarrerasStealth:
                         compressed_size = original_size
                         reduction_percent = 0
                         await self._log(
-                            f"⚠️ JPEG no mejora el tamaño, manteniendo PNG original",
+                            "⚠️ JPEG no mejora el tamaño, manteniendo PNG original",
                             "warning",
                         )
 
