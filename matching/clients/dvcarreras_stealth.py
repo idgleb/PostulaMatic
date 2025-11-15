@@ -210,9 +210,13 @@ class DVCarrerasStealth:
                         background = Image.new("RGB", img.size, (255, 255, 255))
                         if img.mode == "P":
                             img = img.convert("RGBA")
-                        background.paste(img, mask=img.split()[-1] if img.mode == "RGBA" else None)
+                        background.paste(
+                            img, mask=img.split()[-1] if img.mode == "RGBA" else None
+                        )
                         img = background
-                        await self._log("🔄 Convertido RGBA→RGB para mejor compresión", "info")
+                        await self._log(
+                            "🔄 Convertido RGBA→RGB para mejor compresión", "info"
+                        )
 
                     # Redimensionar si es muy grande
                     # Límites: max 1600px de ancho o 2000px de alto (más agresivo)
@@ -260,7 +264,9 @@ class DVCarrerasStealth:
                         # Reemplazar PNG con JPEG
                         screenshot_path.unlink()
                         screenshot_path = jpeg_path
-                        await self._log("🖼️ Convertido a JPEG para mejor compresión", "info")
+                        await self._log(
+                            "🖼️ Convertido a JPEG para mejor compresión", "info"
+                        )
                     else:
                         # PNG con compresión máxima (compress_level=9)
                         img.save(
