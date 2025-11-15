@@ -31,6 +31,7 @@ class ScrapingLockService:
     ) -> bool:
         """
         Intenta adquirir el lock global de scraping.
+        Limpia automáticamente locks huérfanos antes de intentar adquirir.
 
         Args:
             task_id: ID de la tarea de Celery
@@ -41,6 +42,9 @@ class ScrapingLockService:
             True si se adquirió el lock, False si ya existe otro scraping activo
         """
         try:
+            # Limpiar locks huérfanos antes de intentar adquirir
+            ScrapingLockService._cleanup_orphaned_locks()
+
             # cache.add() solo crea la clave si NO existe (atómico en Redis)
             lock_acquired = cache.add(
                 SCRAPING_LOCK_KEY, task_id, timeout=SCRAPING_LOCK_TIMEOUT
@@ -68,6 +72,39 @@ class ScrapingLockService:
         except Exception as e:
             logger.error(f"❌ Error al adquirir lock de scraping: {e}")
             return False
+
+    @staticmethod
+    def _cleanup_orphaned_locks():
+        """
+        Limpia locks huérfanos (tareas que ya terminaron pero el lock sigue activo).
+        Se ejecuta automáticamente antes de adquirir un nuevo lock.
+        """
+        try:
+            existing_task_id = cache.get(SCRAPING_LOCK_KEY)
+            if not existing_task_id:
+                return  # No hay lock activo
+
+            # Verificar estado de la tarea en Celery
+            from celery.result import AsyncResult
+
+            task_result = AsyncResult(existing_task_id)
+            celery_state = task_result.state
+
+            # Estados que indican que la tarea ya terminó
+            finished_states = ["SUCCESS", "FAILURE", "REVOKED", "REJECTED"]
+
+            if celery_state in finished_states or celery_state == "PENDING":
+                # La tarea terminó o nunca se ejecutó, limpiar el lock
+                logger.warning(
+                    f"🧹 Limpiando lock huérfano: task={existing_task_id}, estado={celery_state}"
+                )
+                cache.delete(SCRAPING_LOCK_KEY)
+                cache.delete(SCRAPING_INFO_KEY)
+                logger.info(f"✅ Lock huérfano limpiado automáticamente")
+
+        except Exception as e:
+            logger.warning(f"⚠️ Error al limpiar locks huérfanos: {e}")
+            # No fallar si hay error al limpiar, continuar con el proceso normal
 
     @staticmethod
     def release_lock(task_id: str) -> bool:
