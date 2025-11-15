@@ -1620,6 +1620,16 @@ def scraper_status_view(request, task_id):
     except Exception as e:
         logger.error(f"Error obteniendo estado de tarea {task_id}: {e}", exc_info=True)
         # Retornar 200 con información de error para que el frontend pueda manejarlo
+        try:
+            total_jobs = JobPosting.objects.count()
+        except Exception:
+            total_jobs = 0
+
+        try:
+            total_matches = MatchScore.objects.filter(user=request.user).count()
+        except Exception:
+            total_matches = 0
+
         return JsonResponse(
             {
                 "task_id": task_id,
@@ -1628,8 +1638,8 @@ def scraper_status_view(request, task_id):
                 "successful": False,
                 "failed": True,
                 "result": {"error": str(e)},
-                "total_jobs": JobPosting.objects.count(),
-                "total_matches": MatchScore.objects.filter(user=request.user).count(),
+                "total_jobs": total_jobs,
+                "total_matches": total_matches,
             },
             status=200,  # Retornar 200 para que el frontend pueda manejar el error
         )
