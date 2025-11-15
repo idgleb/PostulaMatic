@@ -1432,49 +1432,81 @@ def scraper_status_view(request, task_id):
     from celery.result import AsyncResult
 
     try:
-        # Obtener el resultado de la tarea
-        task_result = AsyncResult(task_id)
+        # Obtener el resultado de la tarea de forma segura
+        try:
+            task_result = AsyncResult(task_id)
+        except Exception as e:
+            logger.error(f"Error creando AsyncResult para task_id={task_id}: {e}")
+            return JsonResponse(
+                {
+                    "task_id": task_id,
+                    "status": "ERROR",
+                    "ready": True,
+                    "successful": False,
+                    "failed": True,
+                    "result": {"error": f"Error obteniendo tarea: {str(e)}"},
+                    "total_jobs": JobPosting.objects.count(),
+                    "total_matches": MatchScore.objects.filter(
+                        user=request.user
+                    ).count(),
+                },
+                status=200,  # Retornar 200 para que el frontend pueda manejar el error
+            )
 
         # Verificar si la tarea realmente existe
         # Si el estado es PENDING y no está en las tareas activas, probablemente no existe
-        if task_result.status == "PENDING" and not task_result.ready():
+        try:
+            task_status = task_result.status
+        except Exception as e:
+            logger.warning(f"Error obteniendo status inicial: {e}")
+            task_status = "UNKNOWN"
+
+        if task_status == "PENDING":
             try:
-                from celery import current_app
+                is_ready = task_result.ready()
+            except Exception as e:
+                logger.warning(f"Error verificando ready(): {e}")
+                is_ready = False
 
-                inspect = current_app.control.inspect()
-                active_tasks = inspect.active()
+            if not is_ready:
+                try:
+                    from celery import current_app
 
-                task_exists = False
-                if active_tasks:
-                    for worker, tasks in active_tasks.items():
-                        for task in tasks:
-                            if task.get("id") == task_id:
-                                task_exists = True
+                    inspect = current_app.control.inspect()
+                    active_tasks = inspect.active()
+
+                    task_exists = False
+                    if active_tasks:
+                        for worker, tasks in active_tasks.items():
+                            for task in tasks:
+                                if task.get("id") == task_id:
+                                    task_exists = True
+                                    break
+                            if task_exists:
                                 break
-                        if task_exists:
-                            break
 
-                if not task_exists:
-                    return JsonResponse(
-                        {
-                            "task_id": task_id,
-                            "status": "NOT_FOUND",
-                            "ready": True,
-                            "successful": False,
-                            "failed": True,
-                            "result": {"error": "Tarea no encontrada"},
-                            "total_jobs": JobPosting.objects.count(),
-                            "total_matches": MatchScore.objects.filter(
-                                user=request.user
-                            ).count(),
-                        }
+                    if not task_exists:
+                        return JsonResponse(
+                            {
+                                "task_id": task_id,
+                                "status": "NOT_FOUND",
+                                "ready": True,
+                                "successful": False,
+                                "failed": True,
+                                "result": {"error": "Tarea no encontrada"},
+                                "total_jobs": JobPosting.objects.count(),
+                                "total_matches": MatchScore.objects.filter(
+                                    user=request.user
+                                ).count(),
+                            },
+                            status=200,  # Retornar 200 para que el frontend pueda manejar el error
+                        )
+                except Exception as inspect_error:
+                    # Si falla la inspección de Celery, continuar con el estado actual
+                    logger.warning(
+                        f"Error inspeccionando tareas activas de Celery: {inspect_error}"
                     )
-            except Exception as inspect_error:
-                # Si falla la inspección de Celery, continuar con el estado actual
-                logger.warning(
-                    f"Error inspeccionando tareas activas de Celery: {inspect_error}"
-                )
-                # Continuar con el flujo normal, no es crítico
+                    # Continuar con el flujo normal, no es crítico
 
         # Obtener estadísticas actuales
         total_jobs = JobPosting.objects.count()
@@ -1551,8 +1583,21 @@ def scraper_status_view(request, task_id):
         return JsonResponse(status_data)
 
     except Exception as e:
-        logger.error(f"Error obteniendo estado de tarea {task_id}: {e}")
-        return JsonResponse({"error": str(e)}, status=500)
+        logger.error(f"Error obteniendo estado de tarea {task_id}: {e}", exc_info=True)
+        # Retornar 200 con información de error para que el frontend pueda manejarlo
+        return JsonResponse(
+            {
+                "task_id": task_id,
+                "status": "ERROR",
+                "ready": True,
+                "successful": False,
+                "failed": True,
+                "result": {"error": str(e)},
+                "total_jobs": JobPosting.objects.count(),
+                "total_matches": MatchScore.objects.filter(user=request.user).count(),
+            },
+            status=200,  # Retornar 200 para que el frontend pueda manejar el error
+        )
 
 
 @login_required

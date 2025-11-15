@@ -1133,7 +1133,7 @@ function updateLiveScreenshots() {
         return;
     }
     
-    console.log(`📸 updateLiveScreenshots: Buscando screenshot para task_id=${currentTaskId}`);
+    console.log(`📸 [updateLiveScreenshots] Buscando screenshot para task_id=${currentTaskId}`);
     
     fetch(`/matching/latest-screenshot/${currentTaskId}/`, {
         signal: AbortSignal.timeout(10000) // 10 segundos timeout
