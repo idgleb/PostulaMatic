@@ -2449,9 +2449,31 @@ def latest_screenshot_view(request, task_id):
         )
 
         if matching_screenshots:
+            # Filtrar solo screenshots que realmente existen en disco
+            existing_screenshots = [s for s in matching_screenshots if Path(s).exists()]
+            
+            if not existing_screenshots:
+                logger.warning(
+                    f"⚠️ No se encontraron screenshots existentes para task_id={task_id}. "
+                    f"Total encontrados: {len(matching_screenshots)}, pero ninguno existe en disco."
+                )
+                # Intentar buscar JPGs correspondientes para los PNGs que no existen
+                for screenshot in matching_screenshots:
+                    if screenshot.endswith(".png"):
+                        png_path = Path(screenshot)
+                        jpg_path = png_path.with_suffix(".jpg")
+                        if jpg_path.exists():
+                            existing_screenshots.append(str(jpg_path))
+                            logger.info(f"✅ Encontrado JPG correspondiente: {jpg_path.name}")
+                
+                if not existing_screenshots:
+                    return JsonResponse(
+                        {"success": False, "message": "No hay screenshots disponibles en disco"}
+                    )
+            
             # Priorizar screenshots de "tablero_cargado" (el más importante)
             tablero_screenshots = [
-                s for s in matching_screenshots if "tablero_cargado" in s.name
+                s for s in existing_screenshots if "tablero_cargado" in s
             ]
 
             # Si hay screenshots de tablero_cargado, usar esos
@@ -2491,10 +2513,10 @@ def latest_screenshot_view(request, task_id):
                 # Si no hay tablero_cargado, usar el más reciente de todos
                 # Priorizar JPG sobre PNG (después de compresión, JPG es el archivo final)
                 jpg_screenshots = [
-                    s for s in matching_screenshots if s.endswith(".jpg")
+                    s for s in existing_screenshots if s.endswith(".jpg")
                 ]
                 png_screenshots = [
-                    s for s in matching_screenshots if s.endswith(".png")
+                    s for s in existing_screenshots if s.endswith(".png")
                 ]
 
                 # Si hay JPGs, usar el más reciente de esos (son los comprimidos)
@@ -2535,8 +2557,8 @@ def latest_screenshot_view(request, task_id):
                             # Si no hay PNGs existentes, usar el más reciente de todos
                             latest_screenshot = max(matching_screenshots, key=os.path.getmtime)
                 else:
-                    # Fallback: usar el más reciente de todos
-                    latest_screenshot = max(matching_screenshots, key=os.path.getmtime)
+                    # Fallback: usar el más reciente de todos los existentes
+                    latest_screenshot = max(existing_screenshots, key=os.path.getmtime)
 
             # Verificar que el archivo realmente existe antes de retornarlo
             screenshot_path = Path(latest_screenshot)
