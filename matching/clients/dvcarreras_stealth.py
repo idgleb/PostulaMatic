@@ -593,13 +593,13 @@ class DVCarrerasStealth:
                     await self._log(
                         "Sesión válida encontrada, navegando al tablero", "success"
                     )
-                    # Navegar al tablero (sin capturas aquí; se capturará en scrape_job_board)
-                    await self._log(f"Navegando a: {self.JOB_BOARD_URL}", "info")
-                    self.driver.get(self.JOB_BOARD_URL)
-                    await self._human_delay(3, 5)
-
-                    # Verificar si aparece página de encuesta y omitirla
-                    await self._handle_survey_popup()
+                    # Cuando hay sesión guardada, NO navegar aquí al tablero
+                    # Dejamos que scrape_job_board() navegue y capture el screenshot
+                    # Esto asegura que el screenshot "tablero_cargado" se capture correctamente
+                    await self._log(
+                        "Sesión válida confirmada, el tablero se cargará en scrape_job_board()",
+                        "info",
+                    )
 
                     self._is_authenticated = True
                     return True
