@@ -7,9 +7,11 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from matching.models import EmailSentLog, JobPosting, UserCV
-from matching.tasks_email import (process_matching_and_send_emails_task,
-                                  send_bulk_emails_task,
-                                  send_personalized_email_task)
+from matching.tasks_email import (
+    process_matching_and_send_emails_task,
+    send_bulk_emails_task,
+    send_personalized_email_task,
+)
 
 
 class Command(BaseCommand):

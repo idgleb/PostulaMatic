@@ -121,6 +121,7 @@ class ScrapingLockService:
                         # Hay logs recientes, pero está PENDING - puede ser que esté en cola
                         # Verificar si la tarea realmente existe en Celery
                         from celery import current_app
+
                         inspect = current_app.control.inspect()
                         active_tasks = inspect.active()
                         task_exists = False
@@ -136,9 +137,13 @@ class ScrapingLockService:
 
                         if not task_exists:
                             should_cleanup = True
-                            cleanup_reason = "Tarea PENDING pero no existe en workers activos"
+                            cleanup_reason = (
+                                "Tarea PENDING pero no existe en workers activos"
+                            )
                 except Exception as log_check_error:
-                    logger.warning(f"Error verificando logs para limpieza: {log_check_error}")
+                    logger.warning(
+                        f"Error verificando logs para limpieza: {log_check_error}"
+                    )
                     # Si no se puede verificar logs, ser conservador y no limpiar
                     pass
 
