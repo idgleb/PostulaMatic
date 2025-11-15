@@ -1440,6 +1440,8 @@ def dv_connection_status_view(request):
 @user_passes_test(lambda u: u.is_staff, login_url="dashboard")
 def scraper_status_view(request, task_id):
     """Vista para obtener el estado real de una tarea de scraping (solo admins)."""
+    # Importar modelos al inicio para evitar errores de importación
+    from .models import JobPosting, MatchScore
     from celery.result import AsyncResult
 
     try:
@@ -1448,6 +1450,17 @@ def scraper_status_view(request, task_id):
             task_result = AsyncResult(task_id)
         except Exception as e:
             logger.error(f"Error creando AsyncResult para task_id={task_id}: {e}")
+            # Obtener estadísticas de forma segura
+            try:
+                total_jobs = JobPosting.objects.count()
+            except Exception:
+                total_jobs = 0
+
+            try:
+                total_matches = MatchScore.objects.filter(user=request.user).count()
+            except Exception:
+                total_matches = 0
+
             return JsonResponse(
                 {
                     "task_id": task_id,
@@ -1456,10 +1469,8 @@ def scraper_status_view(request, task_id):
                     "successful": False,
                     "failed": True,
                     "result": {"error": f"Error obteniendo tarea: {str(e)}"},
-                    "total_jobs": JobPosting.objects.count(),
-                    "total_matches": MatchScore.objects.filter(
-                        user=request.user
-                    ).count(),
+                    "total_jobs": total_jobs,
+                    "total_matches": total_matches,
                 },
                 status=200,  # Retornar 200 para que el frontend pueda manejar el error
             )
@@ -1497,6 +1508,19 @@ def scraper_status_view(request, task_id):
                                 break
 
                     if not task_exists:
+                        # Obtener estadísticas de forma segura
+                        try:
+                            total_jobs = JobPosting.objects.count()
+                        except Exception:
+                            total_jobs = 0
+
+                        try:
+                            total_matches = MatchScore.objects.filter(
+                                user=request.user
+                            ).count()
+                        except Exception:
+                            total_matches = 0
+
                         return JsonResponse(
                             {
                                 "task_id": task_id,
@@ -1505,10 +1529,8 @@ def scraper_status_view(request, task_id):
                                 "successful": False,
                                 "failed": True,
                                 "result": {"error": "Tarea no encontrada"},
-                                "total_jobs": JobPosting.objects.count(),
-                                "total_matches": MatchScore.objects.filter(
-                                    user=request.user
-                                ).count(),
+                                "total_jobs": total_jobs,
+                                "total_matches": total_matches,
                             },
                             status=200,  # Retornar 200 para que el frontend pueda manejar el error
                         )
