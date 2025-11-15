@@ -11,10 +11,21 @@ from django.views.decorators.http import require_http_methods
 
 from matching.tasks_dv import verify_dv_login_task
 
-from .forms import (CVUploadForm, DVCredentialsForm, EmailConfigForm,
-                    MatchingConfigForm, SMTPConfigForm)
-from .models import (EmailSentLog, JobPosting, MatchScore, ScrapingLog, UserCV,
-                     UserProfile)
+from .forms import (
+    CVUploadForm,
+    DVCredentialsForm,
+    EmailConfigForm,
+    MatchingConfigForm,
+    SMTPConfigForm,
+)
+from .models import (
+    EmailSentLog,
+    JobPosting,
+    MatchScore,
+    ScrapingLog,
+    UserCV,
+    UserProfile,
+)
 from .services.cv_parser import cv_parser
 from .services.skills_extractor import skills_extractor
 from .utils.log_capture import cleanup_log_capture, setup_log_capture
@@ -1485,18 +1496,18 @@ def scraper_status_view(request, task_id):
         is_ready = False
         is_successful = False
         is_failed = False
-        
+
         try:
             is_ready = task_result.ready()
         except Exception as e:
             logger.warning(f"Error verificando si tarea está lista: {e}")
             is_ready = False
-        
+
         if is_ready:
             try:
                 is_successful = task_result.successful()
                 is_failed = task_result.failed()
-                
+
                 if is_successful:
                     try:
                         result_info = task_result.result
