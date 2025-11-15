@@ -2348,70 +2348,74 @@ def latest_screenshot_view(request, task_id):
     try:
         import glob
         import os
+        from pathlib import Path
 
-        # Buscar screenshots por task_id (sin filtrar por user_id específico)
-        # Esto permite ver screenshots de cualquier usuario que ejecutó esta tarea
-        # Buscar tanto PNG como JPG (después de compresión)
-        screenshots_pattern_png = f"media/screenshots/user_*_{task_id}_*.png"
-        screenshots_pattern_jpg = f"media/screenshots/user_*_{task_id}_*.jpg"
+        # Buscar todos los screenshots posibles (PNG y JPG)
+        # Usar búsqueda más amplia para asegurar que encontramos todos los archivos
+        screenshots_dir = Path("media/screenshots")
+        
+        if not screenshots_dir.exists():
+            logger.warning(f"Directorio de screenshots no existe: {screenshots_dir}")
+            return JsonResponse(
+                {"success": False, "message": "No hay screenshots disponibles"}
+            )
 
-        screenshots_png = glob.glob(screenshots_pattern_png)
-        screenshots_jpg = glob.glob(screenshots_pattern_jpg)
-
-        # Combinar ambos tipos de archivos
-        screenshots = screenshots_png + screenshots_jpg
-
-        # Log para debugging
-        logger.debug(
-            f"Buscando screenshots para task_id={task_id}: "
-            f"PNG={len(screenshots_png)}, JPG={len(screenshots_jpg)}, Total={len(screenshots)}"
+        # Buscar todos los archivos PNG y JPG
+        all_screenshots = list(screenshots_dir.glob("*.png")) + list(
+            screenshots_dir.glob("*.jpg")
         )
 
-        if screenshots:
-            # Obtener el más reciente
-            latest_screenshot = max(screenshots, key=os.path.getctime)
-            screenshot_url = latest_screenshot.replace("media/", "/media/")
+        # Filtrar por task_id (debe estar en el nombre del archivo)
+        matching_screenshots = [
+            str(s) for s in all_screenshots if task_id in s.name
+        ]
 
-            logger.debug(f"Screenshot encontrado: {screenshot_url}")
+        # Log detallado para debugging
+        logger.info(
+            f"Buscando screenshots para task_id={task_id}: "
+            f"Total archivos={len(all_screenshots)}, "
+            f"Coincidencias={len(matching_screenshots)}"
+        )
+
+        if matching_screenshots:
+            # Obtener el más reciente usando getmtime() (modification time)
+            # Esto es más confiable que getctime() especialmente después de compresión
+            latest_screenshot = max(matching_screenshots, key=os.path.getmtime)
+            screenshot_url = latest_screenshot.replace("media/", "/media/")
+            screenshot_name = os.path.basename(latest_screenshot)
+
+            logger.info(
+                f"✅ Screenshot encontrado: {screenshot_name} "
+                f"(modificado: {os.path.getmtime(latest_screenshot)})"
+            )
 
             return JsonResponse(
                 {
                     "success": True,
                     "screenshot_url": screenshot_url,
-                    "timestamp": os.path.getctime(latest_screenshot),
+                    "timestamp": os.path.getmtime(latest_screenshot),
+                    "filename": screenshot_name,
                 }
             )
         else:
-            # Si no se encontraron con el patrón, intentar buscar todos los archivos y filtrar
-            all_screenshots = glob.glob("media/screenshots/*.png") + glob.glob(
-                "media/screenshots/*.jpg"
-            )
-            matching_screenshots = [
-                s for s in all_screenshots if task_id in os.path.basename(s)
-            ]
-
-            if matching_screenshots:
-                latest_screenshot = max(matching_screenshots, key=os.path.getctime)
-                screenshot_url = latest_screenshot.replace("media/", "/media/")
-                logger.debug(
-                    f"Screenshot encontrado (búsqueda alternativa): {screenshot_url}"
+            # Log detallado de qué archivos existen para debugging
+            if all_screenshots:
+                sample_files = [s.name for s in all_screenshots[:5]]
+                logger.warning(
+                    f"No se encontraron screenshots para task_id={task_id}. "
+                    f"Archivos de ejemplo en directorio: {sample_files}"
+                )
+            else:
+                logger.warning(
+                    f"No hay screenshots en el directorio para task_id={task_id}"
                 )
 
-                return JsonResponse(
-                    {
-                        "success": True,
-                        "screenshot_url": screenshot_url,
-                        "timestamp": os.path.getctime(latest_screenshot),
-                    }
-                )
-
-            logger.warning(f"No se encontraron screenshots para task_id={task_id}")
             return JsonResponse(
                 {"success": False, "message": "No hay screenshots disponibles"}
             )
 
     except Exception as e:
-        logger.error(f"Error obteniendo screenshot: {e}")
+        logger.error(f"Error obteniendo screenshot: {e}", exc_info=True)
         return JsonResponse({"success": False, "error": str(e)})
 
 
