@@ -3098,8 +3098,11 @@ def get_global_scraping_status(request):
                                 }
                             )
                 except Exception as ready_check_error:
-                    logger.warning(f"Error verificando ready() de tarea: {ready_check_error}")
-                elif celery_state == "PENDING":
+                    logger.warning(
+                        f"Error verificando ready() de tarea: {ready_check_error}"
+                    )
+
+                if celery_state == "PENDING":
                     # Si está PENDING, verificar si realmente existe en workers activos
                     # Si no existe, es un lock huérfano
                     try:
