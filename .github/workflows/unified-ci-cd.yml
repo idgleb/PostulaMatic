@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+ï»¿name: CI/CD Pipeline
 
 on:
   push:
@@ -45,19 +45,18 @@ jobs:
           pip install -r requirements-dev.txt
       
       - name: Run Black (check only)
-        run: |          # Solo verificar formato, no formatear --line-length 88 .
-          
+        run: |
+          # Solo verificar formato, no formatear
+          black --check --line-length 88 .
       
       - name: Run isort (check only)
-        run: |          # Solo verificar imports, no formatear .
-          
+        run: |
+          # Solo verificar imports, no formatear
+          isort --check-only .
       
       - name: Run Ruff
         run: |
-          # Arreglar errores autom+İticamente
-          ruff check --output-format=github . || true
-          
-          
+          # Solo verificar errores, no arreglar automÃƒÂ¡ticamente
           ruff check --output-format=github . || true
       
       - name: Run Django tests
@@ -104,9 +103,9 @@ jobs:
             # Validate Nginx config
             if [ -d "conf.d" ] && [ -f "conf.d/postulamatic.conf" ]; then
               if docker exec nginx-proxy nginx -t 2>&1; then
-                echo "ÈúÓ Nginx config valid"
+                echo "Ã¢Å“â€¦ Nginx config valid"
               else
-                echo "ÈÏ¯ Nginx config invalid, restoring backup"
+                echo "Ã¢ÂÅ’ Nginx config invalid, restoring backup"
                 if ls conf.d/postulamatic.conf.backup.* 1> /dev/null 2>&1; then
                   LATEST_BACKUP=$(ls -t conf.d/postulamatic.conf.backup.* | head -1)
                   cp "$LATEST_BACKUP" conf.d/postulamatic.conf
@@ -123,9 +122,9 @@ jobs:
             # Build Docker containers
             docker compose build
             
-            # ÈúÓ FIX: Aplicar migraciones directamente (sin --check que causa timeout)
-            # Django es seguro: si no hay migraciones pendientes, termina r+İpidamente
-            echo "¡â÷õ Aplicando migraciones..."
+            # Ã¢Å“â€¦ FIX: Aplicar migraciones directamente (sin --check que causa timeout)
+            # Django es seguro: si no hay migraciones pendientes, termina rÃƒÂ¡pidamente
+            echo "Ã°Å¸â€â€ Aplicando migraciones..."
             docker compose run --rm postulamatic_web python manage.py migrate --noinput
             
             # Start containers
@@ -140,22 +139,21 @@ jobs:
             fi
             
             # Health check
-            echo "¡â+Ğ Verificando salud del sitio..."
+            echo "Ã°Å¸ÂÂ¥ Verificando salud del sitio..."
             MAX_RETRIES=3
             RETRY_DELAY=10
             
             for i in $(seq 1 $MAX_RETRIES); do
               if curl -f -s https://postulamatic.app > /dev/null 2>&1; then
-                echo "ÈúÓ Health check exitoso (intento $i/$MAX_RETRIES)"
-                echo "¡â-Ù Deployment completado exitosamente"
+                echo "Ã¢Å“â€¦ Health check exitoso (intento $i/$MAX_RETRIES)"
+                echo "Ã°Å¸Å½â€° Deployment completado exitosamente"
                 exit 0
               else
-                echo "È+ª Health check fallido (intento $i/$MAX_RETRIES), reintentando en ${RETRY_DELAY}s..."
+                echo "Ã¢ÂÂ³ Health check fallido (intento $i/$MAX_RETRIES), reintentando en ${RETRY_DELAY}s..."
                 sleep $RETRY_DELAY
               fi
             done
             
-            echo "È_ß¦®+ Health check fall+ª despu+«s de $MAX_RETRIES intentos"
-            echo "Èõª¦®+ El deployment se complet+ª, pero el sitio puede tardar unos minutos en responder"
+            echo "Ã¢Å¡Â Ã¯Â¸Â Health check fallÃƒÂ³ despuÃƒÂ©s de $MAX_RETRIES intentos"
+            echo "Ã¢â€Â¹Ã¯Â¸Â El deployment se completÃƒÂ³, pero el sitio puede tardar unos minutos en responder"
             exit 0
-
