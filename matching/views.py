@@ -2347,10 +2347,10 @@ def latest_screenshot_view(request, task_id):
         # Buscar tanto PNG como JPG (después de compresión)
         screenshots_pattern_png = f"media/screenshots/user_*_{task_id}_*.png"
         screenshots_pattern_jpg = f"media/screenshots/user_*_{task_id}_*.jpg"
-        
+
         screenshots_png = glob.glob(screenshots_pattern_png)
         screenshots_jpg = glob.glob(screenshots_pattern_jpg)
-        
+
         # Combinar ambos tipos de archivos
         screenshots = screenshots_png + screenshots_jpg
         
