@@ -2358,7 +2358,7 @@ def latest_screenshot_view(request, task_id):
 
         # Combinar ambos tipos de archivos
         screenshots = screenshots_png + screenshots_jpg
-        
+
         # Log para debugging
         logger.debug(
             f"Buscando screenshots para task_id={task_id}: "
@@ -2369,7 +2369,7 @@ def latest_screenshot_view(request, task_id):
             # Obtener el más reciente
             latest_screenshot = max(screenshots, key=os.path.getctime)
             screenshot_url = latest_screenshot.replace("media/", "/media/")
-            
+
             logger.debug(f"Screenshot encontrado: {screenshot_url}")
 
             return JsonResponse(
@@ -2381,16 +2381,20 @@ def latest_screenshot_view(request, task_id):
             )
         else:
             # Si no se encontraron con el patrón, intentar buscar todos los archivos y filtrar
-            all_screenshots = glob.glob("media/screenshots/*.png") + glob.glob("media/screenshots/*.jpg")
+            all_screenshots = glob.glob("media/screenshots/*.png") + glob.glob(
+                "media/screenshots/*.jpg"
+            )
             matching_screenshots = [
                 s for s in all_screenshots if task_id in os.path.basename(s)
             ]
-            
+
             if matching_screenshots:
                 latest_screenshot = max(matching_screenshots, key=os.path.getctime)
                 screenshot_url = latest_screenshot.replace("media/", "/media/")
-                logger.debug(f"Screenshot encontrado (búsqueda alternativa): {screenshot_url}")
-                
+                logger.debug(
+                    f"Screenshot encontrado (búsqueda alternativa): {screenshot_url}"
+                )
+
                 return JsonResponse(
                     {
                         "success": True,
@@ -2398,7 +2402,7 @@ def latest_screenshot_view(request, task_id):
                         "timestamp": os.path.getctime(latest_screenshot),
                     }
                 )
-            
+
             logger.warning(f"No se encontraron screenshots para task_id={task_id}")
             return JsonResponse(
                 {"success": False, "message": "No hay screenshots disponibles"}
