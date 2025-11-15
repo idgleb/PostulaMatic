@@ -34,9 +34,7 @@ class Command(BaseCommand):
         info = cache.get(SCRAPING_INFO_KEY)
 
         if not task_id:
-            self.stdout.write(
-                self.style.SUCCESS("✅ No hay lock de scraping activo")
-            )
+            self.stdout.write(self.style.SUCCESS("✅ No hay lock de scraping activo"))
             return
 
         self.stdout.write(f"🔒 Lock encontrado: task_id={task_id}")
@@ -114,4 +112,3 @@ class Command(BaseCommand):
                     self.stdout.write(
                         self.style.SUCCESS("✅ Lock liberado exitosamente")
                     )
-
