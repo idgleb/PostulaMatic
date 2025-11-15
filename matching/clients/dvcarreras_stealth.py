@@ -246,70 +246,74 @@ class DVCarrerasStealth:
                             "info",
                         )
 
-                    # Estrategia de compresión según tamaño original
-                    # Para screenshots, JPEG siempre comprime mejor que PNG
-                    # Usamos diferentes calidades según el tamaño para maximizar reducción
-                    
-                    if original_size < 100 * 1024:  # < 100KB: JPEG calidad 75 (más agresivo)
-                        quality = 75
-                        strategy = "JPEG calidad 75 (imagen pequeña)"
-                    elif original_size < 500 * 1024:  # 100-500KB: JPEG calidad 80
-                        quality = 80
-                        strategy = "JPEG calidad 80 (imagen mediana)"
-                    else:  # > 500KB: JPEG calidad 85
-                        quality = 85
-                        strategy = "JPEG calidad 85 (imagen grande)"
-                    
-                    # Convertir a JPEG (siempre mejor que PNG para screenshots)
+                    # Estrategia de compresión adaptativa con prueba iterativa
+                    # Prueba diferentes calidades JPEG hasta encontrar la mejor compresión
                     jpeg_path = screenshot_path.with_suffix(".jpg")
-                    img.save(
-                        jpeg_path,
-                        "JPEG",
-                        quality=quality,
-                        optimize=True,
-                        progressive=True,
-                    )
+                    temp_jpeg = screenshot_path.parent / f"{screenshot_path.stem}_temp.jpg"
                     
-                    # Obtener tamaño comprimido
-                    compressed_size = jpeg_path.stat().st_size
+                    # Calidades a probar según tamaño (de mayor a menor calidad)
+                    if original_size < 100 * 1024:  # < 100KB: probar 70, 65, 60
+                        quality_levels = [70, 65, 60]
+                        base_strategy = "JPEG (imagen pequeña)"
+                    elif original_size < 500 * 1024:  # 100-500KB: probar 70, 65, 60, 55
+                        quality_levels = [70, 65, 60, 55]
+                        base_strategy = "JPEG (imagen mediana)"
+                    else:  # > 500KB: probar 80, 75, 70
+                        quality_levels = [80, 75, 70]
+                        base_strategy = "JPEG (imagen grande)"
                     
-                    # Si el JPEG es más grande que el original, intentar con calidad más baja
-                    if compressed_size >= original_size and original_size < 500 * 1024:
-                        await self._log(
-                            f"⚠️ JPEG inicial más grande, probando calidad más baja...",
-                            "info",
-                        )
-                        # Intentar con calidad 70
+                    best_size = original_size
+                    best_quality = None
+                    
+                    # Probar cada calidad hasta encontrar la mejor
+                    for quality in quality_levels:
                         img.save(
-                            jpeg_path,
+                            temp_jpeg,
                             "JPEG",
-                            quality=70,
+                            quality=quality,
                             optimize=True,
                             progressive=True,
                         )
-                        compressed_size = jpeg_path.stat().st_size
-                        strategy = "JPEG calidad 70 (optimizado)"
+                        test_size = temp_jpeg.stat().st_size
+                        
+                        # Si esta calidad es mejor que las anteriores, guardarla como mejor
+                        if test_size < best_size:
+                            best_size = test_size
+                            best_quality = quality
+                            # Reemplazar el mejor JPEG encontrado hasta ahora
+                            if jpeg_path.exists():
+                                jpeg_path.unlink()
+                            temp_jpeg.rename(jpeg_path)
+                            temp_jpeg = screenshot_path.parent / f"{screenshot_path.stem}_temp.jpg"
                     
-                    # Si aún es más grande, mantener el original PNG
-                    if compressed_size >= original_size:
-                        await self._log(
-                            f"⚠️ JPEG no mejora el tamaño, manteniendo PNG original",
-                            "warning",
-                        )
-                        jpeg_path.unlink()  # Eliminar JPEG
-                        compressed_size = original_size
-                        reduction_percent = 0
-                    else:
+                    # Limpiar archivo temporal si existe
+                    if temp_jpeg.exists():
+                        temp_jpeg.unlink()
+                    
+                    # Si encontramos una mejor compresión, usar el mejor JPEG
+                    if best_quality is not None and best_size < original_size:
                         # Reemplazar PNG con JPEG
                         screenshot_path.unlink()
                         screenshot_path = jpeg_path
+                        compressed_size = best_size
                         reduction_percent = (
                             (1 - compressed_size / original_size) * 100
                             if original_size > 0
                             else 0
                         )
                         await self._log(
-                            f"🖼️ {strategy}", "info"
+                            f"🖼️ {base_strategy} calidad {best_quality} (mejor compresión encontrada)",
+                            "info",
+                        )
+                    else:
+                        # No se encontró mejor compresión, mantener PNG original
+                        if jpeg_path.exists():
+                            jpeg_path.unlink()
+                        compressed_size = original_size
+                        reduction_percent = 0
+                        await self._log(
+                            f"⚠️ JPEG no mejora el tamaño, manteniendo PNG original",
+                            "warning",
                         )
 
                     await self._log(
