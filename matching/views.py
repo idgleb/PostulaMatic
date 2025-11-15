@@ -2431,7 +2431,7 @@ def latest_screenshot_view(request, task_id):
                         latest_screenshot = latest_png
                 else:
                     latest_screenshot = max(tablero_screenshots, key=os.path.getmtime)
-                logger.info(f"✅ Priorizando screenshot de tablero_cargado")
+                logger.info("✅ Priorizando screenshot de tablero_cargado")
             else:
                 # Si no hay tablero_cargado, usar el más reciente de todos
                 # Priorizar JPG sobre PNG (después de compresión, JPG es el archivo final)
