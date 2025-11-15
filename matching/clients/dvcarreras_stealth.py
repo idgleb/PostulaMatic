@@ -194,7 +194,7 @@ class DVCarrerasStealth:
 
             # Verificar que se creó el archivo
             if screenshot_path.exists():
-                # Comprimir screenshot para reducir tamaño (~70% de reducción)
+                # Comprimir screenshot para reducir tamaño (objetivo: 60-80% de reducción)
                 try:
                     from PIL import Image
 
@@ -204,27 +204,71 @@ class DVCarrerasStealth:
                     # Abrir imagen
                     img = Image.open(screenshot_path)
 
-                    # Redimensionar si es muy grande (max 1920px de ancho para mantener calidad)
-                    max_width = 1920
+                    # Convertir RGBA a RGB si tiene transparencia (JPEG no soporta alpha)
+                    if img.mode in ("RGBA", "LA", "P"):
+                        # Crear fondo blanco para transparencias
+                        background = Image.new("RGB", img.size, (255, 255, 255))
+                        if img.mode == "P":
+                            img = img.convert("RGBA")
+                        background.paste(img, mask=img.split()[-1] if img.mode == "RGBA" else None)
+                        img = background
+                        await self._log("🔄 Convertido RGBA→RGB para mejor compresión", "info")
+
+                    # Redimensionar si es muy grande
+                    # Límites: max 1600px de ancho o 2000px de alto (más agresivo)
+                    max_width = 1600
+                    max_height = 2000
+                    needs_resize = False
+                    new_width, new_height = img.width, img.height
+
                     if img.width > max_width:
                         ratio = max_width / img.width
+                        new_width = max_width
                         new_height = int(img.height * ratio)
+                        needs_resize = True
+
+                    if new_height > max_height:
+                        ratio = max_height / new_height
+                        new_height = max_height
+                        new_width = int(new_width * ratio)
+                        needs_resize = True
+
+                    if needs_resize:
                         img = img.resize(
-                            (max_width, new_height), Image.Resampling.LANCZOS
+                            (new_width, new_height), Image.Resampling.LANCZOS
                         )
                         await self._log(
                             f"📐 Screenshot redimensionado: {img.width}x{img.height}",
                             "info",
                         )
 
-                    # Guardar con compresión optimizada
-                    # compress_level=6 es un buen balance entre tamaño y velocidad
-                    img.save(
-                        screenshot_path,
-                        "PNG",
-                        optimize=True,
-                        compress_level=6,
-                    )
+                    # Decidir formato según tamaño
+                    # Para imágenes grandes (>500KB), usar JPEG (mejor compresión)
+                    # Para imágenes pequeñas, mantener PNG con compresión agresiva
+                    use_jpeg = original_size > 500 * 1024  # 500KB
+
+                    if use_jpeg:
+                        # Convertir a JPEG con calidad 85 (balance calidad/tamaño)
+                        jpeg_path = screenshot_path.with_suffix(".jpg")
+                        img.save(
+                            jpeg_path,
+                            "JPEG",
+                            quality=85,
+                            optimize=True,
+                            progressive=True,
+                        )
+                        # Reemplazar PNG con JPEG
+                        screenshot_path.unlink()
+                        screenshot_path = jpeg_path
+                        await self._log("🖼️ Convertido a JPEG para mejor compresión", "info")
+                    else:
+                        # PNG con compresión máxima (compress_level=9)
+                        img.save(
+                            screenshot_path,
+                            "PNG",
+                            optimize=True,
+                            compress_level=9,  # Máxima compresión
+                        )
 
                     # Obtener tamaño comprimido
                     compressed_size = screenshot_path.stat().st_size
