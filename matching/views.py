@@ -2448,7 +2448,9 @@ def latest_screenshot_view(request, task_id):
                     if jpg_path.exists():
                         # El JPG existe, usar ese en lugar del PNG
                         latest_screenshot = str(jpg_path)
-                        logger.info(f"✅ Encontrado JPG correspondiente para PNG: {jpg_path.name}")
+                        logger.info(
+                            f"✅ Encontrado JPG correspondiente para PNG: {jpg_path.name}"
+                        )
                     else:
                         latest_screenshot = latest_png
                 else:
