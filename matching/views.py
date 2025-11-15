@@ -1444,6 +1444,8 @@ def scraper_status_view(request, task_id):
     from .models import JobPosting, MatchScore
     from celery.result import AsyncResult
 
+    logger.info(f"📊 scraper_status_view llamado para task_id={task_id}")
+
     try:
         # Obtener el resultado de la tarea de forma segura
         try:
