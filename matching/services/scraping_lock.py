@@ -147,8 +147,18 @@ class ScrapingLockService:
                 logger.warning(
                     f"🧹 Limpiando lock huérfano: task={existing_task_id}, razón: {cleanup_reason}"
                 )
+                # Limpiar de manera más agresiva: múltiples intentos y verificación
                 cache.delete(SCRAPING_LOCK_KEY)
                 cache.delete(SCRAPING_INFO_KEY)
+                # Verificar que se limpió correctamente
+                remaining_lock = cache.get(SCRAPING_LOCK_KEY)
+                if remaining_lock:
+                    logger.warning(f"⚠️ Lock aún existe después de delete(), forzando limpieza...")
+                    # Intentar con timeout 0 para forzar expiración inmediata
+                    cache.set(SCRAPING_LOCK_KEY, None, timeout=0)
+                    cache.set(SCRAPING_INFO_KEY, None, timeout=0)
+                    cache.delete(SCRAPING_LOCK_KEY)
+                    cache.delete(SCRAPING_INFO_KEY)
                 logger.info("✅ Lock huérfano limpiado automáticamente")
 
         except Exception as e:
@@ -171,8 +181,17 @@ class ScrapingLockService:
             current_lock = cache.get(SCRAPING_LOCK_KEY)
 
             if current_lock == task_id:
+                # Limpiar de manera robusta
                 cache.delete(SCRAPING_LOCK_KEY)
                 cache.delete(SCRAPING_INFO_KEY)
+                # Verificar que se limpió
+                remaining = cache.get(SCRAPING_LOCK_KEY)
+                if remaining:
+                    logger.warning(f"⚠️ Lock aún existe después de release, forzando limpieza...")
+                    cache.set(SCRAPING_LOCK_KEY, None, timeout=0)
+                    cache.set(SCRAPING_INFO_KEY, None, timeout=0)
+                    cache.delete(SCRAPING_LOCK_KEY)
+                    cache.delete(SCRAPING_INFO_KEY)
                 logger.info(f"🔓 Lock de scraping liberado: task={task_id}")
                 return True
             else:
@@ -189,13 +208,30 @@ class ScrapingLockService:
     def force_release_lock() -> bool:
         """
         Libera el lock forzosamente (solo para emergencias o limpieza admin).
+        Usa múltiples métodos para asegurar que se limpie correctamente.
 
         Returns:
             True si se liberó
         """
         try:
+            # Método 1: delete() normal
             cache.delete(SCRAPING_LOCK_KEY)
             cache.delete(SCRAPING_INFO_KEY)
+            
+            # Método 2: set con timeout 0 para forzar expiración
+            cache.set(SCRAPING_LOCK_KEY, None, timeout=0)
+            cache.set(SCRAPING_INFO_KEY, None, timeout=0)
+            
+            # Método 3: delete() nuevamente por si acaso
+            cache.delete(SCRAPING_LOCK_KEY)
+            cache.delete(SCRAPING_INFO_KEY)
+            
+            # Verificar que se limpió
+            remaining = cache.get(SCRAPING_LOCK_KEY)
+            if remaining:
+                logger.error(f"❌ Lock aún existe después de force_release: {remaining}")
+                return False
+            
             logger.warning("⚠️ Lock de scraping liberado FORZOSAMENTE")
             return True
         except Exception as e:
