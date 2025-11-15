@@ -466,21 +466,47 @@ function checkCurrentScrapingStatus() {
                 console.log('   - Origen:', globalData.source);
                 console.log('   - Hora:', globalData.started_at);
                 
-                // Establecer como tarea actual y comenzar monitoreo
-                currentTaskId = globalTaskId;
-                localStorage.setItem('lastTaskId', globalTaskId);
-                
-                // Cargar logs y comenzar monitoreo
-                loadAllLogsFromDatabase(true);
-                startSimpleMonitoring();
-                
-                // Mostrar mensaje informativo con origen del scraping
-                const sourceText = globalData.source === 'scheduled' ? 'automáticamente (programado)' : 'manualmente';
-                const sourceIcon = globalData.source === 'scheduled' ? '🕒' : '👤';
-                addLogEntry(`${sourceIcon} Conectado al scraping global en curso (iniciado ${sourceText})`, 'info');
-                
-                // Actualizar badge de origen del scraping
-                updateScrapingSourceBadge(globalData.source);
+                // Verificar el estado real de la tarea antes de monitorear
+                // Si la tarea ya terminó, el lock será limpiado automáticamente
+                fetch(`/matching/scraper-status/${globalTaskId}/`)
+                    .then(response => response.json())
+                    .then(taskData => {
+                        // Si la tarea terminó o no existe, el lock debería limpiarse automáticamente
+                        if (taskData.status === 'SUCCESS' || taskData.status === 'FAILURE' || 
+                            taskData.status === 'REVOKED' || taskData.status === 'REJECTED' ||
+                            taskData.status === 'NOT_FOUND') {
+                            console.log('⚠️ Tarea ya terminó, limpiando lock automáticamente...');
+                            // Recargar el estado global para que limpie el lock
+                            setTimeout(() => {
+                                checkCurrentScrapingStatus();
+                            }, 1000);
+                            return;
+                        }
+                        
+                        // Si la tarea está activa, monitorear normalmente
+                        currentTaskId = globalTaskId;
+                        localStorage.setItem('lastTaskId', globalTaskId);
+                        
+                        // Cargar logs y comenzar monitoreo
+                        loadAllLogsFromDatabase(true);
+                        startSimpleMonitoring();
+                        
+                        // Mostrar mensaje informativo con origen del scraping
+                        const sourceText = globalData.source === 'scheduled' ? 'automáticamente (programado)' : 'manualmente';
+                        const sourceIcon = globalData.source === 'scheduled' ? '🕒' : '👤';
+                        addLogEntry(`${sourceIcon} Conectado al scraping global en curso (iniciado ${sourceText})`, 'info');
+                        
+                        // Actualizar badge de origen del scraping
+                        updateScrapingSourceBadge(globalData.source);
+                    })
+                    .catch(error => {
+                        console.error('Error verificando estado de tarea:', error);
+                        // En caso de error, intentar monitorear de todas formas
+                        currentTaskId = globalTaskId;
+                        localStorage.setItem('lastTaskId', globalTaskId);
+                        loadAllLogsFromDatabase(true);
+                        startSimpleMonitoring();
+                    });
                 
             } else {
                 // ❌ NO HAY SCRAPING GLOBAL ACTIVO
