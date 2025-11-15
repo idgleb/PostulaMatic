@@ -317,7 +317,7 @@ class DVCarrerasStealth:
                         compressed_size = original_size
                         reduction_percent = 0
                         await self._log(
-                            f"⚠️ JPEG no mejora el tamaño, manteniendo PNG original",
+                            "⚠️ JPEG no mejora el tamaño, manteniendo PNG original",
                             "warning",
                         )
 
