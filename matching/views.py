@@ -2514,8 +2514,26 @@ def latest_screenshot_view(request, task_id):
                         logger.info(
                             f"✅ Encontrado JPG correspondiente para PNG: {jpg_path.name}"
                         )
-                    else:
+                    elif png_path.exists():
+                        # El PNG existe, usarlo
                         latest_screenshot = latest_png
+                        logger.info(
+                            f"✅ Usando PNG existente: {png_path.name}"
+                        )
+                    else:
+                        # El PNG no existe, buscar otro
+                        logger.warning(
+                            f"⚠️ PNG no existe: {png_path}, buscando alternativas..."
+                        )
+                        # Buscar el siguiente PNG más reciente que exista
+                        for png in sorted(png_screenshots, key=os.path.getmtime, reverse=True):
+                            if Path(png).exists():
+                                latest_screenshot = png
+                                logger.info(f"✅ Usando PNG alternativo existente: {Path(png).name}")
+                                break
+                        else:
+                            # Si no hay PNGs existentes, usar el más reciente de todos
+                            latest_screenshot = max(matching_screenshots, key=os.path.getmtime)
                 else:
                     # Fallback: usar el más reciente de todos
                     latest_screenshot = max(matching_screenshots, key=os.path.getmtime)
