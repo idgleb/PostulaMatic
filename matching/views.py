@@ -1588,6 +1588,19 @@ def scraper_status_view(request, task_id):
             # Solo actualizar si es diferente (puede haber cambiado durante el procesamiento)
             if current_status != task_status:
                 task_status = current_status
+
+            # Si la tarea terminó (SUCCESS, FAILURE, etc.), limpiar el lock automáticamente
+            finished_states = ["SUCCESS", "FAILURE", "REVOKED", "REJECTED"]
+            if task_status in finished_states:
+                from .services.scraping_lock import scraping_lock
+
+                lock_task_id = scraping_lock.get_lock_task_id()
+                if lock_task_id == task_id:
+                    logger.info(
+                        f"🧹 Tarea terminada ({task_status}), limpiando lock automáticamente"
+                    )
+                    scraping_lock.force_release_lock()
+
         except Exception as e:
             logger.warning(f"Error obteniendo status final de tarea: {e}")
             # Mantener el status que ya teníamos o usar UNKNOWN
