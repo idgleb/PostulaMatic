@@ -1438,36 +1438,41 @@ def scraper_status_view(request, task_id):
         # Verificar si la tarea realmente existe
         # Si el estado es PENDING y no está en las tareas activas, probablemente no existe
         if task_result.status == "PENDING" and not task_result.ready():
-            from celery import current_app
+            try:
+                from celery import current_app
 
-            inspect = current_app.control.inspect()
-            active_tasks = inspect.active()
+                inspect = current_app.control.inspect()
+                active_tasks = inspect.active()
 
-            task_exists = False
-            if active_tasks:
-                for worker, tasks in active_tasks.items():
-                    for task in tasks:
-                        if task.get("id") == task_id:
-                            task_exists = True
+                task_exists = False
+                if active_tasks:
+                    for worker, tasks in active_tasks.items():
+                        for task in tasks:
+                            if task.get("id") == task_id:
+                                task_exists = True
+                                break
+                        if task_exists:
                             break
-                    if task_exists:
-                        break
 
-            if not task_exists:
-                return JsonResponse(
-                    {
-                        "task_id": task_id,
-                        "status": "NOT_FOUND",
-                        "ready": True,
-                        "successful": False,
-                        "failed": True,
-                        "result": {"error": "Tarea no encontrada"},
-                        "total_jobs": JobPosting.objects.count(),
-                        "total_matches": MatchScore.objects.filter(
-                            user=request.user
-                        ).count(),
-                    }
-                )
+                if not task_exists:
+                    return JsonResponse(
+                        {
+                            "task_id": task_id,
+                            "status": "NOT_FOUND",
+                            "ready": True,
+                            "successful": False,
+                            "failed": True,
+                            "result": {"error": "Tarea no encontrada"},
+                            "total_jobs": JobPosting.objects.count(),
+                            "total_matches": MatchScore.objects.filter(
+                                user=request.user
+                            ).count(),
+                        }
+                    )
+            except Exception as inspect_error:
+                # Si falla la inspección de Celery, continuar con el estado actual
+                logger.warning(f"Error inspeccionando tareas activas de Celery: {inspect_error}")
+                # Continuar con el flujo normal, no es crítico
 
         # Obtener estadísticas actuales
         total_jobs = JobPosting.objects.count()

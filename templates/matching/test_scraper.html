@@ -987,14 +987,26 @@ let lastScreenshotUrl = null;
 
 // Función para actualizar screenshots en tiempo real
 function updateLiveScreenshots() {
-    if (!currentTaskId) return;
+    if (!currentTaskId) {
+        console.debug('updateLiveScreenshots: No hay currentTaskId');
+        return;
+    }
+    
+    console.debug(`updateLiveScreenshots: Buscando screenshot para task_id=${currentTaskId}`);
     
     fetch(`/matching/latest-screenshot/${currentTaskId}/`)
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                console.warn(`Error HTTP ${response.status} al obtener screenshot`);
+                return response.json().catch(() => ({success: false, error: `HTTP ${response.status}`}));
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success && data.screenshot_url) {
                 // Solo actualizar si la URL cambió (nuevo screenshot)
                 if (data.screenshot_url !== lastScreenshotUrl) {
+                    console.log(`📸 Nuevo screenshot encontrado: ${data.screenshot_url}`);
                     lastScreenshotUrl = data.screenshot_url;
                     
                     const screenshotContainer = document.getElementById('liveScreenshots');
@@ -1004,7 +1016,8 @@ function updateLiveScreenshots() {
                                 <img src="${data.screenshot_url}" 
                                      class="img-fluid rounded shadow" 
                                      style="max-width: 100%; max-height: 550px; object-fit: contain; border: 2px solid #007bff;"
-                                     alt="Screenshot en vivo">
+                                     alt="Screenshot en vivo"
+                                     onerror="console.error('Error cargando imagen:', this.src); this.parentElement.innerHTML='<div class=\\'text-light\\'><i class=\\'bi bi-exclamation-triangle me-2\\'></i>Error cargando screenshot</div>';">
                                 <div class="mt-2">
                                     <small class="text-light">
                                         <i class="bi bi-camera me-1"></i>
@@ -1013,9 +1026,14 @@ function updateLiveScreenshots() {
                                 </div>
                             </div>
                         `;
+                    } else {
+                        console.warn('updateLiveScreenshots: No se encontró el contenedor liveScreenshots');
                     }
+                } else {
+                    console.debug('updateLiveScreenshots: Screenshot sin cambios');
                 }
-                // Si la URL no cambió, no hacemos nada (mantiene el screenshot anterior sin recargar)
+            } else {
+                console.debug(`updateLiveScreenshots: No hay screenshot disponible (success=${data.success})`);
             }
         })
         .catch(error => {
