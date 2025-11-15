@@ -2538,12 +2538,31 @@ def latest_screenshot_view(request, task_id):
                     # Fallback: usar el más reciente de todos
                     latest_screenshot = max(matching_screenshots, key=os.path.getmtime)
 
+            # Verificar que el archivo realmente existe antes de retornarlo
+            screenshot_path = Path(latest_screenshot)
+            if not screenshot_path.exists():
+                logger.warning(
+                    f"⚠️ Screenshot no existe en disco: {latest_screenshot}, buscando alternativas..."
+                )
+                # Buscar el siguiente screenshot más reciente que exista
+                for screenshot in sorted(matching_screenshots, key=os.path.getmtime, reverse=True):
+                    if Path(screenshot).exists():
+                        latest_screenshot = screenshot
+                        screenshot_path = Path(latest_screenshot)
+                        logger.info(f"✅ Usando screenshot alternativo existente: {screenshot_path.name}")
+                        break
+                else:
+                    logger.error(f"❌ No se encontró ningún screenshot existente para task_id={task_id}")
+                    return JsonResponse(
+                        {"success": False, "message": "Screenshot no encontrado en disco"}
+                    )
+
             screenshot_url = latest_screenshot.replace("media/", "/media/")
             screenshot_name = os.path.basename(latest_screenshot)
 
             logger.info(
-                f"✅ Screenshot encontrado: {screenshot_name} "
-                f"(modificado: {os.path.getmtime(latest_screenshot)})"
+                f"✅ Screenshot encontrado y verificado: {screenshot_name} "
+                f"(modificado: {os.path.getmtime(latest_screenshot)}, existe: {screenshot_path.exists()})"
             )
 
             return JsonResponse(
