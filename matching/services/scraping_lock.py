@@ -100,7 +100,7 @@ class ScrapingLockService:
                 )
                 cache.delete(SCRAPING_LOCK_KEY)
                 cache.delete(SCRAPING_INFO_KEY)
-                logger.info(f"✅ Lock huérfano limpiado automáticamente")
+                logger.info("✅ Lock huérfano limpiado automáticamente")
 
         except Exception as e:
             logger.warning(f"⚠️ Error al limpiar locks huérfanos: {e}")
