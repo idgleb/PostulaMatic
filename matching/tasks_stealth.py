@@ -420,43 +420,55 @@ def scrape_dvcarreras_jobs_stealth(
         result["rotation_used"] = user_id is None
         result["credentials_from_user"] = user_id
 
+        logger.info(f"✅ Scraping completado exitosamente (task={task_id})")
         return result
 
     except Exception as e:
-        logger.error(f"Error en scraping stealth para usuario {user_id}: {e}")
+        logger.error(f"❌ Error en scraping stealth para usuario {user_id}: {e}")
 
         # Reintentar si es posible
         if self.request.retries < self.max_retries:
             logger.info(
-                f"Reintentando scraping stealth (intento {self.request.retries + 1})"
+                f"🔄 Reintentando scraping stealth (intento {self.request.retries + 1})"
             )
             raise self.retry(countdown=60 * (self.request.retries + 1))
 
+        logger.error(f"❌ Scraping falló definitivamente (task={task_id})")
         return {"success": False, "error": str(e), "user_id": user_id}
 
     finally:
         # ============================================================
         # 🔓 LOCK GLOBAL: Liberar lock al terminar (éxito o error)
         # ============================================================
+        logger.info(f"🔓 [FINALLY] Iniciando liberación de lock para task={task_id}")
+        
+        lock_released = False
         try:
+            logger.info(f"🔓 Intentando liberar lock normalmente...")
             released = scraping_lock.release_lock(task_id)
             if released:
-                logger.info(f"🔓 Lock liberado para task={task_id}")
+                logger.info(f"✅ Lock liberado exitosamente (task={task_id})")
+                lock_released = True
             else:
-                # Si no se pudo liberar (no era el dueño), forzar liberación
                 logger.warning(
-                    f"⚠️ No se pudo liberar lock normalmente para task={task_id}, forzando liberación"
+                    f"⚠️ release_lock() retornó False para task={task_id}"
                 )
-                scraping_lock.force_release_lock()
         except Exception as e:
-            logger.error(f"❌ Error al liberar lock en finally: {e}")
-            # Intentar forzar liberación como último recurso
+            logger.error(f"❌ Error al llamar release_lock(): {e}", exc_info=True)
+        
+        # Si no se liberó, forzar liberación
+        if not lock_released:
+            logger.warning(f"🔓 Forzando liberación de lock para task={task_id}...")
             try:
                 scraping_lock.force_release_lock()
+                logger.info(f"✅ Lock liberado forzosamente (task={task_id})")
             except Exception as force_error:
                 logger.error(
-                    f"❌ Error crítico al forzar liberación de lock: {force_error}"
+                    f"❌ ERROR CRÍTICO al forzar liberación de lock: {force_error}",
+                    exc_info=True
                 )
+        
+        logger.info(f"🔓 [FINALLY] Finalizado intento de liberación de lock (task={task_id})")
 
 
 @shared_task(bind=True, max_retries=2)
