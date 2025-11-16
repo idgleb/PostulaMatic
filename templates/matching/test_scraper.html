@@ -701,6 +701,13 @@ function checkScrapingStatus() {
             return response.json();
         })
         .then(data => {
+            console.log(`📊 Estado de tarea recibido:`, {
+                status: data.status,
+                ready: data.ready,
+                successful: data.successful,
+                failed: data.failed
+            });
+            
             // ✅ DETECTAR SI LA TAREA TERMINÓ (ready=true indica que Celery ya no la está procesando)
             if (data.ready === true && (data.successful === true || data.status === 'SUCCESS')) {
                 console.log('✅ Tarea completada exitosamente (detectado por ready=true)');
@@ -1376,6 +1383,13 @@ function updateProgressFromLogMessage(message) {
         updateProgressBar(95, '💾 Almacenando resultados en base de datos...', 'info');
     } else if (msg.includes('cerrando navegador') || msg.includes('navegador stealth cerrado')) {
         updateProgressBar(98, '🧹 Liberando recursos del navegador...', 'info');
+        // Después de cerrar el navegador, verificar si la tarea ya terminó
+        setTimeout(() => {
+            if (currentTaskId) {
+                console.log('🔍 Verificando estado final después de cerrar navegador...');
+                checkScrapingStatus();
+            }
+        }, 2000);
     }
 }
 
