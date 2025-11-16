@@ -2544,7 +2544,12 @@ def latest_screenshot_view(request, task_id):
         )
 
         # Filtrar por task_id (debe estar en el nombre del archivo)
-        matching_screenshots = [str(s) for s in all_screenshots if task_id in s.name]
+        # y excluir archivos temporales (_temp)
+        matching_screenshots = [
+            str(s)
+            for s in all_screenshots
+            if task_id in s.name and "_temp" not in s.name
+        ]
 
         # Log detallado para debugging
         logger.info(
@@ -2555,6 +2560,7 @@ def latest_screenshot_view(request, task_id):
 
         if matching_screenshots:
             # Filtrar solo screenshots que realmente existen en disco
+            # (los archivos _temp ya fueron excluidos anteriormente)
             existing_screenshots = [s for s in matching_screenshots if Path(s).exists()]
 
             if not existing_screenshots:
