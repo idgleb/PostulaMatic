@@ -2,10 +2,10 @@
 Management command para verificar si hay realmente un scraping en curso.
 """
 
+from celery.result import AsyncResult
 from django.core.management.base import BaseCommand
 
 from matching.services.scraping_lock import scraping_lock
-from celery.result import AsyncResult
 
 
 class Command(BaseCommand):
