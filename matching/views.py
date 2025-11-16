@@ -1480,6 +1480,7 @@ def scraper_status_view(request, task_id):
 
         # Verificar si la tarea realmente existe
         # Si el estado es PENDING y no está en las tareas activas, probablemente no existe
+        task_status = "UNKNOWN"  # Inicializar con valor por defecto
         try:
             task_status = task_result.status
         except Exception as e:
