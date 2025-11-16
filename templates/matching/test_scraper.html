@@ -701,54 +701,89 @@ function checkScrapingStatus() {
             return response.json();
         })
         .then(data => {
-            // Actualizar progress bar según el estado
-                            if (data.status === 'PENDING') {
-                    updateProgressBar(15, 'Tarea en cola...', 'warning');
-                    disableScrapingButton();
-                } else if (data.status === 'STARTED') {
-                    updateProgressBar(25, 'Ejecutando scraping...', 'info');
-                    disableScrapingButton();
-                } else if (data.status === 'SUCCESS') {
-                    updateProgressBar(100, 'Completado exitosamente', 'success');
-                    enableScrapingButton();
-                    // Detener monitoreo
-                    if (window.logsInterval) {
-                        clearInterval(window.logsInterval);
-                        window.logsInterval = null;
-                    }
-                    // Cargar logs finales desde BD
-                    loadAllLogsFromDatabase();
-                    // Guardar el task_id completado para poder mostrar logs después de recargar
-                    console.log('✅ Tarea completada exitosamente, guardando como último completado');
-                    localStorage.setItem('lastCompletedTaskId', currentTaskId);
-                    localStorage.removeItem('lastTaskId'); // Ya no está activo
-                    currentTaskId = null;
-                } else if (data.status === 'FAILURE') {
-                    updateProgressBar(0, 'Falló', 'danger');
-                    enableScrapingButton();
-                    // Detener monitoreo
-                    if (window.logsInterval) {
-                        clearInterval(window.logsInterval);
-                        window.logsInterval = null;
-                    }
-                    // Limpiar task_id del localStorage al fallar
-                    console.log('❌ Tarea falló, limpiando localStorage');
-                    localStorage.removeItem('lastTaskId');
-                    currentTaskId = null;
-                    // Cargar logs de error desde BD
-                    loadAllLogsFromDatabase();
-                } else if (data.status === 'NOT_FOUND') {
-                    // Tarea no encontrada - limpiar
-                    localStorage.removeItem('lastTaskId');
-                    currentTaskId = null;
-                    updateProgressBar(0, 'Inicia un scraping para comenzar', 'secondary');
-                    enableScrapingButton();
-                    // Detener monitoreo
-                    if (window.logsInterval) {
-                        clearInterval(window.logsInterval);
-                        window.logsInterval = null;
-                    }
+            // ✅ DETECTAR SI LA TAREA TERMINÓ (ready=true indica que Celery ya no la está procesando)
+            if (data.ready === true && (data.successful === true || data.status === 'SUCCESS')) {
+                console.log('✅ Tarea completada exitosamente (detectado por ready=true)');
+                updateProgressBar(100, 'Completado exitosamente', 'success');
+                enableScrapingButton();
+                // Detener monitoreo
+                if (window.logsInterval) {
+                    clearInterval(window.logsInterval);
+                    window.logsInterval = null;
                 }
+                // Cargar logs finales desde BD
+                loadAllLogsFromDatabase();
+                // Guardar el task_id completado
+                localStorage.setItem('lastCompletedTaskId', currentTaskId);
+                localStorage.removeItem('lastTaskId');
+                currentTaskId = null;
+                return;
+            }
+            
+            // ❌ DETECTAR SI LA TAREA FALLÓ
+            if (data.ready === true && (data.failed === true || data.status === 'FAILURE')) {
+                console.log('❌ Tarea falló (detectado por ready=true y failed=true)');
+                updateProgressBar(0, 'Falló', 'danger');
+                enableScrapingButton();
+                // Detener monitoreo
+                if (window.logsInterval) {
+                    clearInterval(window.logsInterval);
+                    window.logsInterval = null;
+                }
+                localStorage.removeItem('lastTaskId');
+                currentTaskId = null;
+                loadAllLogsFromDatabase();
+                return;
+            }
+            
+            // Actualizar progress bar según el estado
+            if (data.status === 'PENDING') {
+                updateProgressBar(15, 'Tarea en cola...', 'warning');
+                disableScrapingButton();
+            } else if (data.status === 'STARTED') {
+                updateProgressBar(25, 'Ejecutando scraping...', 'info');
+                disableScrapingButton();
+            } else if (data.status === 'SUCCESS') {
+                updateProgressBar(100, 'Completado exitosamente', 'success');
+                enableScrapingButton();
+                // Detener monitoreo
+                if (window.logsInterval) {
+                    clearInterval(window.logsInterval);
+                    window.logsInterval = null;
+                }
+                // Cargar logs finales desde BD
+                loadAllLogsFromDatabase();
+                // Guardar el task_id completado para poder mostrar logs después de recargar
+                console.log('✅ Tarea completada exitosamente, guardando como último completado');
+                localStorage.setItem('lastCompletedTaskId', currentTaskId);
+                localStorage.removeItem('lastTaskId'); // Ya no está activo
+                currentTaskId = null;
+            } else if (data.status === 'FAILURE') {
+                updateProgressBar(0, 'Falló', 'danger');
+                enableScrapingButton();
+                // Detener monitoreo
+                if (window.logsInterval) {
+                    clearInterval(window.logsInterval);
+                    window.logsInterval = null;
+                }
+                // Limpiar task_id del localStorage al fallar
+                console.log('❌ Tarea falló, limpiando localStorage');
+                localStorage.removeItem('lastTaskId');
+                currentTaskId = null;
+                // Cargar logs de error desde BD
+                loadAllLogsFromDatabase();
+            } else if (data.status === 'NOT_FOUND') {
+                // Tarea no encontrada - limpiar
+                localStorage.removeItem('lastTaskId');
+                currentTaskId = null;
+                updateProgressBar(0, 'Inicia un scraping para comenzar', 'secondary');
+                enableScrapingButton();
+                // Detener monitoreo
+                if (window.logsInterval) {
+                    clearInterval(window.logsInterval);
+                    window.logsInterval = null;
+                }
+            }
         })
         .catch(error => {
             console.error('Error verificando estado:', error);
