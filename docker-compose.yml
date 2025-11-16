@@ -17,6 +17,11 @@ services:
       - DEBUG=True
       - ALLOWED_HOSTS=localhost,127.0.0.1
       - GUNICORN_CMD_ARGS=--timeout 180
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
   worker:
     build: .
     # env_file: .env
@@ -29,6 +34,11 @@ services:
       - .:/app
     depends_on:
       - redis
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
   beat:
     build: .
     # env_file: .env
@@ -39,10 +49,21 @@ services:
       - .:/app
     depends_on:
       - redis
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
   redis:
     image: redis:7-alpine
     restart: unless-stopped
     networks: [web]
+    command: redis-server --save 60 1 --loglevel warning --maxmemory 256mb --maxmemory-policy allkeys-lru
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
   flaresolverr:
     image: ghcr.io/flaresolverr/flaresolverr:latest
     container_name: flaresolverr
@@ -55,6 +76,11 @@ services:
       - LOG_HTML=false
       - HEADLESS=true
       - TEST_URL=https://www.google.com
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
 
 networks:
   web:
