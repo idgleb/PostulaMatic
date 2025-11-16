@@ -78,9 +78,7 @@ class Command(BaseCommand):
                     )
                     self.stdout.write("   Esto podría indicar un lock huérfano")
             except Exception as e:
-                self.stdout.write(
-                    self.style.ERROR(f"❌ Error verificando tarea: {e}")
-                )
+                self.stdout.write(self.style.ERROR(f"❌ Error verificando tarea: {e}"))
         else:
             self.stdout.write(self.style.SUCCESS("ℹ️ No hay lock activo"))
 
@@ -129,4 +127,3 @@ class Command(BaseCommand):
 
         self.stdout.write("")
         self.stdout.write(self.style.SUCCESS("✅ Verificación completada"))
-
