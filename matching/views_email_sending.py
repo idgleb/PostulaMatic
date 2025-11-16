@@ -87,13 +87,15 @@ def send_cv_email(request):
         logger.info("🤖 Generando carta de presentación con IA...")
         from .services.email_generator import generate_cover_letter_with_ai
 
-        cover_letter = generate_cover_letter_with_ai(
+        # Desempaquetar tupla (texto, proveedor)
+        cover_letter, actual_ai_provider = generate_cover_letter_with_ai(
             user_name=user_profile.user.get_full_name() or user_profile.user.username,
             job_title=job_posting.title,
             job_description=job_posting.description,
             cv_summary=cv_text[:500],  # Primeros 500 caracteres como resumen
             email_template="base",  # Por defecto usa BASE
         )
+        logger.info(f"🤖 Proveedor IA usado: {actual_ai_provider}")
 
         # 3. Enviar email
         logger.info(f"📨 Enviando email a {job_posting.email}...")
