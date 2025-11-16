@@ -1214,6 +1214,11 @@ function updateLiveScreenshots() {
                                 // Si el JPG también falla, mostrar mensaje
                                 this.onerror = function() {
                                     console.error(`❌ JPG alternativo también falló: ${this.src}`);
+                                    // Restaurar layout centrado para mensajes
+                                    screenshotContainer.className = 'bg-dark p-3 rounded text-center d-flex align-items-center justify-content-center';
+                                    screenshotContainer.style.height = '600px';
+                                    screenshotContainer.style.overflowY = 'auto';
+                                    
                                     screenshotContainer.innerHTML = `
                                         <div class="text-light text-center p-3">
                                             <i class="bi bi-exclamation-triangle me-2"></i>
@@ -1222,6 +1227,11 @@ function updateLiveScreenshots() {
                                     `;
                                 };
                             } else {
+                                // Restaurar layout centrado para mensajes
+                                screenshotContainer.className = 'bg-dark p-3 rounded text-center d-flex align-items-center justify-content-center';
+                                screenshotContainer.style.height = '600px';
+                                screenshotContainer.style.overflowY = 'auto';
+                                
                                 screenshotContainer.innerHTML = `
                                     <div class="text-light text-center p-3">
                                         <i class="bi bi-exclamation-triangle me-2"></i>
@@ -1235,11 +1245,19 @@ function updateLiveScreenshots() {
                             console.log(`✅ Screenshot cargado correctamente: ${this.src}`);
                         };
                         
+                        // Cambiar el layout del contenedor para apilar imagen + timestamp verticalmente
+                        screenshotContainer.className = 'bg-dark p-3 rounded text-center';
+                        screenshotContainer.style.display = 'flex';
+                        screenshotContainer.style.flexDirection = 'column';
+                        screenshotContainer.style.alignItems = 'center';
+                        screenshotContainer.style.height = '600px';
+                        screenshotContainer.style.overflowY = 'auto';
+                        
                         screenshotContainer.innerHTML = '';
                         screenshotContainer.appendChild(img);
                         
                         const timestampDiv = document.createElement('div');
-                        timestampDiv.className = 'mt-2';
+                        timestampDiv.className = 'mt-2 text-center';
                         timestampDiv.innerHTML = `
                             <small class="text-light">
                                 <i class="bi bi-camera me-1"></i>
@@ -1258,6 +1276,11 @@ function updateLiveScreenshots() {
                 // Mostrar mensaje en el contenedor si existe
                 const screenshotContainer = document.getElementById('liveScreenshots');
                 if (screenshotContainer && !screenshotContainer.querySelector('img')) {
+                    // Restaurar layout centrado para mensajes
+                    screenshotContainer.className = 'bg-dark p-3 rounded text-center d-flex align-items-center justify-content-center';
+                    screenshotContainer.style.height = '600px';
+                    screenshotContainer.style.overflowY = 'auto';
+                    
                     screenshotContainer.innerHTML = `
                         <div class="text-light text-center p-3">
                             <i class="bi bi-hourglass-split me-2"></i>
@@ -1271,6 +1294,11 @@ function updateLiveScreenshots() {
             console.error('❌ Error cargando screenshot:', error);
             const screenshotContainer = document.getElementById('liveScreenshots');
             if (screenshotContainer) {
+                // Restaurar layout centrado para mensajes de error
+                screenshotContainer.className = 'bg-dark p-3 rounded text-center d-flex align-items-center justify-content-center';
+                screenshotContainer.style.height = '600px';
+                screenshotContainer.style.overflowY = 'auto';
+                
                 screenshotContainer.innerHTML = `
                     <div class="text-light text-center p-3">
                         <i class="bi bi-exclamation-triangle me-2"></i>
