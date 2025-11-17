@@ -156,7 +156,7 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 # Email base (por defecto, SMTP; el envío real será per-user)
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "no-reply@postulamatic.app")
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "idgleb646807@gmail.com")
 
 # Celery (broker/result por env con defaults a Redis en compose)
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://redis:6379/0")

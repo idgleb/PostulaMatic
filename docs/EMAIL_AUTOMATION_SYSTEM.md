@@ -57,7 +57,7 @@ ANTHROPIC_API_KEY=tu_api_key_anthropic
 AI_PROVIDER=openai  # o anthropic
 
 # Configuración de Email
-DEFAULT_FROM_EMAIL=no-reply@postulamatic.app
+DEFAULT_FROM_EMAIL=idgleb646807@gmail.com
 ```
 
 ### 2. Servicios de Docker
