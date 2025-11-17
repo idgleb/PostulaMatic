@@ -18,7 +18,7 @@
 
 ## 📜 Código de Conducta
 
-Este proyecto y todos los participantes están gobernados por nuestro Código de Conducta. Al participar, se espera que mantengas este código. Por favor reporta comportamientos inaceptables a [support@postulamatic.app](mailto:support@postulamatic.app).
+Este proyecto y todos los participantes están gobernados por nuestro Código de Conducta. Al participar, se espera que mantengas este código. Por favor reporta comportamientos inaceptables a [idgleb646807@gmail.com](mailto:idgleb646807@gmail.com).
 
 ---
 
@@ -531,7 +531,7 @@ git push origin master --tags
 
 - 📖 **Documentación:** [docs/](docs/)
 - 💬 **Issues:** [GitHub Issues](https://github.com/idgleb/PostulaMatic/issues)
-- 📧 **Email:** support@postulamatic.app
+- 📧 **Email:** idgleb646807@gmail.com
 
 ---
 

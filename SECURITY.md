@@ -19,7 +19,7 @@ La seguridad de PostulaMatic es una prioridad. Si descubres una vulnerabilidad d
 
 En su lugar:
 
-1. **Envía un email a:** security@postulamatic.app
+1. **Envía un email a:** idgleb646807@gmail.com
 2. **Incluye:**
    - Descripción detallada de la vulnerabilidad
    - Pasos para reproducir
@@ -200,7 +200,7 @@ Agradecemos a los investigadores de seguridad que han reportado vulnerabilidades
 
 ## 📞 Contacto
 
-- **Security Email:** security@postulamatic.app
+- **Security Email:** idgleb646807@gmail.com
 - **PGP Key:** [Pendiente]
 - **Response Time:** 48 horas
 

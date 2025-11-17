@@ -491,7 +491,7 @@ Este proyecto está bajo la licencia **MIT**. Ver [LICENSE](LICENSE) para más d
 ## 📞 Soporte
 
 - **Issues:** [GitHub Issues](https://github.com/idgleb/PostulaMatic/issues)
-- **Email:** support@postulamatic.app
+- **Email:** idgleb646807@gmail.com
 - **Documentación:** [docs/](docs/)
 
 ---
